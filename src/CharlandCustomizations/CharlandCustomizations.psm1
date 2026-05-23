@@ -8,6 +8,5 @@ foreach ($file in $privateScripts) {
     . $file.FullName
 }
 
-if ($publicScripts) {
-    Export-ModuleMember -Function $publicScripts.BaseName
-}
+$publicFunctionNames = @($publicScripts | ForEach-Object { $_.BaseName })
+Export-ModuleMember -Function $publicFunctionNames
