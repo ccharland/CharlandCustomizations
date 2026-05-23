@@ -5,7 +5,7 @@ Public release home for my PowerShell module and related automation.
 ## Repository baseline
 
 This repository is prepared to import the existing module code from:
-https://github.com/ccharland/MyPowershellCustomizations
+https://github.com/ccharland/MyPowerShellCustomizations
 
 ```text
 .
