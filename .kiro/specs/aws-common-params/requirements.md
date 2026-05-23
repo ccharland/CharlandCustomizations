@@ -52,7 +52,12 @@ The helper must support all standard AWS Tools for PowerShell common parameters:
 - Update the `powershell-module-development.md` steering file to document the new pattern
 - Replace the existing `$awsParams` splatting section with the new helper-based approach
 
+### REQ-7: Refactor All Existing AWS Functions
+- All existing AWS functions in the module must be updated to use `New-AWSParamSplat`
+- Replace all manual `$AwsParams` / `$awsParams` hashtable construction with the helper
+- Add the full set of AWS common parameters to every function that calls AWS cmdlets
+- This is a big-bang refactor while the module is in pre-release stage for consistency
+
 ## Out of Scope
-- Refactoring all existing AWS functions to use the new helper (separate task)
 - Supporting AWS credential resolution order or fallback logic
 - Validating that credentials are actually valid (that's the AWS cmdlet's job)

@@ -19,8 +19,17 @@
 - [ ] Include the standard parameter block template
 - [ ] Note backward compatibility with the old pattern
 
-## Task 4: Demonstrate migration on one existing function
-- [ ] Pick one function (e.g., `Find-CFNStackErrors` in AWSCustomizations.psm1)
-- [ ] Add the full set of AWS common parameters
-- [ ] Replace manual `$AwsParams` building with `New-AWSParamSplat`
-- [ ] Verify function still works with just `-Region` and `-ProfileName`
+## Task 4: Refactor all existing AWS functions to use `New-AWSParamSplat`
+- [ ] Update `Find-CFNStackErrors` in AWSCustomizations.psm1
+- [ ] Update `Start-MultiStackDriftDetection` in AWSCustomizations.psm1
+- [ ] Update `Get-AWSAccountListOfDriftedResources` in AWSCustomizations.psm1
+- [ ] Update `Get-AWSObjectCount` in AWSCustomizations.psm1
+- [ ] Update `Set-AWSProfileWithMFA` in AWSCustomizations.psm1
+- [ ] Update `Update-SSOCredentialList` in AWSCustomizations.psm1
+- [ ] Update `Invoke-ScriptMultiAccountRegion` in Public/Invoke-ScriptMultiAccountRegion.ps1
+- [ ] Update all functions in CloudFormation-TemplateProcessing.psm1
+- [ ] Update all functions in S3Customizations.psm1 (if present)
+- [ ] Update all functions in Audit-AWSAccount.psm1 (if present)
+- [ ] Add full AWS common parameter set to each updated function
+- [ ] Remove all manual `$AwsParams` / `$awsParams` hashtable construction
+- [ ] Verify each function still works with just `-Region` and `-ProfileName`
