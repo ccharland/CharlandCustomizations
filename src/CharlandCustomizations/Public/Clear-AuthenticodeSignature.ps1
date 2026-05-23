@@ -29,7 +29,7 @@
     Dependencies: None (uses built-in cmdlets only)
 #>
 
-function Clear-AuthenticodeSinature {
+function Clear-AuthenticodeSignature {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
