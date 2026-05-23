@@ -8,4 +8,6 @@ foreach ($file in $privateFunctions) {
     . $file.FullName
 }
 
-Export-ModuleMember -Function $publicFunctions.BaseName
+if ($publicFunctions) {
+    Export-ModuleMember -Function $publicFunctions.BaseName
+}
