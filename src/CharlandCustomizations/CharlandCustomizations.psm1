@@ -14,6 +14,8 @@
 .NOTES
     Requires PowerShell 7.2+
     Requires AWS.Tools.Common v5+ or AWSPowerShell.NetCore v5+
+    Modified by Kiro (aws-common-params spec): removed Export-ModuleMember,
+    exports now controlled by manifest FunctionsToExport list.
 #>
 
 # Require AWS PowerShell tools v5+

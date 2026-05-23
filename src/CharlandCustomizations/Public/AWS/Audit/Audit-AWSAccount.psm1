@@ -16,7 +16,7 @@ This module excludes CloudFormation template processing functions which are avai
 in the TemplateProcessing.psm1 module.
 #>
 
-# Load private helper functions needed by this nested module
+# Load private helper functions needed by this nested module (added by Kiro, aws-common-params spec)
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
 
 # ================================================================================================

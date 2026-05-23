@@ -4,7 +4,7 @@
 #>
 Write-Verbose  "Loading AWSCustomizations.psm1"
 
-# Load private helper functions needed by this nested module
+# Load private helper functions needed by this nested module (added by Kiro, aws-common-params spec)
 . "$PSScriptRoot/../../Private/New-AWSParamSplat.ps1"
 
 # Module-level cache for SSO tokens to avoid repeated authentication

@@ -13,6 +13,7 @@ Author: code written by Amazon Q and Copilot, reviewed  by ccharland
 
 # Constants
 # File naming conventions and private helpers are defined in Private/CFNPrivateFunctions.ps1
+# Added by Kiro (aws-common-params spec): dot-source New-AWSParamSplat for nested module scope
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
 . "$PSScriptRoot/../../../Private/CFNPrivateFunctions.ps1"
 Set-Variable -Name S3_BUCKET_PATTERN -Value 'cf-templates-*' -Option ReadOnly -Scope Script

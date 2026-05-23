@@ -1,4 +1,5 @@
 @{
+    # Modified by Kiro (aws-common-params spec): added NestedModules, explicit FunctionsToExport
     RootModule           = 'CharlandCustomizations.psm1'
     ModuleVersion        = '0.1.0'
     GUID                 = '1f7e3e80-b770-4587-a1a0-9e45c839b50a'
