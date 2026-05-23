@@ -1,0 +1,8 @@
+# PowerShell build outputs
+output/
+*.nupkg
+*.psd1.bak
+
+# Editor / OS
+.DS_Store
+Thumbs.db
