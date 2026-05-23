@@ -1,0 +1,229 @@
+# Build Process
+
+## Overview
+
+The build process creates versioned, signed module artifacts from source while keeping the source directory clean and version-agnostic.
+
+## Directory Structure
+
+```
+Source:  src/CharlandCustomizations/               (no version in path)
+Build:   build/CharlandCustomizations/<version>/   (versioned output)
+Install: $HOME/Documents/PowerShell/Modules/CharlandCustomizations/<version>/
+```
+
+## Build Script Usage
+
+### Basic Build
+
+```powershell
+# Validate and build (no install)
+./Scripts/Build-Module.ps1
+```
+
+Creates versioned output in `build/CharlandCustomizations/<version>/`
+
+### Build and Install
+
+```powershell
+# Build, sign, and install
+./Scripts/Build-Module.ps1 -Install
+```
+
+Installs to user's PowerShell modules directory with version number.
+
+### Install Only (No Build)
+
+```powershell
+# Install current source version only
+./Scripts/Build-Module.ps1 -InstallOnly
+```
+
+Install-only mode:
+- Skips analyzer, build output creation, signing, and packaging
+- Copies source module files directly to: `$HOME/Documents/PowerShell/Modules/CharlandCustomizations/<version>/`
+
+### Create Distribution Package
+
+```powershell
+# Build, sign, and create distributable zip
+./Scripts/Build-Module.ps1 -Package
+```
+
+**Requirements for packaging:**
+- All files must be signed (cannot use `-SkipSigning`)
+- All signatures must be valid
+- Creates versioned zip in `build/packages/`
+- Includes SHA256 hash file for verification
+- Generates installation README
+
+**Package contents:**
+- `CharlandCustomizations-<version>.zip` - Module package
+- `CharlandCustomizations-<version>.zip.sha256` - Hash for verification
+- `README-<version>.txt` - Installation instructions
+
+### Clean Build
+
+```powershell
+# Remove build directory and rebuild
+./Scripts/Build-Module.ps1 -Clean -Install
+```
+
+### Skip Signing
+
+```powershell
+# Build without code signing
+./Scripts/Build-Module.ps1 -SkipSigning -Install
+```
+
+### Update Version During Build
+
+```powershell
+# Set an explicit version before build
+./Scripts/Build-Module.ps1 -Version 0.3.3
+
+# Increment semantic version before build
+./Scripts/Build-Module.ps1 -BumpVersion Patch
+./Scripts/Build-Module.ps1 -BumpVersion Minor
+./Scripts/Build-Module.ps1 -BumpVersion Major
+```
+
+Notes:
+- Use either `-Version` or `-BumpVersion` (not both in the same run).
+- The selected version is written to `src/CharlandCustomizations/CharlandCustomizations.psd1` before build output is created.
+
+### Prepare Changelog and Release Commands
+
+```powershell
+# Add changelog template (if missing) and print release commands
+./Scripts/Build-Module.ps1 -PrepareRelease
+
+# Common release flow
+./Scripts/Build-Module.ps1 -BumpVersion Patch -PrepareRelease -Clean -Install
+```
+
+`-PrepareRelease` behavior:
+- Ensures `docs/CHANGELOG.md` contains a section for the current version
+- Prints version-aware git commands for commit and tag (for example, `Release v0.3.3` and `v0.3.3`)
+
+## Build Process Steps
+
+1. **Validate Source**
+   - Checks module manifest exists
+   - Tests manifest syntax
+   - Reads version number
+   - Runs PSScriptAnalyzer (if installed)
+
+2. **Create Build Directory**
+   - Creates `build/CharlandCustomizations/<version>/`
+   - Removes existing build for that version
+
+3. **Copy Files**
+   - Copies all module files from source to build directory
+   - Preserves directory structure
+
+4. **Test Module**
+   - Imports built module
+   - Validates all functions export correctly
+   - Reports function count
+
+5. **Sign Files** (if certificate available)
+   - Finds valid code signing certificate
+   - Signs all `.ps1`, `.psm1`, `.psd1` files in build output
+   - Uses Sectigo timestamp server
+   - Verifies all signatures
+
+6. **Create Package** (if `-Package` flag)
+   - Verifies all files are signed
+   - Creates zip file
+   - Generates SHA256 hash
+   - Creates installation README
+
+7. **Install** (if `-Install` flag)
+   - Removes old versions from install location
+   - Copies built module to `$HOME/Documents/PowerShell/Modules/`
+   - Imports and validates installed module
+
+## Version Management
+
+### Source (src/)
+- No version in directory path
+- Version only in `.psd1` manifest
+- Easy to work with, no path changes
+
+### Build (build/)
+- Versioned directory: `build/CharlandCustomizations/0.3.0/`
+- Ready for distribution
+- Gitignored (not committed)
+
+### Install ($HOME/Documents/PowerShell/Modules/)
+- Versioned directory: `CharlandCustomizations/<version>/`
+- PowerShell automatically loads highest version
+- Multiple versions can coexist
+
+## Workflow
+
+### Development
+```powershell
+# Edit files in src/CharlandCustomizations/
+# Test directly from source
+Import-Module ./src/CharlandCustomizations/CharlandCustomizations.psd1 -Force
+```
+
+### Release
+```powershell
+# 1. Update CHANGELOG.md
+# 2. Build and test (optionally bump version as part of build)
+./Scripts/Build-Module.ps1 -Clean -BumpVersion Patch -Install
+
+# 3. Verify
+Get-Module CharlandCustomizations
+Get-Command -Module CharlandCustomizations
+
+# 4. Commit
+git add src/CharlandCustomizations/CharlandCustomizations.psd1 docs/CHANGELOG.md
+git commit -m "Release v0.3.0"
+git tag v0.3.0
+```
+
+### Distribution
+```powershell
+# Build and create signed distribution package
+./Scripts/Build-Module.ps1 -Package
+
+# Package is in: build/packages/CharlandCustomizations-<version>.zip
+# With hash file: build/packages/CharlandCustomizations-<version>.zip.sha256
+
+# Verify package integrity
+Get-FileHash build/packages/CharlandCustomizations-0.3.0.zip -Algorithm SHA256
+# Compare with .sha256 file
+```
+
+## Troubleshooting
+
+### Build Directory Not Created
+Check permissions on repository directory.
+
+### Module Not Found After Install
+```powershell
+# Check module path
+$env:PSModulePath -split ';'
+
+# Should include: C:\Users\<You>\Documents\PowerShell\Modules
+```
+
+### Old Version Still Loading
+```powershell
+# Remove all versions
+Remove-Module CharlandCustomizations
+Remove-Item $HOME/Documents/PowerShell/Modules/CharlandCustomizations -Recurse
+
+# Reinstall
+./Scripts/Build-Module.ps1 -Install
+```
+
+### Signing Fails
+- Ensure you have a valid code signing certificate
+- Certificate must not be expired
+- Certificate must have private key
+- Use `-SkipSigning` to bypass
