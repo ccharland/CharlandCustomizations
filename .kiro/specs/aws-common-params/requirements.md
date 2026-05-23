@@ -44,15 +44,11 @@ The helper must support all standard AWS Tools for PowerShell common parameters:
 - This prevents overriding AWS session defaults when a parameter is not specified
 - Non-AWS parameters from the calling function are excluded from the output
 
-### REQ-5: Backward Compatibility
-- Existing functions that only use `Region` and `ProfileName` continue to work
-- Functions can be migrated incrementally — no big-bang refactor required
-
-### REQ-6: Update Steering Documentation
+### REQ-5: Update Steering Documentation
 - Update the `powershell-module-development.md` steering file to document the new pattern
 - Replace the existing `$awsParams` splatting section with the new helper-based approach
 
-### REQ-7: Refactor All Existing AWS Functions
+### REQ-6: Refactor All Existing AWS Functions
 - All existing AWS functions in the module must be updated to use `New-AWSParamSplat`
 - Replace all manual `$AwsParams` / `$awsParams` hashtable construction with the helper
 - Add the full set of AWS common parameters to every function that calls AWS cmdlets
