@@ -85,7 +85,6 @@ Functions:
 - `Start-MultiStackDriftDetection`
 - `Get-AWSAccountListOfDriftedResources`
 - `Get-AWSObjectCount`
-- `Test-CFNTemplateFromFile`
 - `Out-CFNStackInfo`
 - `Test-CFNStackFromDirectory`
 - `New-CFNStackDirectory`

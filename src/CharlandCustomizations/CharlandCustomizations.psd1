@@ -39,7 +39,6 @@
         # CloudFormation nested module
         'New-CFNStackFromDirectory'
         'Test-CFNStackFromDirectory'
-        'Test-CFNTemplateFromFile'
         'Out-CFNStackInfo'
         'Update-CFNStackFromDirectory'
         'New-CFNStackDirectory'

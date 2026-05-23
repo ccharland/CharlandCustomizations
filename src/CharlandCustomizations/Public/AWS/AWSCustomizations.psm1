@@ -25,11 +25,7 @@ function  Get-AWSMFASession {
   return Get-STSSessionToken -SerialNumber (Get-IAMMFADevice).SerialNumber -TokenCode $TokenCode
 }
 
-function MFAHOW {
-  <# reminders for me on how to gete session credentials witha  MFA token #>
-  Write-Output  "HowToMFA:  Set-AWSCredential -Credential (Get-AWSMFASession -TokenCode <OTP>)"
-  Write-Output "HowtoMFA:  Set-AWSCredential -Credential (Set-AWSProfleWithMFA -Profile <profilename> -TokenCode <OTP> -Region <Region>"
-}
+
 function Find-CFNStackErrors {
   <#
 .SYNOPSIS
@@ -385,25 +381,6 @@ function Get-AccountListFromProfiles {
     Lists  AWS ProfileName, Account, and AccountAlias
   #>
   Get-AWSCredential -ListProfileDetail  | ForEach-Object { Select-Object -InputObject $_   Profilename, @{Name = "Account"; Expression = { (Get-STSCallerIdentity -ProfileName  $_.ProfileName).Account } }, @{Name = "AccountAlias"; Expression = { Get-IAMAccountAlias -ProfileName  $_.ProfileName } } }
-}
-
-function Test-CFNTemplateFromFile {
-  <#
-  .SYNOPSIS
-    Validates a CloudFormation template from a local file.
-  .DESCRIPTION
-    Reads a CloudFormation template file and validates it using the AWS CFN API.
-  .PARAMETER Path
-    Path to the CloudFormation template file.
-  .EXAMPLE
-    Test-CFNTemplateFromFile -Path ./templates/my-stack.yaml
-  #>
-  param (
-    [Parameter(Mandatory)]
-    [ValidateScript({ Test-Path $_ })]
-    [string]$Path
-  )
-  Test-CFNTemplate -TemplateBody (Get-Content -Raw -Path $Path)
 }
 
 function Start-MultiStackDriftDetection {
