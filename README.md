@@ -2,6 +2,7 @@
 
 Public release home for my PowerShell module and related automation.
 
+THis module uses the prefix "CC" for its commands
 ## Repository baseline
 
 This repository is prepared to import the existing module code from:
