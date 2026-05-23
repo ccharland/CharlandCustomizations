@@ -63,7 +63,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ModuleName = 'CharlandCustomizations'
-$SourcePath = Join-Path (Split-Path $PSScriptRoot -Parent) "Modules\$ModuleName"
+$SourcePath = Join-Path (Split-Path $PSScriptRoot -Parent) "src\$ModuleName"
 Write-Verbose "Sourcepath: $SourcePath"
 $ManifestPath = Join-Path $SourcePath "$ModuleName.psd1"
 Write-Verbose "Manifest Path: ${$ManifestPath}"

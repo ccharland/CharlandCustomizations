@@ -161,10 +161,9 @@ function Get-StackFiles {
 function New-TemplateS3Upload {
     param($StackPath, $Name, $TemplateBucket, $Region, $ProfileName)
 
-    $AwsParams = @{ Region = $Region }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
     $Key = [CFNStackDirectoryInfo]::NewTemplateS3Key($Name)
-    Write-S3Object -BucketName $TemplateBucket -Key $Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @AwsParams
-    Get-S3PresignedURL -BucketName $TemplateBucket -Key $Key @AwsParams -Expires (Get-Date).AddHours(1)
+    Write-S3Object -BucketName $TemplateBucket -Key $Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @awsParams
+    Get-S3PresignedURL -BucketName $TemplateBucket -Key $Key @awsParams -Expires (Get-Date).AddHours(1)
 }

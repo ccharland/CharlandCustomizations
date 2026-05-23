@@ -50,47 +50,75 @@ Scripts will be analyzed using PSScriptAnalyzer.
 
 ## AWS Cmdlet Parameter Splatting
 
-All scripts that invoke AWS cmdlets **must** accept optional `-Region` and `-ProfileName` parameters and pass them via splatting. This keeps AWS credential/region handling consistent and allows callers to override the session defaults.
+All functions that invoke AWS cmdlets **must** include the full set of AWS common parameters and use the `New-AWSParamSplat` private helper to build the splat hashtable. This keeps credential/region handling consistent and allows callers to override session defaults with any supported credential method.
 
-### Pattern
+### Standard Parameter Block
+
+Every AWS function must include these 8 optional parameters alongside its own function-specific parameters:
 
 ```powershell
 [CmdletBinding()]
 param(
+    # Function-specific parameters first
+    [Parameter(Mandatory)]
+    [string]$StackName,
+
+    # AWS common parameters
     [Parameter()]
     [string]$Region,
 
     [Parameter()]
-    [string]$ProfileName
+    [string]$ProfileName,
 
-    # ... other parameters
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
 )
+```
 
+### Pattern
+
+Use `New-AWSParamSplat` in the `begin` block to build the splat hashtable from `$PSBoundParameters`:
+
+```powershell
 begin {
-    # Build splat hash for AWS cmdlet calls
-    $awsParams = @{}
-    if ($Region) {
-        $awsParams['Region'] = $Region
-    }
-    if ($ProfileName) {
-        $awsParams['ProfileName'] = $ProfileName
-    }
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 }
 
 process {
     # Splat into every AWS cmdlet call
     $results = Get-EC2Instance @awsParams
-    $stacks = Get-CFNStack @awsParams
+    $stacks = Get-CFNStack -StackName $StackName @awsParams
 }
 ```
+
+The helper automatically filters `$PSBoundParameters` to include only the recognized AWS common keys, excluding function-specific parameters like `$StackName`. Only keys the caller actually provided are included, so AWS session defaults are not overridden.
 
 ### Rules
 
 - Name the splat hashtable `$awsParams`
-- Build it once in the `begin` block
-- Only add keys when the parameter is provided (do not add empty-string keys)
-- Splat `@awsParams` into every AWS cmdlet call in the script
-- This applies to all module functions
+- Build it once in the `begin` block using `New-AWSParamSplat -BoundParameters $PSBoundParameters`
+- Splat `@awsParams` into every AWS cmdlet call in the function
+- Include all 8 AWS common parameters in the param block for consistency
+- This applies to all module functions that call AWS cmdlets
+
+### Backward Compatibility
+
+The old two-parameter pattern (just `-Region` and `-ProfileName` with manual hashtable construction) still works for simple cases. However, the `New-AWSParamSplat` pattern is preferred for all new and refactored functions because it supports the full credential surface and eliminates repetitive conditional logic.
 
 ## Code Quality
 

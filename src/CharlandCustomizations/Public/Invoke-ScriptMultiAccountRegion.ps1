@@ -35,6 +35,24 @@ function Invoke-ScriptMultiAccountRegion {
 .PARAMETER ThrottleLimit
     Seconds to wait between calls to avoid throttling. Defaults to 0.
 
+.PARAMETER AccessKey
+    AWS access key for explicit credentials. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key for explicit credentials. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
 .EXAMPLE
     Invoke-ScriptMultiAccountRegion -ProfileName 'dev','prod' -Region 'us-east-1' `
         -ScriptBlock { Get-STSCallerIdentity } -IncludeRegion -IncludeProfileName
@@ -66,10 +84,36 @@ function Invoke-ScriptMultiAccountRegion {
 
     [Parameter()]
     [ValidateRange(0, 60)]
-    [int]$ThrottleLimit = 0
+    [int]$ThrottleLimit = 0,
+
+    # AWS common parameters (credential passthrough for Get-STSCallerIdentity validation)
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
   )
 
   begin {
+    # Build base AWS splat from credential parameters then remove ProfileName/Region
+    # since those are arrays used for iteration in this function, not single-value
+    # credential params to pass to AWS cmdlets directly.
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+    $awsParams.Remove('ProfileName') | Out-Null
+    $awsParams.Remove('Region') | Out-Null
+
     if (-not $ProfileName) {
       # Try the shell's current stored credential profile name
       $currentProfile = $null
@@ -116,8 +160,11 @@ function Invoke-ScriptMultiAccountRegion {
         -CurrentOperation "Authenticating..."
 
       # Validate credentials before doing any work for this profile
+      # Override ProfileName per iteration; base awsParams carries other credential params
+      $iterParams = $awsParams.Clone()
+      $iterParams['ProfileName'] = $prof
       try {
-        $identity = Get-STSCallerIdentity -ProfileName $prof -ErrorAction Stop
+        $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
         $accountId = $identity.Account
         Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
       }

@@ -31,6 +31,20 @@ in the TemplateProcessing.psm1 module.
         The AWS region to use. If not specified, the default region will be used.
 .PARAMETER GroupId
         The security group ID to check. If not specified, all security groups in the region will be checked.
+.PARAMETER ProfileName
+        The AWS credential profile name to use.
+.PARAMETER AccessKey
+        The AWS access key for authentication.
+.PARAMETER SecretKey
+        The AWS secret key for authentication.
+.PARAMETER SessionToken
+        The AWS session token for temporary credentials.
+.PARAMETER Credential
+        An AWSCredentials object for authentication.
+.PARAMETER ProfileLocation
+        The location of the credentials file to use.
+.PARAMETER EndpointUrl
+        A custom endpoint URL to use for the AWS service.
 .INPUTS
     Amazon.EC2.Model.SecurityGroup
         Used to specify the security group ID. This is the ID of the security group to check for associated resources.
@@ -109,65 +123,86 @@ AssociatedSageMakerNotebooks   :
 function Get-EC2SGInUse {
     [CmdletBinding()]
     param (
-        [string]$Region = ((Get-DefaultAWSRegion).Region),
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
+        [string[]]$GroupId = @(),
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
         [string]$ProfileName,
 
-        [Parameter(Mandatory = $false, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [string[]]$GroupId = @()
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
     begin {
-        $AwsParams = @{ Region = $Region }
-        if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
         try {
             if ($GroupId.Count -eq 0) {
-                Write-Verbose "No security groups specified. Getting all security groups in region $Region"
+                Write-Verbose "No security groups specified. Getting all security groups in the specified region"
                 Write-Progress -Activity 'Get Security Group List:' -Status 'In Progress'
-                $GroupId = (Get-EC2SecurityGroup @AwsParams).GroupId
+                $GroupId = (Get-EC2SecurityGroup @awsParams).GroupId
                 if ($GroupId.Count -eq 0) {
-                    throw "No security groups found in region $Region"
+                    throw "No security groups found in the specified region"
                 }
             }
         }
         catch {
-            throw "No security groups found in region $Region"
+            throw "No security groups found in the specified region"
         }
         finally {
             Write-Progress -Activity 'Get Security Group List:' -Completed
         }
 
         Write-Progress -Activity 'Get Resource List:' -Status 'Instances'
-        $InstancesMaster = Get-EC2Instance @AwsParams
+        $InstancesMaster = Get-EC2Instance @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'NetworkInterfaces'
-        $NetworkInterfaceMaster = Get-EC2NetworkInterface @AwsParams
+        $NetworkInterfaceMaster = Get-EC2NetworkInterface @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'LoadBalancer'
-        $LoadBalancerMaster = Get-ELB2LoadBalancer @AwsParams
+        $LoadBalancerMaster = Get-ELB2LoadBalancer @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'EndPoints'
-        $EndPointsMaster = Get-EC2VPCEndpoint @AwsParams
+        $EndPointsMaster = Get-EC2VPCEndpoint @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'Databases'
-        $DatabasesMaster = Get-RDSDBInstance @AwsParams
+        $DatabasesMaster = Get-RDSDBInstance @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'ClientEndpoints'
-        $VPNCLientEndpointMaster = Get-EC2ClientVpnEndpoint @AwsParams
+        $VPNCLientEndpointMaster = Get-EC2ClientVpnEndpoint @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'Lambda'
-        $LambdaFunctionsMaster = Get-LMFunctionList @AwsParams
+        $LambdaFunctionsMaster = Get-LMFunctionList @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'ElasticCache'
-        $ElastiCacheClustersMaster = Get-ECCacheCluster @AwsParams
+        $ElastiCacheClustersMaster = Get-ECCacheCluster @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'MSK'
-        $MSKClustersMaster = Get-MSKClusterList @AwsParams
+        $MSKClustersMaster = Get-MSKClusterList @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'Neptune'
-        $NeptuneClustersMaster = Get-NPTDBCluster @AwsParams
+        $NeptuneClustersMaster = Get-NPTDBCluster @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'MQBroker'
-        $MQBrokersMaster = Get-MQBrokerList @AwsParams
+        $MQBrokersMaster = Get-MQBrokerList @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'FSX'
-        $FSxFileSystemsMaster = Get-FSXFileSystem @AwsParams
+        $FSxFileSystemsMaster = Get-FSXFileSystem @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'Directory'
-        $DirectoriesMaster = Get-DSDirectory @AwsParams
+        $DirectoriesMaster = Get-DSDirectory @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'Workspace'
-        $WorkSpacesMaster = Get-WKSWorkspace @AwsParams
+        $WorkSpacesMaster = Get-WKSWorkspace @awsParams
         Write-Progress -Activity 'Get Resource List:' -Status 'SageMaker'
 
         try {
-            $SageMakerNotebookInstanceListMaster = Get-SMNotebookInstanceList @AwsParams | ForEach-Object { Get-SMNotebookInstance @AwsParams }
+            $SageMakerNotebookInstanceListMaster = Get-SMNotebookInstanceList @awsParams | ForEach-Object { Get-SMNotebookInstance @awsParams }
         }
         catch {
             $SageMakerNotebookInstanceListMaster = $null
@@ -183,7 +218,7 @@ function Get-EC2SGInUse {
 
     process {
         foreach ($SG in $GroupId) {
-            $SecurityGroup = Get-EC2SecurityGroup @AwsParams -GroupId $SG
+            $SecurityGroup = Get-EC2SecurityGroup @awsParams -GroupId $SG
             $Count++
             Write-Verbose "Count: $count"
             Write-Verbose "Total: $Total"
@@ -231,7 +266,7 @@ function Get-EC2SGInUse {
 
             # Get associated Amazon MSK clusters
             $MSKClusters = $MSKClustersMaster | ForEach-Object {
-                $ClusterInfo = Get-MSKCluster -ClusterArn $_.ClusterArn -Region $Region
+                $ClusterInfo = Get-MSKCluster -ClusterArn $_.ClusterArn @awsParams
                 if ($ClusterInfo.BrokerNodeGroupInfo.SecurityGroups -contains $SG) {
                     $_
                 }
@@ -244,7 +279,7 @@ function Get-EC2SGInUse {
             }
             $UsedByCount += $NeptuneClusters.Count
             # Get associated Amazon MQ brokers
-            $MQBrokers = $MQBrokersMaster | ForEach-Object { Get-MQBroker -Region $Region | Where-Object {
+            $MQBrokers = $MQBrokersMaster | ForEach-Object { Get-MQBroker @awsParams | Where-Object {
                     $_.SecurityGroups -contains $SG }
             }
             $UsedByCount += $MQBrokers.Count
@@ -252,7 +287,7 @@ function Get-EC2SGInUse {
             # Get associated FSx file systems
             $FSxFileSystems = $FSxFileSystemsMaster | Where-Object {
                 $_.NetworkInterfaceIds | ForEach-Object {
-                    $ENI = Get-EC2NetworkInterface -NetworkInterfaceId $_ -Region $Region
+                    $ENI = Get-EC2NetworkInterface -NetworkInterfaceId $_ @awsParams
                     $ENI.Groups.GroupId -contains $SG
                 }
             }
@@ -266,7 +301,7 @@ function Get-EC2SGInUse {
             # Get associated WorkSpaces
             $WorkSpaces = $WorkSpacesMaster | ForEach-Object {
                 $WorkspaceId = $_.WorkspaceId
-                $WorkspaceDetails = Get-WKSWorkspace -WorkspaceId $WorkspaceId -Region $Region
+                $WorkspaceDetails = Get-WKSWorkspace -WorkspaceId $WorkspaceId @awsParams
                 if ($WorkspaceDetails.SecurityGroupIds -contains $SG) {
                     $_
                 }
@@ -333,7 +368,19 @@ function Out-AWSSupportingInfo {
     .PARAMETER RootPath
         Root directory for output files. Defaults to current directory.
     .PARAMETER ProfileName
-        AWS profile name. Optional.
+        AWS credential profile name.
+    .PARAMETER AccessKey
+        The AWS access key for authentication.
+    .PARAMETER SecretKey
+        The AWS secret key for authentication.
+    .PARAMETER SessionToken
+        The AWS session token for temporary credentials.
+    .PARAMETER Credential
+        An AWSCredentials object for authentication.
+    .PARAMETER ProfileLocation
+        The location of the credentials file to use.
+    .PARAMETER EndpointUrl
+        A custom endpoint URL to use for the AWS service.
     .EXAMPLE
         Out-AWSSupportingInfo
     .EXAMPLE
@@ -347,36 +394,55 @@ function Out-AWSSupportingInfo {
     [CmdletBinding()]
     param(
         [Parameter()]
-        [string]$Region = ((Get-DefaultAWSRegion).Region),
-
-        [Parameter()]
         [string]$RootPath = (Get-Location).Path,
 
+        # AWS common parameters
         [Parameter()]
-        [string]$ProfileName
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    $AwsParams = @{ Region = $Region }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
-    $AccountId = (Get-STSCallerIdentity @AwsParams).Account
-    Write-Verbose "AccountId: $AccountId | Region: $Region"
+    $AccountId = (Get-STSCallerIdentity @awsParams).Account
+    $RegionDisplay = if ($awsParams.ContainsKey('Region')) { $awsParams['Region'] } else { (Get-DefaultAWSRegion).Region }
+    Write-Verbose "AccountId: $AccountId | Region: $RegionDisplay"
 
-    $OutputDir = Join-Path -Path $RootPath -ChildPath (Join-Path -Path $AccountId -ChildPath $Region)
+    $OutputDir = Join-Path -Path $RootPath -ChildPath (Join-Path -Path $AccountId -ChildPath $RegionDisplay)
     if (-not (Test-Path -Path $OutputDir)) {
         New-Item -ItemType Directory -Path $OutputDir | Out-Null
     }
     Write-Verbose "Output directory: $OutputDir"
 
-    Get-SSMParameterList @AwsParams |
+    Get-SSMParameterList @awsParams |
     Select-Object Name, Description |
     Out-File -FilePath (Join-Path $OutputDir 'SSMParameters.txt') -Force
 
-    Get-SECSecretList @AwsParams |
+    Get-SECSecretList @awsParams |
     Select-Object Name, Description |
     Out-File -FilePath (Join-Path $OutputDir 'Secrets.txt') -Force
 
-    Get-CFNExport @AwsParams |
+    Get-CFNExport @awsParams |
     Select-Object Name, Value |
     Out-File -FilePath (Join-Path $OutputDir 'CFNExports.txt') -Force
 
@@ -400,7 +466,19 @@ function Out-AWSNetworkingComponent {
     .PARAMETER RootPath
         Root directory for output files. Defaults to current directory.
     .PARAMETER ProfileName
-        AWS profile name. Optional.
+        AWS credential profile name.
+    .PARAMETER AccessKey
+        The AWS access key for authentication.
+    .PARAMETER SecretKey
+        The AWS secret key for authentication.
+    .PARAMETER SessionToken
+        The AWS session token for temporary credentials.
+    .PARAMETER Credential
+        An AWSCredentials object for authentication.
+    .PARAMETER ProfileLocation
+        The location of the credentials file to use.
+    .PARAMETER EndpointUrl
+        A custom endpoint URL to use for the AWS service.
     .EXAMPLE
         Out-AWSNetworkingComponent
     .EXAMPLE
@@ -418,40 +496,59 @@ function Out-AWSNetworkingComponent {
     [CmdletBinding()]
     param(
         [Parameter()]
-        [string]$Region = ((Get-DefaultAWSRegion).Region),
-
-        [Parameter()]
         [string]$RootPath = (Get-Location).Path,
 
+        # AWS common parameters
         [Parameter()]
-        [string]$ProfileName
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    $AwsParams = @{ Region = $Region }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
-    $AccountId = (Get-STSCallerIdentity @AwsParams).Account
-    Write-Verbose "AccountId: $AccountId | Region: $Region"
+    $AccountId = (Get-STSCallerIdentity @awsParams).Account
+    $RegionDisplay = if ($awsParams.ContainsKey('Region')) { $awsParams['Region'] } else { (Get-DefaultAWSRegion).Region }
+    Write-Verbose "AccountId: $AccountId | Region: $RegionDisplay"
 
-    $OutputDir = Join-Path -Path $RootPath -ChildPath (Join-Path -Path $AccountId -ChildPath $Region)
+    $OutputDir = Join-Path -Path $RootPath -ChildPath (Join-Path -Path $AccountId -ChildPath $RegionDisplay)
     if (-not (Test-Path -Path $OutputDir)) {
         New-Item -ItemType Directory -Path $OutputDir | Out-Null
     }
     Write-Verbose "Output directory: $OutputDir"
 
-    Get-EC2VpnConnection @AwsParams |
+    Get-EC2VpnConnection @awsParams |
     Select-Object VpnConnectionId,
     @{Name = 'Name'; Expression = { ($_.Tags | Where-Object { $_.Key -eq 'Name' }).Value } } |
     Out-File -FilePath (Join-Path $OutputDir 'VPNConnections.txt') -Force
 
-    Get-EC2Vpc @AwsParams |
+    Get-EC2Vpc @awsParams |
     Select-Object VpcId,
     @{Name = 'Name'; Expression = { ($_.Tags | Where-Object { $_.Key -eq 'Name' }).Value } },
     CidrBlock,
     @{Name = 'AssociatedCidrBlocks'; Expression = { ($_.CidrBlockAssociationSet | ForEach-Object { $_.CidrBlock }) -join ', ' } } |
     Out-File -FilePath (Join-Path $OutputDir 'VPCs.txt') -Force
 
-    Get-EC2Subnet @AwsParams |
+    Get-EC2Subnet @awsParams |
     Select-Object VpcId, SubnetId,
     @{Name = 'Name'; Expression = { ($_.Tags | Where-Object { $_.Key -eq 'Name' }).Value } },
     CidrBlock, AvailabilityZone, AvailableIpAddressCount |
@@ -459,7 +556,7 @@ function Out-AWSNetworkingComponent {
     Format-Table |
     Out-File -FilePath (Join-Path $OutputDir 'Subnets.txt') -Force
 
-    Get-EC2RouteTable @AwsParams |
+    Get-EC2RouteTable @awsParams |
     Select-Object RouteTableId, VpcId,
     @{Name = 'Name'; Expression = { ($_.Tags | Where-Object { $_.Key -eq 'Name' }).Value } },
     @{Name = 'AssociationCount'; Expression = { ($_.Associations | Measure-Object).Count } } |
@@ -467,17 +564,17 @@ function Out-AWSNetworkingComponent {
     Format-Table |
     Out-File -FilePath (Join-Path $OutputDir 'RouteTables.txt') -Force
 
-    Get-EC2ManagedPrefixList @AwsParams |
+    Get-EC2ManagedPrefixList @awsParams |
     Format-Table PrefixListId, PrefixListName |
     Out-File -FilePath (Join-Path $OutputDir 'PrefixLists.txt') -Force
 
-    Get-EC2TransitGatewayRouteTable @AwsParams |
+    Get-EC2TransitGatewayRouteTable @awsParams |
     Select-Object TransitGatewayRouteTableId,
     @{Name = 'Name'; Expression = { ($_.Tags | Where-Object { $_.Key -eq 'Name' }).Value } } |
     Format-Table |
     Out-File -FilePath (Join-Path $OutputDir 'TransitGatewayRouteTables.txt') -Force
 
-    Get-EC2TransitGatewayAttachment @AwsParams |
+    Get-EC2TransitGatewayAttachment @awsParams |
     Select-Object `
     @{Name = 'Name'; Expression = { ($_.Tags | Where-Object { $_.Key -eq 'Name' }).Value } },
     ResourceId,
@@ -583,38 +680,63 @@ function Get-GlobalAuditReportItem {
     [CmdletBinding()]
     param(
         [string[]]$Region = @('us-east-1'),
-        [string]$ProfileName
+
+        # AWS common parameters (Region excluded - handled by $Region array above)
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
+
+    # Build base AWS params (excludes Region since we iterate over regions)
+    $baseAwsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+    $baseAwsParams.Remove('Region') | Out-Null
 
     $output = @()
     foreach ($RegionName in $Region) {
-        $AwsParams = @{ Region = $RegionName }
-        if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+        $regionParams = $baseAwsParams.Clone()
+        $regionParams['Region'] = $RegionName
 
         Write-Output $RegionName
         $RegionResults = New-Object -TypeName 'PSCustomObject' -Property @{
-            account          = (Get-STSCallerIdentity @AwsParams).Account
+            account          = (Get-STSCallerIdentity @regionParams).Account
             region           = $RegionName
-            VMCount          = (Get-Ec2Instance @AwsParams).count
-            CloudFront       = (Get-CFDistributionList @AwsParams).count
-            LoadBalancer     = (Get-ELB2LoadBalancer @AwsParams).count + (Get-ELBLoadBalancer @AwsParams).count
-            AutoScaling      = (Get-ASAutoScalingGroup @AwsParams).count
-            RDS              = (Get-RDSDBInstance @AwsParams).count
-            EFS              = (Get-EFSFileSystem @AwsParams).count
-            ECS              = (Get-ECSClusterList @AwsParams).count
-            EKS              = (Get-EKSClusterList @AwsParams).count
-            KMS              = (Get-KMSKeyList @AwsParams).count
-            Lambda           = (Get-LMFunctionList @AwsParams).count
-            Certs            = (Get-ACMCertificateList @AwsParams).count
-            Secrets          = (Get-SECSecretList @AwsParams).count
-            DynamoDB         = (Get-DDBTableList @AwsParams).count
-            RDS_Maria        = (Get-RDSDBInstance @AwsParams -filter @{name = 'engine'; values = 'mariadb' }).count
-            Redshift         = (Get-RSCluster @AwsParams).count
-            SNS_SQS          = (Get-SQSQueue @AwsParams).count + (Get-SNSTopic @AwsParams).count
-            Step             = (Get-SFNStateMachineList @AwsParams).count
-            DirectoryService = (Get-DSDirectory @AwsParams).count
-            Forecast         = (Get-FRCForecastList @AwsParams).count
-            StorageGateway   = (Get-SGGateway @AwsParams).count
+            VMCount          = (Get-Ec2Instance @regionParams).count
+            CloudFront       = (Get-CFDistributionList @regionParams).count
+            LoadBalancer     = (Get-ELB2LoadBalancer @regionParams).count + (Get-ELBLoadBalancer @regionParams).count
+            AutoScaling      = (Get-ASAutoScalingGroup @regionParams).count
+            RDS              = (Get-RDSDBInstance @regionParams).count
+            EFS              = (Get-EFSFileSystem @regionParams).count
+            ECS              = (Get-ECSClusterList @regionParams).count
+            EKS              = (Get-EKSClusterList @regionParams).count
+            KMS              = (Get-KMSKeyList @regionParams).count
+            Lambda           = (Get-LMFunctionList @regionParams).count
+            Certs            = (Get-ACMCertificateList @regionParams).count
+            Secrets          = (Get-SECSecretList @regionParams).count
+            DynamoDB         = (Get-DDBTableList @regionParams).count
+            RDS_Maria        = (Get-RDSDBInstance @regionParams -filter @{name = 'engine'; values = 'mariadb' }).count
+            Redshift         = (Get-RSCluster @regionParams).count
+            SNS_SQS          = (Get-SQSQueue @regionParams).count + (Get-SNSTopic @regionParams).count
+            Step             = (Get-SFNStateMachineList @regionParams).count
+            DirectoryService = (Get-DSDirectory @regionParams).count
+            Forecast         = (Get-FRCForecastList @regionParams).count
+            StorageGateway   = (Get-SGGateway @regionParams).count
         }
 
         $output += $RegionResults
@@ -649,6 +771,23 @@ function Get-GlobalAuditReportItem {
 .PARAMETER filter
 filter to pass to get-ec2tag
 
+.PARAMETER Region
+    The AWS region to query.
+.PARAMETER ProfileName
+    The AWS credential profile name to use.
+.PARAMETER AccessKey
+    The AWS access key for authentication.
+.PARAMETER SecretKey
+    The AWS secret key for authentication.
+.PARAMETER SessionToken
+    The AWS session token for temporary credentials.
+.PARAMETER Credential
+    An AWSCredentials object for authentication.
+.PARAMETER ProfileLocation
+    The location of the credentials file to use.
+.PARAMETER EndpointUrl
+    A custom endpoint URL to use for the AWS service.
+
 .OUTPUTS
 PSobject
 ResourceID, KeyPresent
@@ -664,44 +803,75 @@ function Get-EC2KeyTagNameStatus {
         [String]
         $TagKey,
         $taglist = $null,
-        $filter = $null
+        $filter = $null,
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    if ($null -eq $taglist) {
-        if ($filter) {
-            $Taglist = get-EC2Tag -filter $filter | Group-Object resourceId
-        }
-        else {
-            $Taglist = get-EC2Tag | Group-Object resourceId
-        }
+    begin {
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
     }
 
-    $output = @()
-
-    foreach ($item in $taglist) {
-        $result = New-Object -TypeName PSCustomObject
-        $result | Add-Member -MemberType NoteProperty -Name 'ResourceId' -Value $item.name
-        $result | Add-Member -MemberType NoteProperty -Name 'KeyName' -Value $TagKey
-
-        foreach ($tag in $item.group) {
-            if ($tag.key -eq $TagKey) {
-                break
+    process {
+        if ($null -eq $taglist) {
+            if ($filter) {
+                $Taglist = Get-EC2Tag @awsParams -filter $filter | Group-Object resourceId
+            }
+            else {
+                $Taglist = Get-EC2Tag @awsParams | Group-Object resourceId
             }
         }
-        #process results
-        if ($tag.key -eq $TagKey) {
-            $result | Add-Member -MemberType NoteProperty -Name 'KeyPresent' -Value $True
-        }
-        else {
-            $result | Add-Member -MemberType NoteProperty -Name 'KeyPresent' -Value $False
-        }
-        $output += $result
-    }
 
-    if ($output.count -ne $taglist.count) {
-        throw 'Script error- Input item count does not match output item count'
+        $output = @()
+
+        foreach ($item in $taglist) {
+            $result = New-Object -TypeName PSCustomObject
+            $result | Add-Member -MemberType NoteProperty -Name 'ResourceId' -Value $item.name
+            $result | Add-Member -MemberType NoteProperty -Name 'KeyName' -Value $TagKey
+
+            foreach ($tag in $item.group) {
+                if ($tag.key -eq $TagKey) {
+                    break
+                }
+            }
+            #process results
+            if ($tag.key -eq $TagKey) {
+                $result | Add-Member -MemberType NoteProperty -Name 'KeyPresent' -Value $True
+            }
+            else {
+                $result | Add-Member -MemberType NoteProperty -Name 'KeyPresent' -Value $False
+            }
+            $output += $result
+        }
+
+        if ($output.count -ne $taglist.count) {
+            throw 'Script error- Input item count does not match output item count'
+        }
+        return $output
     }
-    return $output
 }
 
 # ================================================================================================
@@ -720,6 +890,23 @@ function Get-EC2KeyTagNameStatus {
 .PARAMETER MaxResults
     Maximum number of snapshots to retrieve per API call. Defaults to 200.
     Lower values reduce memory usage per batch; higher values reduce API calls.
+
+.PARAMETER Region
+    The AWS region to query.
+.PARAMETER ProfileName
+    The AWS credential profile name to use.
+.PARAMETER AccessKey
+    The AWS access key for authentication.
+.PARAMETER SecretKey
+    The AWS secret key for authentication.
+.PARAMETER SessionToken
+    The AWS session token for temporary credentials.
+.PARAMETER Credential
+    An AWSCredentials object for authentication.
+.PARAMETER ProfileLocation
+    The location of the credentials file to use.
+.PARAMETER EndpointUrl
+    A custom endpoint URL to use for the AWS service.
 
 .OUTPUTS
     PSCustomObject with the following properties:
@@ -749,37 +936,68 @@ function Get-EC2KeyTagNameStatus {
 function Get-EC2SnapshotReport {
     [CmdletBinding()]
     param(
-        [int]$MaxResults = 200
+        [int]$MaxResults = 200,
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    $output = @()
-    $NextToken = $null
+    begin {
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+    }
 
-    do {
-        #process in smaller groups
-        Write-Information -MessageData "Fetching info on up to $($MaxResults) snapshots"
-        $SnapshotList = Get-EC2Snapshot -OwnerId self -NextToken $NextToken -maxresult $MaxResults
-        $NextToken = $AWShistory.LastServiceResponse.NextToken
-        $Message = 'Starting processing of ' + $SnapshotList.count + ' snapshots'
-        Write-Information $Message
+    process {
+        $output = @()
+        $NextToken = $null
 
-        foreach ($Snapshot in $SnapshotList) {
-            $record = New-Object -TypeName PSCustomObject -Property ([ordered] @{
-                    SnapshotId  = $Snapshot.SnapshotId
-                    VolumeId    = $Snapshot.VolumeId
-                    StartTime   = $Snapshot.StartTime
-                    Description = $Snapshot.Description
-                    State       = $Snapshot.State
-                })
+        do {
+            #process in smaller groups
+            Write-Information -MessageData "Fetching info on up to $($MaxResults) snapshots"
+            $SnapshotList = Get-EC2Snapshot -OwnerId self -NextToken $NextToken -maxresult $MaxResults @awsParams
+            $NextToken = $AWShistory.LastServiceResponse.NextToken
+            $Message = 'Starting processing of ' + $SnapshotList.count + ' snapshots'
+            Write-Information $Message
 
-            $Snapshot.Tags | Sort-Object Key | ForEach-Object {
-                Add-Member -InputObject $Record -NotePropertyName "Tag:$($_.key)" -NotePropertyValue $($_.value)
+            foreach ($Snapshot in $SnapshotList) {
+                $record = New-Object -TypeName PSCustomObject -Property ([ordered] @{
+                        SnapshotId  = $Snapshot.SnapshotId
+                        VolumeId    = $Snapshot.VolumeId
+                        StartTime   = $Snapshot.StartTime
+                        Description = $Snapshot.Description
+                        State       = $Snapshot.State
+                    })
+
+                $Snapshot.Tags | Sort-Object Key | ForEach-Object {
+                    Add-Member -InputObject $Record -NotePropertyName "Tag:$($_.key)" -NotePropertyValue $($_.value)
+                }
+                $output += $record
             }
-            $output += $record
-        }
-        Write-Information "output size is $($output.count)"
-    } while ($NextToken)
-    return $output
+            Write-Information "output size is $($output.count)"
+        } while ($NextToken)
+        return $output
+    }
 }
 
 # ================================================================================================
@@ -791,33 +1009,80 @@ function Get-EC2SnapshotReport {
     Gets a report of all EC2 volumes in the current region
 .DESCRIPTION
     Lists all EC2 volumes and their attachment status, including unattached volumes
+.PARAMETER Region
+    The AWS region to query.
+.PARAMETER ProfileName
+    The AWS credential profile name to use.
+.PARAMETER AccessKey
+    The AWS access key for authentication.
+.PARAMETER SecretKey
+    The AWS secret key for authentication.
+.PARAMETER SessionToken
+    The AWS session token for temporary credentials.
+.PARAMETER Credential
+    An AWSCredentials object for authentication.
+.PARAMETER ProfileLocation
+    The location of the credentials file to use.
+.PARAMETER EndpointUrl
+    A custom endpoint URL to use for the AWS service.
 .EXAMPLE
     Get-EC2VolumeReport
     Gets all volumes in the current region
 #>
 function Get-EC2VolumeReport {
     [CmdletBinding()]
-    param()
+    param(
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
 
-    $volist = Get-Ec2Volume
-    Write-Verbose "Number of volumes in region: $($volist.count) "
-    $results = @()
+        [Parameter()]
+        [string]$ProfileName,
 
-    foreach ($item in $volist) {
-        if ($item.state -eq 'available') {
-            #instance not attached
-            Write-Verbose "unattached volume $($item.volumeid)"
-            $results += $item | Select-Object Volumeid, @{Name = 'InstanceID' ; Expression = { 'NoInstance' } }, Size, Iops, VolumeType
-        }
-        else {
-            Write-Verbose "attached volume $($item.volumeid)"
-            foreach ($attachment in $item.Attachments ) {
-                $results += $attachment | Select-Object VolumeId, InstanceId, @{Name = 'Size'; Expression = { $item.Size } },
-                @{Name = 'Iops'; Expression = { $item.Iops } }, @{Name = 'VolumeType'; Expression = { $item.VolumeType } }
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
+    )
+
+    begin {
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+    }
+
+    process {
+        $volist = Get-Ec2Volume @awsParams
+        Write-Verbose "Number of volumes in region: $($volist.count) "
+        $results = @()
+
+        foreach ($item in $volist) {
+            if ($item.state -eq 'available') {
+                #instance not attached
+                Write-Verbose "unattached volume $($item.volumeid)"
+                $results += $item | Select-Object Volumeid, @{Name = 'InstanceID' ; Expression = { 'NoInstance' } }, Size, Iops, VolumeType
+            }
+            else {
+                Write-Verbose "attached volume $($item.volumeid)"
+                foreach ($attachment in $item.Attachments ) {
+                    $results += $attachment | Select-Object VolumeId, InstanceId, @{Name = 'Size'; Expression = { $item.Size } },
+                    @{Name = 'Iops'; Expression = { $item.Iops } }, @{Name = 'VolumeType'; Expression = { $item.VolumeType } }
+                }
             }
         }
+        return $results
     }
-    return $results
 }
 
 # ================================================================================================
@@ -889,6 +1154,24 @@ function Start-EC2RetryLoop {
 .PARAMETER ProfileName
     AWS credential profile to use.
 
+.PARAMETER AccessKey
+    The AWS access key for authentication.
+
+.PARAMETER SecretKey
+    The AWS secret key for authentication.
+
+.PARAMETER SessionToken
+    The AWS session token for temporary credentials.
+
+.PARAMETER Credential
+    An AWSCredentials object for authentication.
+
+.PARAMETER ProfileLocation
+    The location of the credentials file to use.
+
+.PARAMETER EndpointUrl
+    A custom endpoint URL to use for the AWS service.
+
 .PARAMETER AllowedPorts
     Ports that are acceptable to have open to the internet. Defaults to 80 and 443.
 
@@ -904,93 +1187,113 @@ function Find-OpenSecurityGroup {
     [CmdletBinding()]
     param(
         [Parameter()]
+        [int[]]$AllowedPorts = @(80, 443),
+
+        # AWS common parameters
+        [Parameter()]
         [string]$Region,
 
         [Parameter()]
         [string]$ProfileName,
 
         [Parameter()]
-        [int[]]$AllowedPorts = @(80, 443)
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    # Build common parameters for AWS calls
-    $awsParams = @{}
-    if ($Region) { $awsParams['Region'] = $Region }
-    if ($ProfileName) { $awsParams['ProfileName'] = $ProfileName }
+    begin {
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+    }
 
-    try {
-        Write-Verbose 'Retrieving security groups...'
-        $securityGroups = Get-EC2SecurityGroup @awsParams
+    process {
+        try {
+            Write-Verbose 'Retrieving security groups...'
+            $securityGroups = Get-EC2SecurityGroup @awsParams
 
-        if (-not $securityGroups) {
-            Write-Verbose 'No security groups found.'
-            Write-Output ([PSCustomObject]@{})
-            return
-        }
+            if (-not $securityGroups) {
+                Write-Verbose 'No security groups found.'
+                Write-Output ([PSCustomObject]@{})
+                return
+            }
 
-        Write-Verbose "Found $($securityGroups.Count) security groups. Checking inbound rules..."
+            Write-Verbose "Found $($securityGroups.Count) security groups. Checking inbound rules..."
 
-        $findings = foreach ($sg in $securityGroups) {
-            foreach ($rule in $sg.IpPermissions) {
-                # Check IPv4 ranges for 0.0.0.0/0
-                $openIpv4 = $rule.Ipv4Ranges | Where-Object { $_.CidrIp -eq '0.0.0.0/0' }
-                # Check IPv6 ranges for ::/0
-                $openIpv6 = $rule.Ipv6Ranges | Where-Object { $_.CidrIpv6 -eq '::/0' }
+            $findings = foreach ($sg in $securityGroups) {
+                foreach ($rule in $sg.IpPermissions) {
+                    # Check IPv4 ranges for 0.0.0.0/0
+                    $openIpv4 = $rule.Ipv4Ranges | Where-Object { $_.CidrIp -eq '0.0.0.0/0' }
+                    # Check IPv6 ranges for ::/0
+                    $openIpv6 = $rule.Ipv6Ranges | Where-Object { $_.CidrIpv6 -eq '::/0' }
 
-                if ($openIpv4 -or $openIpv6) {
-                    $fromPort = $rule.FromPort
-                    $toPort = $rule.ToPort
+                    if ($openIpv4 -or $openIpv6) {
+                        $fromPort = $rule.FromPort
+                        $toPort = $rule.ToPort
 
-                    # IpProtocol -1 means all traffic (all ports)
-                    $isAllTraffic = $rule.IpProtocol -eq '-1'
+                        # IpProtocol -1 means all traffic (all ports)
+                        $isAllTraffic = $rule.IpProtocol -eq '-1'
 
-                    # Check if the rule covers only allowed ports
-                    $isAllowedOnly = (-not $isAllTraffic) -and
-                    ($fromPort -eq $toPort) -and
-                    ($fromPort -in $AllowedPorts)
+                        # Check if the rule covers only allowed ports
+                        $isAllowedOnly = (-not $isAllTraffic) -and
+                        ($fromPort -eq $toPort) -and
+                        ($fromPort -in $AllowedPorts)
 
-                    if (-not $isAllowedOnly) {
-                        # Determine which open CIDR triggered the finding
-                        $openCidrs = @()
-                        if ($openIpv4) { $openCidrs += '0.0.0.0/0' }
-                        if ($openIpv6) { $openCidrs += '::/0' }
+                        if (-not $isAllowedOnly) {
+                            # Determine which open CIDR triggered the finding
+                            $openCidrs = @()
+                            if ($openIpv4) { $openCidrs += '0.0.0.0/0' }
+                            if ($openIpv6) { $openCidrs += '::/0' }
 
-                        $portDisplay = if ($isAllTraffic) {
-                            'All Ports'
-                        }
-                        elseif ($fromPort -eq $toPort) {
-                            "$fromPort"
-                        }
-                        else {
-                            "$fromPort-$toPort"
-                        }
+                            $portDisplay = if ($isAllTraffic) {
+                                'All Ports'
+                            }
+                            elseif ($fromPort -eq $toPort) {
+                                "$fromPort"
+                            }
+                            else {
+                                "$fromPort-$toPort"
+                            }
 
-                        [PSCustomObject]@{
-                            GroupId     = $sg.GroupId
-                            GroupName   = $sg.GroupName
-                            VpcId       = $sg.VpcId
-                            Protocol    = if ($isAllTraffic) { 'All' } else { $rule.IpProtocol }
-                            Ports       = $portDisplay
-                            OpenCIDR    = $openCidrs -join ', '
-                            Description = ($rule.Ipv4Ranges | Where-Object { $_.CidrIp -eq '0.0.0.0/0' } |
-                                Select-Object -First 1 -ExpandProperty Description) -as [string]
+                            [PSCustomObject]@{
+                                GroupId     = $sg.GroupId
+                                GroupName   = $sg.GroupName
+                                VpcId       = $sg.VpcId
+                                Protocol    = if ($isAllTraffic) { 'All' } else { $rule.IpProtocol }
+                                Ports       = $portDisplay
+                                OpenCIDR    = $openCidrs -join ', '
+                                Description = ($rule.Ipv4Ranges | Where-Object { $_.CidrIp -eq '0.0.0.0/0' } |
+                                    Select-Object -First 1 -ExpandProperty Description) -as [string]
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if ($findings) {
-            Write-Verbose "Found $($findings.Count) overly permissive rule(s) across security groups."
-            $findings
+            if ($findings) {
+                Write-Verbose "Found $($findings.Count) overly permissive rule(s) across security groups."
+                $findings
+            }
+            else {
+                Write-Verbose "No overly permissive inbound rules found. All 0.0.0.0/0 rules are limited to ports: $($AllowedPorts -join ', ')"
+                return [PSCustomObject]@{}
+            }
         }
-        else {
-            Write-Verbose "No overly permissive inbound rules found. All 0.0.0.0/0 rules are limited to ports: $($AllowedPorts -join ', ')"
-            return [PSCustomObject]@{}
+        catch {
+            Write-Error "Failed to retrieve security groups: $_"
         }
-    }
-    catch {
-        Write-Error "Failed to retrieve security groups: $_"
     }
 }
 
@@ -1009,6 +1312,24 @@ function Find-OpenSecurityGroup {
 
 .PARAMETER ProfileName
     AWS credential profile name. Defaults to the current session profile.
+
+.PARAMETER AccessKey
+    The AWS access key for authentication.
+
+.PARAMETER SecretKey
+    The AWS secret key for authentication.
+
+.PARAMETER SessionToken
+    The AWS session token for temporary credentials.
+
+.PARAMETER Credential
+    An AWSCredentials object for authentication.
+
+.PARAMETER ProfileLocation
+    The location of the credentials file to use.
+
+.PARAMETER EndpointUrl
+    A custom endpoint URL to use for the AWS service.
 
 .PARAMETER DatabasePorts
     Array of port numbers considered database ports. Defaults to common DB ports:
@@ -1036,13 +1357,32 @@ function Find-EC2DBSG {
     [CmdletBinding()]
     param(
         [Parameter()]
+        [int[]]$DatabasePorts = @(1433, 1521, 3306, 5432, 5439, 6379, 27017),
+
+        # AWS common parameters
+        [Parameter()]
         [string]$Region,
 
         [Parameter()]
         [string]$ProfileName,
 
         [Parameter()]
-        [int[]]$DatabasePorts = @(1433, 1521, 3306, 5432, 5439, 6379, 27017)
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
     begin {
@@ -1056,14 +1396,7 @@ function Find-EC2DBSG {
             27017 = 'MongoDB'
         }
 
-        # Build splat hash for AWS cmdlet calls
-        $awsParams = @{}
-        if ($Region) {
-            $awsParams['Region'] = $Region
-        }
-        if ($ProfileName) {
-            $awsParams['ProfileName'] = $ProfileName
-        }
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
     }
 
     process {
@@ -1156,6 +1489,24 @@ function Find-EC2DBSG {
 .PARAMETER ProfileName
     AWS credential profile name. Defaults to the current session profile.
 
+.PARAMETER AccessKey
+    The AWS access key for authentication.
+
+.PARAMETER SecretKey
+    The AWS secret key for authentication.
+
+.PARAMETER SessionToken
+    The AWS session token for temporary credentials.
+
+.PARAMETER Credential
+    An AWSCredentials object for authentication.
+
+.PARAMETER ProfileLocation
+    The location of the credentials file to use.
+
+.PARAMETER EndpointUrl
+    A custom endpoint URL to use for the AWS service.
+
 .EXAMPLE
     PS C:\> .\Get-EC2Count.ps1 | Format-Table
 
@@ -1168,20 +1519,37 @@ function Get-EC2Count {
         [Parameter()]
         [string[]]$Region,
 
+        # AWS common parameters
         [Parameter()]
-        [string]$ProfileName
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
     begin {
-        # Build splat hash for AWS cmdlet calls
-        $awsParams = @{}
-        if ($ProfileName) {
-            $awsParams['ProfileName'] = $ProfileName
-        }
+        # Build base AWS params (excludes Region since we iterate over regions)
+        $baseAwsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+        $baseAwsParams.Remove('Region') | Out-Null
 
         # Resolve regions if not provided
         if (-not $Region) {
-            $Region = (Get-EC2Region @awsParams).RegionName
+            $Region = (Get-EC2Region @baseAwsParams).RegionName
         }
     }
 
@@ -1197,7 +1565,7 @@ function Get-EC2Count {
             Write-Verbose "Region: $R"
 
             # Region-specific splat (adds Region to the base awsParams)
-            $regionParams = $awsParams.Clone()
+            $regionParams = $baseAwsParams.Clone()
             $regionParams['Region'] = $R
 
             try {

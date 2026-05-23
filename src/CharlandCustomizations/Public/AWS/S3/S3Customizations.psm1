@@ -16,17 +16,35 @@ function Clear-S3Bucket {
     .PARAMETER BucketName
         Name of the S3 bucket to empty.
 
-    .PARAMETER Region
-        AWS region of the bucket.
-
-    .PARAMETER ProfileName
-        AWS profile name.
-
     .PARAMETER DeleteBucket
         Delete the bucket itself after emptying it.
 
     .PARAMETER Force
         Skip the typed bucket-name confirmation prompt.
+
+    .PARAMETER Region
+        AWS region override. If not specified, uses the default session region.
+
+    .PARAMETER ProfileName
+        AWS credential profile name.
+
+    .PARAMETER AccessKey
+        AWS IAM access key for explicit credentials.
+
+    .PARAMETER SecretKey
+        AWS IAM secret key for explicit credentials.
+
+    .PARAMETER SessionToken
+        AWS session token for temporary credentials.
+
+    .PARAMETER Credential
+        Pre-built AWS credential object (AWSCredentials).
+
+    .PARAMETER ProfileLocation
+        Path to a custom AWS credential file.
+
+    .PARAMETER EndpointUrl
+        Custom AWS service endpoint URL.
 
     .EXAMPLE
         Clear-S3Bucket -BucketName "123456789012-staging-us-east-1" -Region "us-east-1" -WhatIf
@@ -40,30 +58,44 @@ function Clear-S3Bucket {
         [ValidateNotNullOrEmpty()]
         [string]$BucketName,
 
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
+        [Parameter()]
+        [switch]$Force,
+
+        [Parameter()]
+        [switch]$DeleteBucket,
+
+        # AWS common parameters
+        [Parameter()]
         [string]$Region,
 
         [Parameter()]
         [string]$ProfileName,
 
         [Parameter()]
-        [switch]$Force,
+        [string]$AccessKey,
 
         [Parameter()]
-        [switch]$DeleteBucket
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
     begin {
         $ErrorActionPreference = 'Stop'
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
     }
 
     process {
-        $AWSParams = @{ Region = $Region }
-        if ($ProfileName) {
-            $AWSParams.ProfileName = $ProfileName
-        }
-
         if (-not $Force -and -not $WhatIfPreference) {
             Write-Warning "This will permanently delete all objects and versions in bucket '$BucketName'."
             Write-Warning 'This action is irreversible.'
@@ -80,7 +112,8 @@ function Clear-S3Bucket {
         $KeyMarker = $null
         $VersionIdMarker = $null
 
-        Write-Output "${DryRunLabel}Emptying bucket '$BucketName' in $Region..."
+        $RegionDisplay = if ($Region) { $Region } else { '(default)' }
+        Write-Output "${DryRunLabel}Emptying bucket '$BucketName' in $RegionDisplay..."
 
         do {
             $Params = @{
@@ -92,12 +125,12 @@ function Clear-S3Bucket {
                 $Params.VersionIdMarker = $VersionIdMarker
             }
 
-            $Response = Get-S3Version @Params @AWSParams
+            $Response = Get-S3Version @Params @awsParams
 
             foreach ($Version in $Response.Versions) {
                 $Target = "$($Version.Key) (VersionId: $($Version.VersionId))"
                 if ($PSCmdlet.ShouldProcess($Target, 'Delete object version')) {
-                    Remove-S3Object -BucketName $BucketName -Key $Version.Key -VersionId $Version.VersionId @AWSParams -Force
+                    Remove-S3Object -BucketName $BucketName -Key $Version.Key -VersionId $Version.VersionId @awsParams -Force
                     $DeletedVersions++
                 }
             }
@@ -105,7 +138,7 @@ function Clear-S3Bucket {
             foreach ($Marker in $Response.DeleteMarkers) {
                 $Target = "$($Marker.Key) (VersionId: $($Marker.VersionId))"
                 if ($PSCmdlet.ShouldProcess($Target, 'Delete delete marker')) {
-                    Remove-S3Object -BucketName $BucketName -Key $Marker.Key -VersionId $Marker.VersionId @AWSParams -Force
+                    Remove-S3Object -BucketName $BucketName -Key $Marker.Key -VersionId $Marker.VersionId @awsParams -Force
                     $DeletedMarkers++
                 }
             }
@@ -118,7 +151,7 @@ function Clear-S3Bucket {
 
         if ($DeleteBucket) {
             if ($PSCmdlet.ShouldProcess($BucketName, 'Delete bucket')) {
-                Remove-S3Bucket -BucketName $BucketName @AWSParams -Force
+                Remove-S3Bucket -BucketName $BucketName @awsParams -Force
                 Write-Output "${DryRunLabel}Bucket '$BucketName' deleted."
             }
         }

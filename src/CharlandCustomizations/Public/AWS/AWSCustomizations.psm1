@@ -49,78 +49,199 @@ StackName ResourceStatus  LogicalResourceId ResourceStatusReason
 Stack4    UPDATE_COMPLETE ALambdaFunction   Resource skipped during UpdateRollback
 
 .PARAMETER Region
-
- Region to test. If not specified, will use your default Region
+    AWS region. If not specified, will use your default Region.
 
 .PARAMETER ProfileName
     AWS profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
 #>
 
   [CmdletBinding()]
   param (
-    [string]$Region = (Get-DefaultAWSRegion).Region,
+    [Parameter()]
     [string]$RootStackName = $Null,
-    [string]$ProfileName
+
+    # AWS common parameters
+    [Parameter()]
+    [string]$Region,
+
+    [Parameter()]
+    [string]$ProfileName,
+
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
   )
 
-  $AwsParams = @{ Region = $Region }
-  if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
-
-  Write-Output "Checking Stacks in:  $($region) for account $($(Get-STSCallerIdentity @AwsParams).Account)"
-
-  if ([string]::IsNullOrEmpty($RootStackName) ) {
-    Write-Verbose  "looking at all stacks"
-    $StackList = Get-CFNStack @AwsParams
-
-  }
-  else {
-    Write-Verbose "looking for child stacks"
-    $StackList = Get-CFNStack @AwsParams | where-object RootId -eq (Get-CFNStack @AwsParams -StackName $rootStackName).StackId
-    $StackList += Get-CFNStack @AwsParams -StackName $RootStackName
-
+  begin {
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
   }
 
-  Write-Verbose  "stacklist.count $(($Stacklist).count)"
+  process {
+    Write-Output "Checking Stacks in:  $($Region) for account $($(Get-STSCallerIdentity @awsParams).Account)"
 
-  $StacksWithErrors = $Stacklist | Where-Object StackStatusReason
+    if ([string]::IsNullOrEmpty($RootStackName) ) {
+      Write-Verbose  "looking at all stacks"
+      $StackList = Get-CFNStack @awsParams
 
-  if ($stackswithErrors.count -gt 0) {
-    Write-Output "Stacks in error state"
-    $StacksWithErrors | Select-Object StackName, StackStatus, StackStatusReason | Format-Table  -AutoSize
-  }
-  else {
-    Write-Output "No stacks in error state"
-  }
+    }
+    else {
+      Write-Verbose "looking for child stacks"
+      $StackList = Get-CFNStack @awsParams | Where-Object RootId -eq (Get-CFNStack @awsParams -StackName $RootStackName).StackId
+      $StackList += Get-CFNStack @awsParams -StackName $RootStackName
 
-  Write-Output "Resources with Errors:"
-  foreach ($Stack in $StacksWithErrors.StackName) {
-    Get-CFNStackResourceSummary @AwsParams -StackName $stack | where-object ResourceStatusReason | `
-      Select-Object @{Name = "StackName"; Expression = { $Stack } }, ResourceStatus, LogicalResourceId, ResourceStatusReason | Format-Table -Autosize
+    }
+
+    Write-Verbose  "stacklist.count $(($Stacklist).count)"
+
+    $StacksWithErrors = $Stacklist | Where-Object StackStatusReason
+
+    if ($stackswithErrors.count -gt 0) {
+      Write-Output "Stacks in error state"
+      $StacksWithErrors | Select-Object StackName, StackStatus, StackStatusReason | Format-Table  -AutoSize
+    }
+    else {
+      Write-Output "No stacks in error state"
+    }
+
+    Write-Output "Resources with Errors:"
+    foreach ($Stack in $StacksWithErrors.StackName) {
+      Get-CFNStackResourceSummary @awsParams -StackName $Stack | Where-Object ResourceStatusReason | `
+        Select-Object @{Name = "StackName"; Expression = { $Stack } }, ResourceStatus, LogicalResourceId, ResourceStatusReason | Format-Table -Autosize
+    }
   }
 }
 
 
-function  Set-AWSProfileWithMFA {
-  param (
-    [Parameter(mandatory = $true)]
-    [string]$ProfileName,
-    [Parameter(mandatory = $true)]
-    [string]$TokenCode,
-    [string]$Region = $NULL
-  )
-  
-  if (-not $Region) {
-    $Region = (Get-DefaultAWSRegion).region
-  }
-  
-  $AwsParams = @{ Region = $Region; ProfileName = $ProfileName }
-  
-  # Set-AWSCredential to call Get-IAMMFDevice (AWS bug - see https://github.com/aws/aws-tools-for-powershell/issues/106)
-  Set-AWSCredential -ProfileName $ProfileName
-  # Set-AWSCredential -Credential (Get-STSSessionToken @AwsParams -SerialNumber (Get-IAMMFADevice @AwsParams).SerialNumber -TokenCode $TokenCode)
-  # above goal.. but you have to run set-AWSCredential manually
+function Set-AWSProfileWithMFA {
+  <#
+.SYNOPSIS
+    Retrieves temporary STS session credentials using MFA authentication.
 
-  return Get-STSSessionToken @AwsParams -SerialNumber (Get-IAMMFADevice @AwsParams).SerialNumber -TokenCode $TokenCode
+.DESCRIPTION
+    Authenticates against an AWS profile using a one-time MFA token code and returns
+    temporary STS session credentials. The returned credentials can be used with
+    Set-AWSCredential to establish a session.
+
+.PARAMETER ProfileName
+    The AWS credential profile to authenticate with MFA.
+
+.PARAMETER TokenCode
+    The one-time password (OTP) from your MFA device.
+
+.PARAMETER Region
+    AWS region. If not specified, uses the session default from Get-DefaultAWSRegion.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
+.EXAMPLE
+    PS C:\> Set-AWSCredential -Credential (Set-AWSProfileWithMFA -ProfileName myprofile -TokenCode 123456)
+
+    Authenticates with MFA and sets the returned credentials as the active session.
+
+.EXAMPLE
+    PS C:\> Set-AWSProfileWithMFA -ProfileName myprofile -TokenCode 123456 -Region us-east-1
+
+    Retrieves MFA session credentials for a specific region.
+#>
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory)]
+    [string]$ProfileName,
+
+    [Parameter(Mandatory)]
+    [string]$TokenCode,
+
+    # AWS common parameters
+    [Parameter()]
+    [string]$Region,
+
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
+  )
+
+  begin {
+    # If Region not specified, fall back to session default
+    if (-not $Region) {
+      $Region = (Get-DefaultAWSRegion).Region
+      if ($Region) {
+        $PSBoundParameters['Region'] = $Region
+      }
+    }
+
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+  }
+
+  process {
+    # Set-AWSCredential to call Get-IAMMFADevice (AWS bug - see https://github.com/aws/aws-tools-for-powershell/issues/106)
+    Set-AWSCredential -ProfileName $ProfileName
+    # Set-AWSCredential -Credential (Get-STSSessionToken @awsParams -SerialNumber (Get-IAMMFADevice @awsParams).SerialNumber -TokenCode $TokenCode)
+    # above goal.. but you have to run set-AWSCredential manually
+
+    return Get-STSSessionToken @awsParams -SerialNumber (Get-IAMMFADevice @awsParams).SerialNumber -TokenCode $TokenCode
+  }
 }
 
 function Set-AWSEnv {
@@ -299,29 +420,69 @@ PS C:\> Start-MultiStackDriftDetection
 
 Does stack drift detection on all stacks within a region.
 
+.PARAMETER StackName
+Stackname or list of stackNames to start
+
 .PARAMETER Region
-AWS region to run function in, if not will use default region
+    AWS region. If not specified, will use your default Region.
 
 .PARAMETER ProfileName
     AWS profile name. Optional.
 
-.PARAMETER StackName
-Stackname or list of stackNames to start
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
 #>
   [CmdletBinding()]
   param (
     [Parameter(valueFromPipeline = $true, ValueFromRemainingArguments)]
     [string[]]$StackName = $null,
-    $Region = (Get-DefaultAWSRegion).Region,
-    [string]$ProfileName
+
+    # AWS common parameters
+    [Parameter()]
+    [string]$Region,
+
+    [Parameter()]
+    [string]$ProfileName,
+
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
   )
   begin {
-    $AwsParams = @{ Region = $Region }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
-    
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+
     if ($NULL -eq $stackname) {
       #call Get-CFNstack not Get-CFNstacksummary -- don't care about deleted stacks
-      $stackname = (Get-CFNstack @AwsParams).StackName
+      $stackname = (Get-CFNstack @awsParams).StackName
     }
     # nothing but debug messages
     $message = "stackname count " + $StackName.count
@@ -338,7 +499,7 @@ Stackname or list of stackNames to start
       $message = "Starting  " + $Item
       Write-Verbose $message
 
-      $StackInfo = Get-CFNstack @AwsParams -stackname $Item
+      $StackInfo = Get-CFNstack @awsParams -stackname $Item
       # can't do a drift check if stack is in below states:
       if ($StackInfo.StackStatus -in "ROLLBACK_COMPLETE", "DELETE_FAILED", "ROLLBACK_FAILED") {
         Write-Verbose "$($StackInfo.stackName) in status  $($StackInfo.StackStatus) drift-detection not applicable"
@@ -346,7 +507,7 @@ Stackname or list of stackNames to start
       else {
         $DetectStatus = $NULL
         try {
-          $DetectStatus = Start-CFNStackDriftDetection @AwsParams -StackName $Item -Select '*' -ErrorAction Stop
+          $DetectStatus = Start-CFNStackDriftDetection @awsParams -StackName $Item -Select '*' -ErrorAction Stop
         }
         catch {
           Write-Error "Stack drift detection failed for '$Item': $($_.Exception.Message)"
@@ -363,7 +524,7 @@ Stackname or list of stackNames to start
             Write-Verbose "Waiting for detection to finish for $($StackInfo.stackName)"
             Start-Sleep -Seconds $SleepTimer
             $SleepTimer += $SleepTimer / 2
-            $Status = (Get-CFNstackDriftDetectionStatus @AwsParams -StackDriftDetectionId $DetectStatus.StackDriftDetectionId).DetectionStatus
+            $Status = (Get-CFNstackDriftDetectionStatus @awsParams -StackDriftDetectionId $DetectStatus.StackDriftDetectionId).DetectionStatus
           } until ($Status -ne "DETECTION_IN_PROCESS")
           Write-Verbose "Drift detection completed for $($StackInfo.stackName)"
         }
@@ -378,33 +539,98 @@ Stackname or list of stackNames to start
 }
 
 function Get-AWSAccountListOfDriftedResources {
+  <#
+.SYNOPSIS
+    Lists all drifted resources across CloudFormation stacks in an AWS account.
+
+.DESCRIPTION
+    Enumerates CloudFormation stacks (optionally filtered by a root stack ARN) and
+    reports any resources whose drift status is MODIFIED or DELETED.
+
+.PARAMETER StackRootARN
+    Optional. If specified, only stacks whose RootId matches this ARN are checked.
+
+.PARAMETER Region
+    AWS region. If not specified, uses the session default.
+
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key for explicit credentials. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key for explicit credentials. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
+.EXAMPLE
+    Get-AWSAccountListOfDriftedResources -Region us-east-1 -ProfileName myprofile
+
+.EXAMPLE
+    Get-AWSAccountListOfDriftedResources -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
+#>
   [CmdletBinding()]
   param (
     [Parameter()]
-    [string]$Region = (Get-DefaultAWSRegion).Region,
+    [string]$StackRootARN = $null,
+
+    # AWS common parameters
+    [Parameter()]
+    [string]$Region,
+
     [Parameter()]
     [string]$ProfileName,
+
     [Parameter()]
-    [string]$StackRootARN = $null
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
   )
 
-  $AwsParams = @{ Region = $Region }
-  if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
-
-  If ($StackRootArn) {
-    $stacklist = Get-CFNstack @AwsParams | Where-Object RootId -EQ $StackRootArn
+  begin {
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
   }
-  else {
-    $stacklist = Get-CFNstack @AwsParams
-  }
-  foreach ($stack in $stacklist) {
-    foreach ($resource in Get-CFNstackResourceSummary @AwsParams -StackName $stack.Stackname |
-      Where-Object { $_.DriftInformation.StackResourceDriftStatus -in @("MODIFIED", "DELETED") } ) {
 
-      Get-CFNstackResourceDrift @AwsParams -StackName $stack.Stackname -LogicalResourceId $resource.LogicalResourceId   |
-      Select-Object @{Name = "StackId"; Expression = { $stack.Stackname } },
-      LogicalResourceId, PhysicalResourceId, ResourceType, StackResourceDriftStatus
+  process {
+    If ($StackRootArn) {
+      $stacklist = Get-CFNstack @awsParams | Where-Object RootId -EQ $StackRootArn
+    }
+    else {
+      $stacklist = Get-CFNstack @awsParams
+    }
+    foreach ($stack in $stacklist) {
+      foreach ($resource in Get-CFNstackResourceSummary @awsParams -StackName $stack.Stackname |
+        Where-Object { $_.DriftInformation.StackResourceDriftStatus -in @("MODIFIED", "DELETED") } ) {
 
+        Get-CFNstackResourceDrift @awsParams -StackName $stack.Stackname -LogicalResourceId $resource.LogicalResourceId   |
+        Select-Object @{Name = "StackId"; Expression = { $stack.Stackname } },
+        LogicalResourceId, PhysicalResourceId, ResourceType, StackResourceDriftStatus
+
+      }
     }
   }
 }
@@ -419,6 +645,27 @@ function Get-AWSObjectCount {
 
 .PARAMETER Region
     Region or list of regions to scan, if not entered, will look at all regions.
+
+.PARAMETER ProfileName
+    AWS profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
     PS C:\> .\Get-AWSObjectCount.ps1 |Format-Table
@@ -471,75 +718,104 @@ us-east-2          0        1        1           2           0   True
   param (
     [Parameter(ValueFromPipeline)]
     $Region = (Get-EC2Region).RegionName,
-    [string]$ProfileName
+
+    # AWS common parameters
+    [Parameter()]
+    [string]$ProfileName,
+
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
   )
-  write-verbose "RegionCount: $(($region).count)"
-  $output = @()
-  
-  $S3Params = @{ Region = 'us-east-1' }
-  if ($ProfileName) { $S3Params.ProfileName = $ProfileName }
-  
-  #do this in us-east-1 only
-  $AllBuckets = ((Get-S3Bucket @S3Params).BucketName | Get-S3BucketLocation @S3Params).Value | Select-Object @{Name = "Region"; Expression = { $_ } } | Group-Object Region -NoElement
 
-  foreach ($R in $Region ) {
-    $AwsParams = @{ Region = $R }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
-
-    Write-Verbose "Region: $($R)"
-    #  see https://docs.aws.amazon.com/general/latest/gr/s3.html , us-east-1 and eu-west-1 have extra names
-    if ($R -eq 'us-east-1') {
-      $BucketCount = ($AllBuckets | Where-Object Name -In '', 'us-east-1').Count
-
-    }
-    elseif ($R -eq 'eu-west-1') {
-      $BucketCount = ($AllBuckets | Where-Object Name -In 'EU', 'eu-west-1' ).Count
-    }
-    else {
-      #if no buckets in region, will return zero
-      $BucketCount = ($AllBuckets | Where-Object Name -EQ $R).Count
-    }
-    Write-Verbose "Bucketcount: $($R)$($BucketCount)"
-
-    try {
-      $StackCount = (Get-CFNStack @AwsParams).count
-      Write-Verbose "Stackcount: $($stackcount)"
-      $EC2Count = (Get-EC2Instance @AwsParams).count
-      Write-Verbose "EC2Count: $($EC2Count)"
-      $LambdaCount = (Get-LMFunctionList @AwsParams).count
-      Write-Verbose "LambdaCount: $($LambdaCount)"
-      $VPCCount = (Get-EC2Vpc @AwsParams).count
-
-      $RegionData = New-Object -TypeName PsObject -Property ([ordered]@{
-          Region      = $R
-          StackCount  = $StackCount
-          VPCCount    = $VPCCount
-          EC2Count    = $Ec2Count
-          BucketCount = $BucketCount
-          LambdaCount = $LambdaCount
-          ScanOk      = $True
-        })
-      Write-Verbose "$($RegionData)"
-    }
-
-    catch {
-      Write-Verbose ("catch: $($Region)")
-      $RegionData = New-Object -TypeName PsObject -Property ([ordered]@{
-          Region      = $Region
-          StackCount  = ""
-          EC2Count    = ""
-          BucketCount = ""
-          LambdaCount = ""
-          ScanOk      = $false
-
-        })
-    }
-    finally {
-      Write-Verbose "Completed Region $($R)"
-      $output += $RegionData
-    }
+  begin {
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
   }
-  return $output
+
+  process {
+    Write-Verbose "RegionCount: $(($Region).count)"
+    $output = @()
+
+    # S3 bucket listing must use us-east-1; override Region in the splat for this call
+    $S3Params = $awsParams.Clone()
+    $S3Params['Region'] = 'us-east-1'
+
+    #do this in us-east-1 only
+    $AllBuckets = ((Get-S3Bucket @S3Params).BucketName | Get-S3BucketLocation @S3Params).Value | Select-Object @{Name = "Region"; Expression = { $_ } } | Group-Object Region -NoElement
+
+    foreach ($R in $Region ) {
+      # Override Region for each iteration since we scan multiple regions
+      $AwsParams['Region'] = $R
+
+      Write-Verbose "Region: $($R)"
+      #  see https://docs.aws.amazon.com/general/latest/gr/s3.html , us-east-1 and eu-west-1 have extra names
+      if ($R -eq 'us-east-1') {
+        $BucketCount = ($AllBuckets | Where-Object Name -In '', 'us-east-1').Count
+
+      }
+      elseif ($R -eq 'eu-west-1') {
+        $BucketCount = ($AllBuckets | Where-Object Name -In 'EU', 'eu-west-1' ).Count
+      }
+      else {
+        #if no buckets in region, will return zero
+        $BucketCount = ($AllBuckets | Where-Object Name -EQ $R).Count
+      }
+      Write-Verbose "Bucketcount: $($R)$($BucketCount)"
+
+      try {
+        $StackCount = (Get-CFNStack @AwsParams).count
+        Write-Verbose "Stackcount: $($stackcount)"
+        $EC2Count = (Get-EC2Instance @AwsParams).count
+        Write-Verbose "EC2Count: $($EC2Count)"
+        $LambdaCount = (Get-LMFunctionList @AwsParams).count
+        Write-Verbose "LambdaCount: $($LambdaCount)"
+        $VPCCount = (Get-EC2Vpc @AwsParams).count
+
+        $RegionData = New-Object -TypeName PsObject -Property ([ordered]@{
+            Region      = $R
+            StackCount  = $StackCount
+            VPCCount    = $VPCCount
+            EC2Count    = $Ec2Count
+            BucketCount = $BucketCount
+            LambdaCount = $LambdaCount
+            ScanOk      = $True
+          })
+        Write-Verbose "$($RegionData)"
+      }
+
+      catch {
+        Write-Verbose ("catch: $($Region)")
+        $RegionData = New-Object -TypeName PsObject -Property ([ordered]@{
+            Region      = $Region
+            StackCount  = ""
+            EC2Count    = ""
+            BucketCount = ""
+            LambdaCount = ""
+            ScanOk      = $false
+
+          })
+      }
+      finally {
+        Write-Verbose "Completed Region $($R)"
+        $output += $RegionData
+      }
+    }
+    return $output
+  }
 }
 
 <#
@@ -596,6 +872,9 @@ function Update-SSOCredentialList {
 .PARAMETER Region
     The AWS region where IAM Identity Center is configured.
 
+.PARAMETER ProfileName
+    AWS profile name. Optional.
+
 .PARAMETER ProfilePrefix
     Optional prefix for generated profile names.
 
@@ -610,6 +889,24 @@ function Update-SSOCredentialList {
 
 .PARAMETER Force
     Skip confirmation and overwrite existing profiles without prompting.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
     Update-SSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' -Region 'us-east-1'
@@ -646,17 +943,44 @@ function Update-SSOCredentialList {
     [string]$CredentialFile = (Join-Path $HOME '.aws' 'credentials'),
 
     [Parameter()]
-    [switch]$Force
+    [switch]$Force,
+
+    # AWS common parameters
+    [Parameter()]
+    [string]$AccessKey,
+
+    [Parameter()]
+    [string]$SecretKey,
+
+    [Parameter()]
+    [string]$SessionToken,
+
+    [Parameter()]
+    $Credential,
+
+    [Parameter()]
+    [string]$ProfileLocation,
+
+    [Parameter()]
+    [string]$EndpointUrl
   )
 
+  begin {
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+
+    # SSO OIDC calls require pseudo credentials and only need Region/ProfileName
+    # Build a subset splat for SSO-specific cmdlets
+    $SsoParams = @{}
+    if ($awsParams.ContainsKey('Region')) { $SsoParams['Region'] = $awsParams['Region'] }
+    if ($awsParams.ContainsKey('ProfileName')) { $SsoParams['ProfileName'] = $awsParams['ProfileName'] }
+  }
+
+  process {
   # Pseudo credentials required by the SSO OIDC API
   $pseudoCreds = @{
     AccessKey = 'AKAEXAMPLE123ACCESS'
     SecretKey = 'PseudoS3cret4cceSSKey123PseudoS3cretKey'
   }
-
-  $SsoParams = @{ Region = $Region }
-  if ($ProfileName) { $SsoParams.ProfileName = $ProfileName }
   
   # Ensure credentials directory exists
   $credDir = Split-Path $CredentialFile -Parent
@@ -810,6 +1134,7 @@ function Update-SSOCredentialList {
     ProfilesFailed  = $profilesFailed
     CredentialFile  = $CredentialFile
     TokenExpires    = $tokenExpire
+  }
   }
 }
 

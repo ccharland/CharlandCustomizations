@@ -29,6 +29,27 @@ Specific stack name or all directories if not specified.
 .PARAMETER Region
 AWS region. Defaults to default region.
 
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
 .PARAMETER VerifyOnly
 Validate only, don't create stack.
 
@@ -38,25 +59,50 @@ New-CFNStackFromDirectory -StackName MyStack -VerifyOnly
 function New-CFNStackFromDirectory {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
-        $Region = (Get-DefaultAWSRegionName),
         $Path = (Get-Location).Path,
         $StackName = $null,
+        [switch]$VerifyOnly,
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
         [string]$ProfileName,
-        [switch]$VerifyOnly
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
     begin {
+        if (-not $Region) {
+            $Region = Get-DefaultAWSRegionName
+        }
         if ($null -eq $Region) {
             throw "No AWS region specified and no default region configured. Please specify -Region parameter or configure a default region."
         }
         
-        $AwsParams = @{ Region = $Region }
-        if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
         
-        $AccountID = (Get-STSCallerIdentity @AwsParams).Account
+        $AccountID = (Get-STSCallerIdentity @awsParams).Account
         Write-Verbose "AccountId: $AccountId"
         Write-Verbose "Region: $Region"
         Write-Verbose "Path: $Path"
-        $TemplateBucket = (Get-S3Bucket | Where-Object BucketName -Like "cf-templates-*$Region").BucketName
+        $TemplateBucket = (Get-S3Bucket @awsParams | Where-Object BucketName -Like "cf-templates-*$Region").BucketName
         if (-not $TemplateBucket) {
             throw "No S3 bucket found for CloudFormation templates in region $Region. Please ensure you have the correct permissions and the bucket exists (cf-templates-<random>-$Region)."
         }
@@ -98,9 +144,9 @@ function New-CFNStackFromDirectory {
         
             $TemplateS3Key = [CFNStackDirectoryInfo]::NewTemplateS3Key($name) 
         
-            Write-S3Object -BucketName $TemplateBucket -Key $TemplateS3Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @AwsParams
+            Write-S3Object -BucketName $TemplateBucket -Key $TemplateS3Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @awsParams
 
-            $TemplateS3Url = Get-S3PreSignedURL -BucketName $TemplateBucket -Key $TemplateS3Key @AwsParams -Expires (Get-Date).AddHours(1)
+            $TemplateS3Url = Get-S3PreSignedURL -BucketName $TemplateBucket -Key $TemplateS3Key @awsParams -Expires (Get-Date).AddHours(1)
             Write-Verbose "template S3 URL: $TemplateS3Url"
 
             if (Test-Path -Path ([CFNStackDirectoryInfo]::GetParametersPath($StackPath))) {
@@ -124,7 +170,7 @@ function New-CFNStackFromDirectory {
                 $TemplateCapabilities = @()
             }
         
-            $TemplateTest = Test-CFNTemplate -TemplateURL $TemplateS3Url @AwsParams
+            $TemplateTest = Test-CFNTemplate -TemplateURL $TemplateS3Url @awsParams
         
             if ($TemplateTest.Parameters.Count -ne $templateParameters.Count) {
                 throw "Template parameter counts do not match between template parameters and parameters.json for stack $Name"
@@ -144,7 +190,7 @@ function New-CFNStackFromDirectory {
                         -TemplateURL $TemplateS3Url `
                         -Parameters $TemplateParameters `
                         -Capabilities $TemplateCapabilities `
-                        @AwsParams `
+                        @awsParams `
                         -Tags $Tags
         
                     Write-Output "New-CFNStack invoked for stack $Name in region $Region"
@@ -181,6 +227,27 @@ Stack names to validate.
 .PARAMETER Region
 AWS region.
 
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
 .PARAMETER RootPath
 Root directory path.
 
@@ -196,19 +263,44 @@ function Test-CFNStackFromDirectory {
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
         [string[]]
         $StackName,
-        $Region = (Get-DefaultAWSRegionName),
-        [string]$ProfileName,
         $RootPath = (Get-Location).Path,
-        $TemplateName = [CFNStackDirectoryInfo]::TemplateFile
+        $TemplateName = [CFNStackDirectoryInfo]::TemplateFile,
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
     begin {
+        if (-not $Region) {
+            $Region = Get-DefaultAWSRegionName
+        }
         if ($null -eq $Region) {
             throw "No AWS region specified and no default region configured. Please specify -Region parameter or configure a default region."
         }
-        $AwsParams = @{ Region = $Region }
-        if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
-        $AccountID = (Get-STSCallerIdentity @AwsParams).Account
+        $AccountID = (Get-STSCallerIdentity @awsParams).Account
         Write-Verbose "AccountId: $AccountId"
         Write-Verbose "Region: $Region"
     }
@@ -228,7 +320,7 @@ function Test-CFNStackFromDirectory {
                 $TemplateBody = Get-Content -Path $TemplatePath -Encoding utf8 -Raw
                 Write-Debug "TemplateBody = $TemplateBody"
 
-                Test-CFNTemplate -TemplateBody $TemplateBody @AwsParams
+                Test-CFNTemplate -TemplateBody $TemplateBody @awsParams
 
             }
             catch {
@@ -248,6 +340,27 @@ Stack names to export.
 .PARAMETER Region
 AWS region.
 
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
 .PARAMETER RootPath
 Root export path.
 
@@ -260,19 +373,44 @@ function Out-CFNStackInfo {
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
         [string[]]
         $StackName,
-        $Region = (Get-DefaultAWSRegionName),
         $RootPath = (Get-Location).Path,
-        [string]$ProfileName
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
     begin {
+        if (-not $Region) {
+            $Region = Get-DefaultAWSRegionName
+        }
         if ($Null -eq $Region) {
             throw "No AWS region specified and no default region configured. Please specify -Region parameter or configure a default region."
         }
-        $AwsParams = @{ Region = $Region }
-        if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
-        $AccountID = (Get-STSCallerIdentity @AwsParams).Account
+        $AccountID = (Get-STSCallerIdentity @awsParams).Account
         Write-Verbose "AccountId: $AccountId"
         Write-Verbose "Region: $Region"
 
@@ -308,8 +446,8 @@ function Out-CFNStackInfo {
             # save template to file
             Write-Progress -Id $progressId -Activity $activity -Status "$statusPrefix (Exporting templates)" -PercentComplete 35
             Write-Verbose "Saving template to $StackInfoPath"
-            $Original = Get-CFNTemplate -StackName $name -TemplateStage Original @AwsParams
-            $Processed = Get-CFNTemplate -StackName $name -TemplateStage Processed @AwsParams
+            $Original = Get-CFNTemplate -StackName $name -TemplateStage Original @awsParams
+            $Processed = Get-CFNTemplate -StackName $name -TemplateStage Processed @awsParams
             if ($Original -eq $Processed) {
                 Write-Verbose 'No transforms in template'
                 $TemplatePath = [CFNStackDirectoryInfo]::GetTemplatePath($StackInfoPath)
@@ -324,7 +462,7 @@ function Out-CFNStackInfo {
             }
         
             Write-Progress -Id $progressId -Activity $activity -Status "$statusPrefix (Exporting stack metadata)" -PercentComplete 70
-            $StackInfo = Get-CFNStack -StackName $name @AwsParams
+            $StackInfo = Get-CFNStack -StackName $name @awsParams
             # Save items necessary to deploy stacks.
             Write-Verbose "Saving parameters to $([CFNStackDirectoryInfo]::GetParametersPath($StackInfoPath))"
             $StackInfo.Parameters | ConvertTo-Json -Depth 5 | Out-File -FilePath ([CFNStackDirectoryInfo]::GetParametersPath($StackInfoPath))
@@ -374,6 +512,27 @@ function Out-CFNStackInfo {
 .PARAMETER Region
     The AWS region where the stack exists. Defaults to the default AWS region.
 
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
 .PARAMETER ExecuteChangeSet
     If specified, the change set will be executed immediately after creation. By default, only the change set is created.
 
@@ -402,29 +561,54 @@ function Out-CFNStackInfo {
 function Update-CFNStackFromDirectory {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
-        $Region = (Get-DefaultAWSRegionName),
         $Path = (Get-Location).Path,
         [Parameter(Mandatory = $true)]
         [string]$StackName,
         [switch]$VerifyOnly,
         [switch]$ExecuteChangeSet,
+        $ChangeSetName = $null,
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
         [string]$ProfileName,
-        $ChangeSetName = $null
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
     begin {
+        if (-not $Region) {
+            $Region = Get-DefaultAWSRegionName
+        }
         if ($Null -eq $Region) {
             throw "No AWS region specified and no default region configured. Please specify -Region parameter or configure a default region."
         }
-        $AwsParams = @{ Region = $Region }
-        if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
-        $AccountID = (Get-STSCallerIdentity @AwsParams).Account
+        $AccountID = (Get-STSCallerIdentity @awsParams).Account
         Write-Verbose "AccountId: $AccountId"
         Write-Verbose "Region: $Region"
         Write-Verbose "Path: $Path"
     
-        $TemplateBucket = (Get-S3Bucket @AwsParams | Where-Object BucketName -Like "cf-templates-*$Region").BucketName
+        $TemplateBucket = (Get-S3Bucket @awsParams | Where-Object BucketName -Like "cf-templates-*$Region").BucketName
         if (-not $TemplateBucket) {
             throw "No S3 bucket found for CloudFormation templates in region $Region. Please ensure you have the correct permissions and the bucket exists (cf-templates-<random>-$Region)."
         }
@@ -434,7 +618,7 @@ function Update-CFNStackFromDirectory {
                 Write-Verbose "Path verified for StackName: $StackName"
                 # Verify stack exists
                 try {
-                    Get-CFNStack -StackName $StackName @AwsParams | Out-Null
+                    Get-CFNStack -StackName $StackName @awsParams | Out-Null
                     Write-Verbose "Stack $StackName exists in region $Region"
                 }
                 catch {
@@ -471,7 +655,7 @@ function Update-CFNStackFromDirectory {
         
             # Verify the stack exists before attempting to update
             try {
-                Get-CFNStack -StackName $Name @AwsParams | Out-Null
+                Get-CFNStack -StackName $Name @awsParams | Out-Null
                 Write-Verbose "Confirmed stack $Name exists in region $Region"
             }
             catch {
@@ -489,9 +673,9 @@ function Update-CFNStackFromDirectory {
             $TemplateS3Key = [CFNStackDirectoryInfo]::NewTemplateS3Key($Name)
 
             # Upload template to S3
-            Write-S3Object -BucketName $TemplateBucket -Key $TemplateS3Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @AwsParams
+            Write-S3Object -BucketName $TemplateBucket -Key $TemplateS3Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @awsParams
 
-            $TemplateS3Url = Get-S3PreSignedURL -BucketName $TemplateBucket -Key $TemplateS3Key @AwsParams -Expires (Get-Date).AddHours(1)
+            $TemplateS3Url = Get-S3PreSignedURL -BucketName $TemplateBucket -Key $TemplateS3Key @awsParams -Expires (Get-Date).AddHours(1)
             Write-Verbose "Template S3 URL: $TemplateS3Url"
 
             # Load parameters if they exist
@@ -519,7 +703,7 @@ function Update-CFNStackFromDirectory {
             }
 
             # Test template
-            $TemplateTest = Test-CFNTemplate -TemplateURL $TemplateS3Url @AwsParams
+            $TemplateTest = Test-CFNTemplate -TemplateURL $TemplateS3Url @awsParams
         
             if ($TemplateTest.Parameters.Count -ne $TemplateParameters.Count) {
                 Write-Warning "Template parameter counts do not match between template parameters and parameters.json for stack $Name. Template has $($TemplateTest.Parameters.Count) parameters, file has $($TemplateParameters.Count) parameters."
@@ -554,7 +738,7 @@ function Update-CFNStackFromDirectory {
                         ChangeSetName = $GeneratedChangeSetName
                         TemplateURL   = $TemplateS3Url
                     }
-                    $ChangeSetParams += $AwsParams
+                    $ChangeSetParams += $awsParams
 
                     if ($TemplateParameters.Count -gt 0) {
                         $ChangeSetParams.Parameters = $TemplateParameters
@@ -575,7 +759,7 @@ function Update-CFNStackFromDirectory {
                     Write-Verbose 'Waiting for change set to be created...'
                     do {
                         Start-Sleep -Seconds 2
-                        $ChangeSetStatus = Get-CFNChangeSet -ChangeSetName $GeneratedChangeSetName -StackName $Name @AwsParams
+                        $ChangeSetStatus = Get-CFNChangeSet -ChangeSetName $GeneratedChangeSetName -StackName $Name @awsParams
                         Write-Verbose "Change set status: $($ChangeSetStatus.Status)"
                     } while ($ChangeSetStatus.Status -eq 'CREATE_IN_PROGRESS')
 
@@ -588,7 +772,7 @@ function Update-CFNStackFromDirectory {
                         if ($ExecuteChangeSet) {
                             if ($PSCmdlet.ShouldProcess("$Name in $Region", 'Execute CloudFormation change set')) {
                                 Write-Output 'Executing change set...'
-                                Start-CFNChangeSet -ChangeSetName $GeneratedChangeSetName -StackName $Name @AwsParams
+                                Start-CFNChangeSet -ChangeSetName $GeneratedChangeSetName -StackName $Name @awsParams
                                 Write-Output "Change set execution started for stack $Name"
                             }
                         }
@@ -641,6 +825,27 @@ function Update-CFNStackFromDirectory {
 .PARAMETER Region
     The AWS region to work in. Defaults to the default region.
 
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
+
 .PARAMETER Path
     The path where the stack directory will be created. Defaults to the current location.
 
@@ -660,32 +865,58 @@ function Update-CFNStackFromDirectory {
 function New-CFNStackDirectory {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
-        $Region = (Get-DefaultAWSRegionName),
         $Path = (Get-Location).Path,
-        [string]$ProfileName,
         [String][Parameter(Mandatory = $true)]$StackName,
-        [String][Parameter(Mandatory = $true)]$TemplateBody
+        [String][Parameter(Mandatory = $true)]$TemplateBody,
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    $AwsParams = @{ Region = $Region }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
+    begin {
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+    }
 
-    $TargetPath = Join-Path -Path $Path -ChildPath $StackName
-    if ($PSCmdlet.ShouldProcess("Creating new CloudFormation Stack directory at '$TargetPath'")) {
-        if (-not (Test-Path -Path $TargetPath)) {
-            New-Item -ItemType Directory -Path $TargetPath | Out-Null
-            Write-Output "Created directory: $TargetPath"
-        }
-        else {
-            Write-Warning "Directory already exists: $TargetPath"
-        }
+    process {
+        $TargetPath = Join-Path -Path $Path -ChildPath $StackName
+        if ($PSCmdlet.ShouldProcess("Creating new CloudFormation Stack directory at '$TargetPath'")) {
+            if (-not (Test-Path -Path $TargetPath)) {
+                New-Item -ItemType Directory -Path $TargetPath | Out-Null
+                Write-Output "Created directory: $TargetPath"
+            }
+            else {
+                Write-Warning "Directory already exists: $TargetPath"
+            }
     
-        $TemplateFile = [CFNStackDirectoryInfo]::GetTemplatePath($TargetPath)
-        Set-Content -Path $TemplateFile -Value $TemplateBody
-        Write-Output "Created template file: $TemplateFile"
+            $TemplateFile = [CFNStackDirectoryInfo]::GetTemplatePath($TargetPath)
+            Set-Content -Path $TemplateFile -Value $TemplateBody
+            Write-Output "Created template file: $TemplateFile"
     
-        # call Test-CFNStackFromDirectory to validate the template
-        Test-CFNStackFromDirectory -StackName $StackName -Region $Region -ProfileName $ProfileName -RootPath $Path
+            # call Test-CFNStackFromDirectory to validate the template
+            Test-CFNStackFromDirectory -StackName $StackName -RootPath $Path @awsParams
+        }
     }
 }
 
@@ -709,6 +940,27 @@ Name to use to create Change set.
 
 .PARAMETER Region
 AWS Region to work in (will use default region if not specified)
+
+.PARAMETER ProfileName
+    AWS credential profile name. Optional.
+
+.PARAMETER AccessKey
+    AWS access key. Optional.
+
+.PARAMETER SecretKey
+    AWS secret key. Optional.
+
+.PARAMETER SessionToken
+    AWS session token for temporary credentials. Optional.
+
+.PARAMETER Credential
+    Pre-built AWS credential object. Optional.
+
+.PARAMETER ProfileLocation
+    Custom credential file path. Optional.
+
+.PARAMETER EndpointUrl
+    Custom AWS service endpoint URL. Optional.
 
 .PARAMETER TemplateBody
 String containing template body, instead of using the one created by this script.
@@ -734,107 +986,131 @@ function Edit-CFTTEbsVolumes {
     param (
         [Parameter(Mandatory = $true)][string]$StackName,
         [string]$ChangeName = 'ChangeEBSVolumeType',
-        [string]$Region = (Get-DefaultAWSRegion).region,
-        [string]$ProfileName,
         [string]$TemplateBody,
         [string]$NewTemplateFileName,
         [string]$OldVolumeType = 'gp2',
-        [string]$NewVolumeType = 'gp3'
+        [string]$NewVolumeType = 'gp3',
+
+        # AWS common parameters
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        $Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
     )
 
-    $AwsParams = @{ Region = $Region }
-    if ($ProfileName) { $AwsParams.ProfileName = $ProfileName }
-
-    if ($null -eq $Region) {
-        Throw 'Need a region specified'
-    }
-
-    if ($TemplateBody -eq '') {
-        $OrigTemplate = Get-CFNTemplate -StackName $StackName @AwsParams
-        $StackInfo = Get-CFNStack -StackName $StackName @AwsParams
-    
-        $Template = $OrigTemplate.replace($OldVolumeType, $NewVolumeType)
-    
-        if ($Template -eq $OrigTemplate) {
-            Write-Output "No changes: $($OldVolumeType) not found in template"
-            return
+    begin {
+        if (-not $Region) {
+            $Region = (Get-DefaultAWSRegion).region
         }
-    
-        if ($NewTemplateFileName) {
-            Write-Output "Saving new template as: $($NewTemplateFileName)"
-            $Template | Out-File -FilePath $NewTemplateFileName -Encoding utf8
+        if ($null -eq $Region) {
+            Throw 'Need a region specified'
         }
-    }
-    else {
-        # use item passed into the template.
-        $Template = $TemplateBody
-        $StackInfo = Get-CFNStack -StackName $StackName @AwsParams
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
     }
 
-    # Validation
-    if ($Template -match $OldVolumeType) {
-        Throw "$($OldVolumeType) found in template, modification failed."
-    }
-    if ($Template -notmatch $NewVolumeType) {
-        Throw "$($NewVolumeType) not found in template, modification failed."
-    }
-
-    # Test template
-    # $tr = Test-CFNTemplate -TemplateBody $Template
-    # Write-Host "Template is valid"
-
-    if ($PSCmdlet.ShouldProcess("$StackName", "Create change set to change $OldVolumeType to $NewVolumeType")) {
+    process {
+        if ($TemplateBody -eq '') {
+            $OrigTemplate = Get-CFNTemplate -StackName $StackName @awsParams
+            $StackInfo = Get-CFNStack -StackName $StackName @awsParams
     
-        # Wait for any existing change sets to complete or be deleted
-        do {
-            $existingChangeSets = Get-CFNChangeSetList -StackName $StackName @AwsParams | Where-Object { $_.Status -eq "CREATE_IN_PROGRESS" }
-            if ($existingChangeSets) {
-                Write-Verbose "Waiting for existing change sets to complete..."
-                Start-Sleep -Seconds 10
+            $Template = $OrigTemplate.replace($OldVolumeType, $NewVolumeType)
+    
+            if ($Template -eq $OrigTemplate) {
+                Write-Output "No changes: $($OldVolumeType) not found in template"
+                return
             }
-        } while ($existingChangeSets)
-
-        New-CFNChangeSet -StackName $StackName -ChangeSetName $ChangeName -TemplateBody $Template -Parameters $StackInfo.Parameters @AwsParams | Out-Null
     
-        # Wait for change set to be created
-        do {
-            $ChangeSetResponse = Get-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @AwsParams
-            Start-Sleep -Seconds 5
-        } while ($ChangeSetResponse.Status -eq "CREATE_IN_PROGRESS")
-    
-        $ChangeSetResponse = Get-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @AwsParams
-    
-        if ($ChangeSetResponse.Status -eq "CREATE_COMPLETE") {
-            Write-Output "Change set created successfully!"
-            Write-Output "Changes to be made:"
-            foreach ($change in $ChangeSetResponse.Changes) {
-                $resourceChange = $change.ResourceChange
-                Write-Output "  Action: $($change.Action)"
-                Write-Output "  Resource: $($resourceChange.LogicalResourceId) ($($resourceChange.ResourceType))"
-                if ($resourceChange.Details) {
-                    foreach ($detail in $resourceChange.Details) {
-                        Write-Output "    $($detail.Target.Attribute): $($detail.Target.Name)"
-                    }
-                }
-                Write-Output ""
-            }
-        
-            $confirmation = Read-Host "Do you want to execute this change set? (y/n)"
-            if ($confirmation -eq 'y' -or $confirmation -eq 'Y') {
-                Start-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @AwsParams
-                Write-Output "Change set execution started."
-            }
-            else {
-                Write-Output "Change set created but not executed."
-                Write-Output "To execute later: Start-CFNChangeSet -ChangeSetName '$ChangeName' -StackName '$StackName' -Region '$Region'"
-                Write-Output "To delete: Remove-CFNChangeSet -ChangeSetName '$ChangeName' -StackName '$StackName' -Region '$Region'"
+            if ($NewTemplateFileName) {
+                Write-Output "Saving new template as: $($NewTemplateFileName)"
+                $Template | Out-File -FilePath $NewTemplateFileName -Encoding utf8
             }
         }
         else {
-            Write-Error "Change set creation failed: $($ChangeSetResponse.StatusReason)"
-            if ($ChangeSetResponse.Status -eq "FAILED") {
-                Remove-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @AwsParams
-                Write-Output "Failed change set has been cleaned up."
+            # use item passed into the template.
+            $Template = $TemplateBody
+            $StackInfo = Get-CFNStack -StackName $StackName @awsParams
+        }
+
+        # Validation
+        if ($Template -match $OldVolumeType) {
+            Throw "$($OldVolumeType) found in template, modification failed."
+        }
+        if ($Template -notmatch $NewVolumeType) {
+            Throw "$($NewVolumeType) not found in template, modification failed."
+        }
+
+        if ($PSCmdlet.ShouldProcess("$StackName", "Create change set to change $OldVolumeType to $NewVolumeType")) {
+    
+            # Wait for any existing change sets to complete or be deleted
+            do {
+                $existingChangeSets = Get-CFNChangeSetList -StackName $StackName @awsParams | Where-Object { $_.Status -eq "CREATE_IN_PROGRESS" }
+                if ($existingChangeSets) {
+                    Write-Verbose "Waiting for existing change sets to complete..."
+                    Start-Sleep -Seconds 10
+                }
+            } while ($existingChangeSets)
+
+            New-CFNChangeSet -StackName $StackName -ChangeSetName $ChangeName -TemplateBody $Template -Parameters $StackInfo.Parameters @awsParams | Out-Null
+    
+            # Wait for change set to be created
+            do {
+                $ChangeSetResponse = Get-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams
+                Start-Sleep -Seconds 5
+            } while ($ChangeSetResponse.Status -eq "CREATE_IN_PROGRESS")
+    
+            $ChangeSetResponse = Get-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams
+    
+            if ($ChangeSetResponse.Status -eq "CREATE_COMPLETE") {
+                Write-Output "Change set created successfully!"
+                Write-Output "Changes to be made:"
+                foreach ($change in $ChangeSetResponse.Changes) {
+                    $resourceChange = $change.ResourceChange
+                    Write-Output "  Action: $($change.Action)"
+                    Write-Output "  Resource: $($resourceChange.LogicalResourceId) ($($resourceChange.ResourceType))"
+                    if ($resourceChange.Details) {
+                        foreach ($detail in $resourceChange.Details) {
+                            Write-Output "    $($detail.Target.Attribute): $($detail.Target.Name)"
+                        }
+                    }
+                    Write-Output ""
+                }
+        
+                $confirmation = Read-Host "Do you want to execute this change set? (y/n)"
+                if ($confirmation -eq 'y' -or $confirmation -eq 'Y') {
+                    Start-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams
+                    Write-Output "Change set execution started."
+                }
+                else {
+                    Write-Output "Change set created but not executed."
+                    Write-Output "To execute later: Start-CFNChangeSet -ChangeSetName '$ChangeName' -StackName '$StackName' -Region '$Region'"
+                    Write-Output "To delete: Remove-CFNChangeSet -ChangeSetName '$ChangeName' -StackName '$StackName' -Region '$Region'"
+                }
+            }
+            else {
+                Write-Error "Change set creation failed: $($ChangeSetResponse.StatusReason)"
+                if ($ChangeSetResponse.Status -eq "FAILED") {
+                    Remove-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams
+                    Write-Output "Failed change set has been cleaned up."
+                }
             }
         }
     }

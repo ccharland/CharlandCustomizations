@@ -1,0 +1,116 @@
+BeforeAll {
+    . "$PSScriptRoot/../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
+}
+
+Describe 'New-AWSParamSplat' {
+
+    Context 'Filtering behavior' {
+
+        It 'Returns only AWS common keys when mixed parameters are passed' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['Region'] = 'us-east-1'
+            $params['ProfileName'] = 'myprofile'
+            $params['StackName'] = 'my-stack'
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result.Keys | Should -Contain 'Region'
+            $result.Keys | Should -Contain 'ProfileName'
+            $result.Keys | Should -Not -Contain 'StackName'
+            $result.Count | Should -Be 2
+        }
+
+        It 'Returns empty hashtable when no AWS params are in BoundParameters' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['StackName'] = 'my-stack'
+            $params['Force'] = $true
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result | Should -BeOfType [hashtable]
+            $result.Count | Should -Be 0
+        }
+
+        It 'Excludes non-AWS parameters' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['StackName'] = 'my-stack'
+            $params['Force'] = $true
+            $params['Verbose'] = $true
+            $params['Region'] = 'eu-west-1'
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result.Keys | Should -Not -Contain 'StackName'
+            $result.Keys | Should -Not -Contain 'Force'
+            $result.Keys | Should -Not -Contain 'Verbose'
+            $result.Keys | Should -Contain 'Region'
+            $result.Count | Should -Be 1
+        }
+    }
+
+    Context 'Supported AWS parameter names' {
+
+        It 'Handles all 8 supported parameter names' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['Region'] = 'us-west-2'
+            $params['ProfileName'] = 'default'
+            $params['AccessKey'] = 'AKIAIOSFODNN7EXAMPLE'
+            $params['SecretKey'] = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+            $params['SessionToken'] = 'FwoGZXIvYXdzEBY'
+            $params['Credential'] = 'cred-object'
+            $params['ProfileLocation'] = '/home/user/.aws/credentials'
+            $params['EndpointUrl'] = 'https://custom.endpoint.com'
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result.Count | Should -Be 8
+            $result['Region'] | Should -Be 'us-west-2'
+            $result['ProfileName'] | Should -Be 'default'
+            $result['AccessKey'] | Should -Be 'AKIAIOSFODNN7EXAMPLE'
+            $result['SecretKey'] | Should -Be 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+            $result['SessionToken'] | Should -Be 'FwoGZXIvYXdzEBY'
+            $result['Credential'] | Should -Be 'cred-object'
+            $result['ProfileLocation'] | Should -Be '/home/user/.aws/credentials'
+            $result['EndpointUrl'] | Should -Be 'https://custom.endpoint.com'
+        }
+    }
+
+    Context 'Null and empty value exclusion (REQ-1)' {
+
+        It 'Excludes keys with null values' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['Region'] = 'us-east-1'
+            $params['ProfileName'] = $null
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result.Keys | Should -Contain 'Region'
+            $result.Keys | Should -Not -Contain 'ProfileName'
+            $result.Count | Should -Be 1
+        }
+
+        It 'Excludes keys with empty string values' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['Region'] = 'us-east-1'
+            $params['AccessKey'] = ''
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result.Keys | Should -Contain 'Region'
+            $result.Keys | Should -Not -Contain 'AccessKey'
+            $result.Count | Should -Be 1
+        }
+
+        It 'Includes keys with non-string objects even if falsy' {
+            $params = [System.Collections.Generic.Dictionary[string, object]]::new()
+            $params['Region'] = 'us-east-1'
+            $params['Credential'] = [PSCustomObject]@{ Token = 'abc' }
+
+            $result = New-AWSParamSplat -BoundParameters $params
+
+            $result.Keys | Should -Contain 'Region'
+            $result.Keys | Should -Contain 'Credential'
+            $result.Count | Should -Be 2
+        }
+    }
+}
