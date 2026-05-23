@@ -1,4 +1,5 @@
 # PowerShell build outputs
+build/
 output/
 *.nupkg
 *.psd1.bak
