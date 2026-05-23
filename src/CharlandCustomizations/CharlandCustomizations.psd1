@@ -7,7 +7,7 @@
     Copyright = '(c) ccharland. All rights reserved.'
     Description = 'Public PowerShell module and scripts for daily customization and automation tasks.'
     PowerShellVersion = '7.2'
-    FunctionsToExport = @()
+    FunctionsToExport = '*'
     CmdletsToExport = @()
     VariablesToExport = @()
     AliasesToExport = @()
