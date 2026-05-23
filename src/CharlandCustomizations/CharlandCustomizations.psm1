@@ -7,6 +7,3 @@ $privateScripts = Get-ChildItem -Path (Join-Path $PSScriptRoot 'Private') -Filte
 foreach ($file in $privateScripts) {
     . $file.FullName
 }
-
-$publicFunctionNames = @($publicScripts | ForEach-Object { $_.BaseName })
-Export-ModuleMember -Function $publicFunctionNames
