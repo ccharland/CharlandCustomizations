@@ -23,7 +23,6 @@
         'Invoke-ScriptMultiAccountRegion'
         'Set-FileSignature'
         'Update-Powershell7'
-        'Clear-AuthenticodeSignature'
         # AWS nested module (AWSCustomizations.psm1)
         'Find-CFNStackErrors'
         'Set-AWSProfileWithMFA'
