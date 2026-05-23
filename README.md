@@ -2,11 +2,9 @@
 
 Public release home for my PowerShell module and related automation.
 
-THis module uses the prefix "CC" for its commands
-## Repository baseline
+This module uses the prefix "CC" for its commands
 
-This repository is prepared to import the existing module code from:
-https://github.com/ccharland/MyPowerShellCustomizations
+## Repository baseline
 
 ```text
 .
@@ -18,19 +16,3 @@ https://github.com/ccharland/MyPowerShellCustomizations
 │       └── Private/
 ├── tests/
 └── README.md
-```
-
-## Import workflow
-
-1. Copy public functions into `src/CharlandCustomizations/Public/`.
-2. Copy internal helper functions into `src/CharlandCustomizations/Private/`.
-3. Update `src/CharlandCustomizations/CharlandCustomizations.psd1`:
-   - `ModuleVersion`
-   - `FunctionsToExport`
-   - `AliasesToExport`
-4. Run your Pester tests from `tests/`.
-5. Import the module from source:
-
-```powershell
-Import-Module ./src/CharlandCustomizations/CharlandCustomizations.psd1 -Force
-```
