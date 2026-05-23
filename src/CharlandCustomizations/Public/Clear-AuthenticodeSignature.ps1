@@ -1,3 +1,4 @@
+function Clear-AuthenticodeSignature {
 <#
 .SYNOPSIS
     Removes the Authenticode signature block from PowerShell script files.
@@ -28,8 +29,6 @@
 
     Dependencies: None (uses built-in cmdlets only)
 #>
-
-function Clear-AuthenticodeSignature {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
