@@ -3,6 +3,8 @@
     S3 helper functions for AWS account maintenance.
 #>
 
+# Load private helper functions needed by this nested module
+. "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
 function Clear-S3Bucket {
     <#
     .SYNOPSIS

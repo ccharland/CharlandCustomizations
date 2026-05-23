@@ -4,6 +4,9 @@
 #>
 Write-Verbose  "Loading AWSCustomizations.psm1"
 
+# Load private helper functions needed by this nested module
+. "$PSScriptRoot/../../Private/New-AWSParamSplat.ps1"
+
 # Module-level cache for SSO tokens to avoid repeated authentication
 $script:SSOTokenCache = @{}
 function  Get-AWSMFASession {
