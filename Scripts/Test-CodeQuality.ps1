@@ -32,7 +32,7 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [string]$Path = 'Modules/CharlandCustomizations',
+    [string]$Path = (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations'),
 
     [Parameter()]
     [ValidateSet('Error', 'Warning', 'Information')]

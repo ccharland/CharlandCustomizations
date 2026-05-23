@@ -63,13 +63,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ModuleName = 'CharlandCustomizations'
-$SourcePath = Join-Path (Split-Path $PSScriptRoot -Parent) "src\$ModuleName"
+$SourcePath = Join-Path (Split-Path $PSScriptRoot -Parent) "src/$ModuleName"
 Write-Verbose "Sourcepath: $SourcePath"
 $ManifestPath = Join-Path $SourcePath "$ModuleName.psd1"
-Write-Verbose "Manifest Path: ${$ManifestPath}"
+Write-Verbose "Manifest Path: $ManifestPath"
 $BuildRoot = Join-Path (Split-Path $PSScriptRoot -Parent) "build"
-Write-Verbose "Buildroot: ${$BuildRoot}"
-$ChangelogPath = Join-Path (Split-Path $PSScriptRoot -Parent) "docs\CHANGELOG.md"
+Write-Verbose "Buildroot: $BuildRoot"
+$ChangelogPath = Join-Path (Split-Path $PSScriptRoot -Parent) "docs/CHANGELOG.md"
 $didBuild = $false
 $performInstall = $Install -or $InstallOnly
 
@@ -491,7 +491,7 @@ if (-not $InstallOnly) {
 }
 
 Write-Output "`nRelease commands (for v$version):"
-Write-Output "  git add Modules/$ModuleName/$ModuleName.psd1 docs/CHANGELOG.md"
+Write-Output "  git add src/$ModuleName/$ModuleName.psd1 docs/CHANGELOG.md"
 Write-Output "  git commit -m \"Release v$version\""
 Write-Output "  git tag v$version"
 if (-not $PrepareRelease) {

@@ -26,7 +26,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Path = (Join-Path $PSScriptRoot '..\Modules\CharlandCustomizations'),
+    [string]$Path = (Join-Path $PSScriptRoot '..\src\CharlandCustomizations'),
     [string]$Repository = 'PSGallery',
     [string]$ApiKey,
     [string]$SecretName = 'PSGalleryApiKey',
