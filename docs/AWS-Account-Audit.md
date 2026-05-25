@@ -29,23 +29,23 @@ The `audit-AWSAccount.psm1` module was created by extracting and consolidating n
 
 - AWS PowerShell module (`AWSPowerShell.NetCore` or `AWSPowerShell`)
 - Valid AWS credentials configured
-- PowerShell 5.1 or later
+- PowerShell 7.2 or later
 
 ## Installation
 
-1. Copy the module files to your PowerShell modules directory:
+1. Install or copy the `CharlandCustomizations` module to one of your PowerShell modules directories:
 
    ```powershell
    # Find your modules path
-   $env:PSModulePath -split ';'
+   $env:PSModulePath -split [IO.Path]::PathSeparator
 
-   # Copy module files to one of the module paths
-   # For example: C:\Users\<username>\Documents\PowerShell\Modules\audit-AWSAccount\
+   # Copy the CharlandCustomizations module folder to one of the module paths
+   # For example: C:\Users\<username>\Documents\PowerShell\Modules\CharlandCustomizations\
    ```
 
-2. Import the module:
+2. Import the main module, which exports these audit functions:
    ```powershell
-   Import-Module audit-AWSAccount
+   Import-Module CharlandCustomizations
    ```
 
 ## Usage Examples
