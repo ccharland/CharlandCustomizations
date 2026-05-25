@@ -68,7 +68,7 @@
 
     PrivateData = @{
         PSData = @{
-            Tags         = @('PowerShell', 'AWS', 'Automation', 'CloudFormation', 'Utilities', 'Prerelease', 'Beta')
+            Tags         = @('PowerShell', 'AWS', 'Automation', 'CloudFormation', 'Utilities', 'Beta')
             ProjectUri   = 'https://github.com/ccharland/CharlandCustomizations'
             LicenseUri   = 'https://github.com/ccharland/CharlandCustomizations/blob/main/LICENSE'
             ReleaseNotes = 'Initial public release - module structure and steering files.'
