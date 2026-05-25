@@ -39,24 +39,24 @@ This module uses a standardized directory structure for CloudFormation stack man
 
 - AWS PowerShell module (`AWSPowerShell.NetCore` or `AWS.Tools`)
 - Valid AWS credentials configured
-- PowerShell 5.1 or later
+- PowerShell 7.2 or later
 - S3 bucket for CloudFormation templates (cf-templates-*<region>)
 
 ## Installation
 
-1. Copy the module files to your PowerShell modules directory:
+Install or make available the main `CharlandCustomizations` module in one of the paths listed in `$env:PSModulePath`.
+
+1. Verify your PowerShell module paths if needed:
    ```powershell
-   # Find your modules path
    $env:PSModulePath -split ';'
-   
-   # Copy module files to one of the module paths
-   # For example: C:\Users\<username>\Documents\PowerShell\Modules\CloudFormation-TemplateProcessing\
    ```
 
-2. Import the module:
+2. Import the main module:
    ```powershell
-   Import-Module CloudFormation-TemplateProcessing
+   Import-Module CharlandCustomizations
    ```
+
+The CloudFormation functions documented here are exported by `CharlandCustomizations` via its module manifest, so no separate `CloudFormation-TemplateProcessing` import is required.
 
 ## Common Parameters
 Region:  AWS Region
