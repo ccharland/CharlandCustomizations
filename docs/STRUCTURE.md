@@ -77,12 +77,12 @@ Kiro IDE configuration including feature specifications and development steering
 
 ## Module Loading
 
-The module loader (`CharlandCustomizations.psm1`) auto-discovers functions:
+The module loader (`CharlandCustomizations.psm1`) initializes script-based functions, while the module manifest controls nested modules and exports:
 
 1. Dot-sources all `.ps1` files in `Private/`
 2. Dot-sources all `.ps1` files in `Public/`
-3. Imports nested modules (`.psm1` files in `Public/` subdirectories)
-4. Exports public functions
+3. Loads nested modules through the manifest's `NestedModules` entry
+4. Limits exported commands through the manifest's `FunctionsToExport` entry
 
 ## Command Prefix
 
