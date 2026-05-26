@@ -1,156 +1,227 @@
-# CharlandCustomizations Test Plan
+# CharlandCustomizations Release Testing Plan
 
 ## 1. Purpose
 
-This plan defines how to test module functions in `CharlandCustomizations` with a risk-based approach that prioritizes destructive AWS operations and security-sensitive workflows.
+This plan defines the release testing required before publishing `CharlandCustomizations`. The goal is to verify that each public function and release-support script is documented, testable, and safe enough for local use, CI, and packaging.
 
-## 2. Scope
+## 2. Release Scope
 
 In scope:
 
 - Exported functions listed in `src/CharlandCustomizations/CharlandCustomizations.psd1`
-- Unit tests (Pester + mocks)
-- Contract tests (parameter behavior, ShouldProcess, splatting support)
-- Integration tests (optional, gated by AWS test account/profile)
-- Regression tests for fixed defects
+- Public `.ps1` scripts under `src/CharlandCustomizations/Public`
+- Release and support scripts under `Scripts`
+- Private helper tests when the helper owns reusable behavior
+- Pester unit tests, PSScriptAnalyzer checks, packaging checks, and opt-in integration tests
 
 Out of scope:
 
-- Real production account execution
-- Performance benchmarking in first phase
+- Production AWS account execution
+- Live destructive AWS testing outside a dedicated sandbox account
+- Performance benchmarking for the first release gate
 
-## 3. Current Baseline
+## 3. Required Per-Function And Per-Script Checks
 
-Existing tests found:
+Each function or script must have the following before release:
 
-- `tests/New-AWSParamSplat.Tests.ps1`
+1. Comment-based help that is discoverable from PowerShell.
+   - Functions: `Get-Help <FunctionName>` and `<FunctionName> -?`
+   - Scripts: `Get-Help ./Scripts/<ScriptName>.ps1` and `./Scripts/<ScriptName>.ps1 -?`
+   - Help must include `.SYNOPSIS`, parameter documentation for non-obvious parameters, and at least one `.EXAMPLE`.
+2. At least one Pester test that validates expected behavior.
+   - Prefer a meaningful behavior test over a smoke-only test.
+   - For AWS-facing commands, mock AWS cmdlets unless the test is explicitly tagged `Integration`.
+   - For destructive commands, include `-WhatIf` or `ShouldProcess` coverage.
+3. Parameter contract coverage for any public parameters added or changed in the release.
+4. Error-path coverage for high-risk workflows such as AWS, signing, filesystem mutation, publishing, and git hook installation.
+5. Code quality pass with `./Scripts/Test-CodeQuality.ps1`.
 
-Baseline quality gate currently available:
+## 4. Release Gates
 
-- `./Scripts/Test-CodeQuality.ps1` (PSScriptAnalyzer)
+The release is ready only when all required gates pass:
 
-## 4. Test Levels
+1. Help gate: every function and script exposes usable comment-based help.
+2. Unit test gate: Pester unit tests pass.
+3. Coverage gate: every exported function and release-support script has at least one mapped Pester test or a documented release exception.
+4. Static analysis gate: PSScriptAnalyzer reports no errors.
+5. Build gate: `./Scripts/Build-Module.ps1 -Clean -Package` completes successfully.
+6. Manifest gate: exported functions in the manifest match the public release surface.
+7. Manual smoke gate: the packaged module imports cleanly and one representative command from each area can be discovered with `Get-Command` and `Get-Help`.
 
-### 4.1 Unit Tests (default for most functions)
+## 5. Test Levels
 
-Use Pester mocks for AWS cmdlets:
+### 5.1 Unit Tests
 
-- `Get-STSCallerIdentity`
-- `Get-S3Bucket`, `Write-S3Object`, `Remove-S3Object`, `Get-S3PreSignedURL`
-- CloudFormation cmdlets (`Get-CFNStack`, `New-CFNStack`, `New-CFNChangeSet`, etc.)
+Unit tests are the default release requirement. Use Pester mocks for AWS, git, signing, and filesystem side effects where possible.
 
 Validate:
 
-- Parameter handling (including Region/ProfileName)
-- ShouldProcess behavior for destructive functions
-- Error handling and messages
-- Return/output shape
+- Parameter binding and defaults
+- Pipeline input where supported
+- AWS common parameter splatting through `New-AWSParamSplat`
+- `ShouldProcess` behavior for state-changing commands
+- Output object shape
+- Error handling and useful failure messages
 
-### 4.2 Integration Tests (opt-in)
+### 5.2 Integration Tests
 
-Run only when environment variables/profile are present.
+Integration tests are optional and opt-in. They must be tagged `Integration` and must not run by default in local or CI unit test commands.
 
-- Tag as `Integration`
-- Execute in a dedicated sandbox account/region
-- Never run by default locally or in CI
+Integration tests may use:
 
-### 4.3 Regression Tests
+- A dedicated AWS sandbox account/profile
+- A temporary local package repository
+- Temporary git repositories under the test output directory
 
-Every bug fix must include at least one test reproducing the original failure.
+Integration tests must not use:
 
-## 5. Risk-Based Priority Matrix
+- Production AWS accounts
+- Personal default profiles unless explicitly configured
+- Destructive operations without a unique test prefix and cleanup path
 
-### Priority 1 (Critical/High impact)
+### 5.3 Regression Tests
 
-Functions:
+Every bug fix must include at least one test that fails against the old behavior and passes after the fix.
+
+## 6. Risk-Based Priorities
+
+### Priority 1: Release Blockers
+
+These commands can delete resources, modify credentials, publish artifacts, write signatures, or run across accounts. They require stronger testing before release.
 
 - `Clear-S3Bucket`
 - `New-CFNStackFromDirectory`
 - `Update-CFNStackFromDirectory`
 - `Set-AWSProfileWithMFA`
+- `Update-SSOCredentialList`
+- `Remove-ExpiredAWSProfiles`
+- `Use-AssumedRole`
 - `Invoke-ScriptMultiAccountRegion`
+- `Set-FileSignature`
+- `Clear-AuthenticodeSignature`
+- `Install-GitHooks`
+- `Scripts/Build-Module.ps1`
+- `Scripts/Publish-CharlandCustomizations.ps1`
+- `Scripts/Register-LocalRepository.ps1`
 
-Minimum tests per function:
+Minimum tests:
 
+- Help exists and can be retrieved
+- At least one behavior-focused Pester test
 - Parameter validation and defaults
-- Region/ProfileName splatting path
-- ShouldProcess / -WhatIf behavior (where applicable)
-- Failure path does not terminate session unexpectedly
+- Failure path with downstream command throwing
+- `ShouldProcess` / `-WhatIf` behavior where state changes occur
+- No accidental live AWS calls in unit tests
 
-### Priority 2 (Core AWS workflows)
-
-Functions:
+### Priority 2: Core Workflows
 
 - `Find-CFNStackErrors`
+- `Get-AWSMFASession`
+- `Set-AWSEnv`
+- `Get-AccountListFromProfiles`
 - `Start-MultiStackDriftDetection`
 - `Get-AWSAccountListOfDriftedResources`
 - `Get-AWSObjectCount`
-- `Out-CFNStackInfo`
 - `Test-CFNStackFromDirectory`
+- `Out-CFNStackInfo`
 - `New-CFNStackDirectory`
+- `Edit-CFTTEbsVolumes`
+- `Test-CommitSignatures`
+- `Scripts/Test-CodeQuality.ps1`
 
-Minimum tests per function:
+Minimum tests:
 
-- Happy path with mocks
-- Missing file/resource path
-- Output object/message assertions
+- Help exists and can be retrieved
+- At least one behavior-focused Pester test
+- Happy path with mocks or temporary test data
+- Empty/null input handling
+- Output object or message assertions
 
-### Priority 3 (Audit and utility reporting)
-
-Functions:
+### Priority 3: Audit And Reporting
 
 - `Get-EC2SGInUse`
+- `Get-EC2Count`
+- `Find-EC2DBSG`
+- `Out-AWSSupportingInfo`
+- `Out-AWSNetworkingComponent`
 - `Get-IAMAuditList`
 - `Get-GlobalAuditReportItem`
 - `Get-EC2KeyTagNameStatus`
 - `Get-EC2SnapshotReport`
 - `Get-EC2VolumeReport`
-- `Out-AWSSupportingInfo`
-- `Out-AWSNetworkingComponent`
+- `Start-EC2RetryLoop`
+- `Find-OpenSecurityGroup`
+- `Install-ProfilesFromSource`
+- `Update-Powershell7`
 
-Minimum tests per function:
+Minimum tests:
 
-- Basic execution with mocks
+- Help exists and can be retrieved
+- At least one behavior-focused Pester test
+- Basic execution with mocks or local test data
 - Null/empty collection handling
 - Expected fields in output
 
-## 6. Required Test Categories Per Function
+## 7. Release Inventory Checklist
 
-For each exported function, include tests for:
+Track each item through the release. Use `Not Started`, `Help Ready`, `Test Ready`, `Passing`, or `Exception Approved`.
 
-1. `ParameterSet` and default behavior
-2. `Region/ProfileName` splatting support
-3. `ErrorPath` (AWS cmdlet throws)
-4. `PipelineInput` (if supported)
-5. `ShouldProcess` compliance (if destructive)
+| Item | Type | Priority | Help | Pester Test | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `Install-ProfilesFromSource` | Function | P3 | Pending | Pending | Local profile copy behavior |
+| `Invoke-ScriptMultiAccountRegion` | Function | P1 | Pending | Pending | Multi-account execution contract |
+| `Set-FileSignature` | Function | P1 | Pending | Pending | Signing side effects |
+| `Update-Powershell7` | Function | P3 | Pending | Pending | External install/update behavior |
+| `Clear-AuthenticodeSignature` | Function | P1 | Pending | Pending | File mutation |
+| `Find-CFNStackErrors` | Function | P2 | Pending | Pending | AWS mocks |
+| `Set-AWSProfileWithMFA` | Function | P1 | Pending | Pending | Credential mutation |
+| `Get-AWSMFASession` | Function | P2 | Pending | Pending | STS mocks |
+| `Start-MultiStackDriftDetection` | Function | P2 | Pending | Pending | CloudFormation mocks |
+| `Get-AWSAccountListOfDriftedResources` | Function | P2 | Pending | Pending | CloudFormation mocks |
+| `Get-AWSObjectCount` | Function | P2 | Pending | Pending | AWS inventory mocks |
+| `Set-AWSEnv` | Function | P2 | Pending | Pending | Environment mutation |
+| `Update-SSOCredentialList` | Function | P1 | Pending | Pending | SSO credential file behavior |
+| `Remove-ExpiredAWSProfiles` | Function | P1 | Pending | Pending | Credential file mutation |
+| `Get-AccountListFromProfiles` | Function | P2 | Pending | Pending | Local credential parsing |
+| `Use-AssumedRole` | Function | P1 | Pending | Pending | Credential/environment mutation |
+| `New-CFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation create flow |
+| `Test-CFNStackFromDirectory` | Function | P2 | Pending | Pending | Template validation flow |
+| `Out-CFNStackInfo` | Function | P2 | Pending | Pending | Output file/report behavior |
+| `Update-CFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation update flow |
+| `New-CFNStackDirectory` | Function | P2 | Pending | Pending | File creation |
+| `Edit-CFTTEbsVolumes` | Function | P2 | Pending | Pending | Template transformation |
+| `Clear-S3Bucket` | Function | P1 | Pending | Pending | Destructive S3 behavior |
+| `Get-EC2SGInUse` | Function | P3 | Pending | Pending | EC2/security group mocks |
+| `Get-EC2Count` | Function | P3 | Pending | Pending | EC2 mocks |
+| `Find-EC2DBSG` | Function | P3 | Pending | Pending | Security group analysis |
+| `Out-AWSSupportingInfo` | Function | P3 | Pending | Pending | Report output |
+| `Out-AWSNetworkingComponent` | Function | P3 | Pending | Pending | Report output |
+| `Get-IAMAuditList` | Function | P3 | Pending | Pending | IAM mocks |
+| `Get-GlobalAuditReportItem` | Function | P3 | Pending | Pending | Report item shape |
+| `Get-EC2KeyTagNameStatus` | Function | P3 | Pending | Pending | Tag analysis |
+| `Get-EC2SnapshotReport` | Function | P3 | Pending | Pending | Snapshot mocks |
+| `Get-EC2VolumeReport` | Function | P3 | Pending | Pending | Volume mocks |
+| `Start-EC2RetryLoop` | Function | P3 | Pending | Pending | Retry behavior |
+| `Find-OpenSecurityGroup` | Function | P3 | Pending | Pending | Security group rules |
+| `Test-CommitSignatures` | Function | P2 | Pending | Pending | Temporary git repo |
+| `Install-GitHooks` | Function | P1 | Pending | Pending | File mutation |
+| `New-AWSParamSplat` | Private Helper | P2 | Ready | Ready | Existing tests in `tests/New-AWSParamSplat.Tests.ps1` |
+| `Scripts/Build-Module.ps1` | Script | P1 | Pending | Pending | Build/package gate |
+| `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Pending | Pending | Publish flow with mocks |
+| `Scripts/Register-LocalRepository.ps1` | Script | P1 | Pending | Pending | Repository registration |
+| `Scripts/Test-CodeQuality.ps1` | Script | P2 | Pending | Pending | Analyzer invocation |
 
-## 7. Test Design Patterns
+## 8. Recommended Test Organization
 
-### 7.1 Splatting Contract Test Pattern
+Recommended folders:
 
-- Mock AWS cmdlet
-- Call function with `-Region` and `-ProfileName`
-- Assert mock was invoked with both parameters
-
-### 7.2 ShouldProcess Pattern
-
-- Call with `-WhatIf`
-- Assert destructive cmdlets were not called
-- Call without `-WhatIf` and assert they were called
-
-### 7.3 Error Contract Pattern
-
-- Mock downstream cmdlet to throw
-- Assert function throws or logs expected error
-- Assert no `exit`/session termination behavior
-
-## 8. File/Tag Organization
-
-Recommended structure:
-
+- `tests/Unit/Core/*.Tests.ps1`
 - `tests/Unit/AWS/*.Tests.ps1`
+- `tests/Unit/AWS/S3/*.Tests.ps1`
+- `tests/Unit/AWS/Audit/*.Tests.ps1`
 - `tests/Unit/CloudFormation/*.Tests.ps1`
 - `tests/Unit/Git/*.Tests.ps1`
+- `tests/Unit/Scripts/*.Tests.ps1`
 - `tests/Integration/**/*.Tests.ps1`
 
 Recommended tags:
@@ -160,8 +231,59 @@ Recommended tags:
 - `Slow`
 - `Destructive`
 - `Regression`
+- `Help`
 
-## 9. Execution Commands
+## 9. Test Design Patterns
+
+### 9.1 Help Coverage Pattern
+
+```powershell
+It 'has discoverable comment-based help' -Tag 'Help' {
+    $help = Get-Help Clear-S3Bucket -Full
+
+    $help.Synopsis | Should -Not -BeNullOrEmpty
+    $help.Examples.Example.Count | Should -BeGreaterThan 0
+}
+```
+
+### 9.2 Splatting Contract Pattern
+
+```powershell
+It 'passes AWS common parameters to downstream cmdlets' -Tag 'Unit' {
+    Mock Get-CFNStack { @() }
+
+    Find-CFNStackErrors -StackName 'app' -Region 'us-east-1' -ProfileName 'test'
+
+    Should -Invoke Get-CFNStack -ParameterFilter {
+        $Region -eq 'us-east-1' -and $ProfileName -eq 'test'
+    }
+}
+```
+
+### 9.3 ShouldProcess Pattern
+
+```powershell
+It 'does not call destructive commands during WhatIf' -Tag 'Unit' {
+    Mock Remove-S3Object {}
+
+    Clear-S3Bucket -BucketName 'release-test' -WhatIf
+
+    Should -Not -Invoke Remove-S3Object
+}
+```
+
+### 9.4 Error Contract Pattern
+
+```powershell
+It 'throws a useful error when the downstream operation fails' -Tag 'Unit' {
+    Mock Get-S3Object { throw 'AWS failure' }
+
+    { Clear-S3Bucket -BucketName 'release-test' -ErrorAction Stop } |
+        Should -Throw '*AWS failure*'
+}
+```
+
+## 10. Execution Commands
 
 Run all unit tests:
 
@@ -169,10 +291,10 @@ Run all unit tests:
 Invoke-Pester -Path ./tests -Tag Unit
 ```
 
-Run cloudformation-focused tests:
+Run help checks:
 
 ```powershell
-Invoke-Pester -Path ./tests/Unit/CloudFormation
+Invoke-Pester -Path ./tests -Tag Help
 ```
 
 Run integration tests only:
@@ -187,53 +309,43 @@ Run code quality checks:
 ./Scripts/Test-CodeQuality.ps1
 ```
 
-## 10. CI Quality Gates
+Run release build/package check:
 
-Minimum gate for merge:
+```powershell
+./Scripts/Build-Module.ps1 -Clean -Package
+```
 
-1. Pester Unit tests pass
-2. No PSScriptAnalyzer errors
-3. New/modified function includes at least one test
-4. Any bug fix includes a regression test
+## 11. Release Test Sequence
 
-## 11. 30-60-90 Day Rollout
+1. Refresh the release inventory from `CharlandCustomizations.psd1`.
+2. Verify comment-based help for every function and script.
+3. Add or update Pester tests for every changed command.
+4. Run unit tests and fix failures.
+5. Run PSScriptAnalyzer and fix errors.
+6. Build and package the module.
+7. Import the packaged module in a clean PowerShell session.
+8. Run manual smoke checks for command discovery and help.
+9. Run opt-in integration tests only when sandbox credentials are configured.
+10. Record release exceptions, if any, before publishing.
 
-### First 30 days
+## 12. Definition Of Done
 
-- Complete Priority 1 unit tests
-- Standardize test tags and folder layout
-- Add splatting contract tests to all CloudFormation and S3 destructive flows
+A function or script is release-ready when:
 
-### Days 31-60
+1. It has discoverable help through `Get-Help` and `-?`.
+2. It has at least one Pester test mapped in the inventory.
+3. High-risk behavior has mock-based unit coverage.
+4. Destructive behavior supports and tests `ShouldProcess` where applicable.
+5. Tests pass in a clean environment.
+6. Any skipped or deferred coverage has an explicit release exception.
 
-- Complete Priority 2 unit tests
-- Add integration smoke tests for sandbox AWS account
+## 13. Immediate Next Targets
 
-### Days 61-90
+Start with the release blockers:
 
-- Complete Priority 3 tests
-- Add regression suite for all fixed critical/high issues
-- Tune CI gates and flaky test handling
-
-## 12. Definition of Done
-
-A function is considered fully covered when:
-
-1. Unit tests exist for happy path and failure path
-2. Region/ProfileName behavior is verified
-3. ShouldProcess behavior is verified (if destructive)
-4. Tests pass in clean environment
-5. Test is mapped to a priority bucket in this plan
-
-## 13. Immediate Next Implementation Targets
-
-Start with these files:
-
-1. `tests/New-AWSParamSplat.Tests.ps1` (already exists)
-
-Add new files:
-
-1. `tests/Unit/AWS/S3/Clear-S3Bucket.Tests.ps1`
-2. `tests/Unit/AWS/AWSCustomizations.Tests.ps1`
-3. `tests/Unit/AWS/Audit/Audit-AWSAccount.Tests.ps1`
-4. `tests/Unit/CloudFormation/CloudFormation-TemplateProcessing.Tests.ps1`
+1. Add help tests for all exported functions and `Scripts/*.ps1`.
+2. Add unit tests for `Clear-S3Bucket`.
+3. Add unit tests for `Set-FileSignature` and `Clear-AuthenticodeSignature`.
+4. Add unit tests for `Invoke-ScriptMultiAccountRegion`.
+5. Add unit tests for `New-CFNStackFromDirectory` and `Update-CFNStackFromDirectory`.
+6. Add script-level tests for `Scripts/Build-Module.ps1` and `Scripts/Publish-CharlandCustomizations.ps1`.
