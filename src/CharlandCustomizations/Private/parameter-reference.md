@@ -1,4 +1,4 @@
-Common Credential and Region Parameters
+# Common Credential and Region Parameters for all AWS cmdlets
 
 -AccessKey <String>
 The AWS access key for the user account. This can be a temporary access key if the corresponding session token is supplied to the -SessionToken parameter.

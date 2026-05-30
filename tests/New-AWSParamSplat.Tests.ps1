@@ -117,16 +117,14 @@ Describe 'New-AWSParamSplat' {
         }
     }
 
-    Context 'Direct parameter usage' {
+    Context 'Direct parameter usage (outputs PSCustomObject)' {
 
-        It 'Builds splat from directly passed parameters' {
+        It 'Builds PSCustomObject from directly passed parameters' {
             $result = New-AWSParamSplat -Region 'us-east-1' -ProfileName 'myprofile'
 
-            $result.Keys | Should -Contain 'Region'
-            $result.Keys | Should -Contain 'ProfileName'
-            $result['Region'] | Should -Be 'us-east-1'
-            $result['ProfileName'] | Should -Be 'myprofile'
-            $result.Count | Should -Be 2
+            $result | Should -BeOfType [PSCustomObject]
+            $result.Region | Should -Be 'us-east-1'
+            $result.ProfileName | Should -Be 'myprofile'
         }
 
         It 'Handles all 9 parameters directly' {
@@ -142,27 +140,26 @@ Describe 'New-AWSParamSplat' {
                 -ProfileLocation '/home/user/.aws/credentials' `
                 -EndpointUrl 'https://custom.endpoint.com'
 
-            $result.Count | Should -Be 9
-            $result['Region'] | Should -Be 'us-west-2'
-            $result['ProfileName'] | Should -Be 'default'
-            $result['AccessKey'] | Should -Be 'AKIAIOSFODNN7EXAMPLE'
-            $result['SecretKey'] | Should -Be 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-            $result['SessionToken'] | Should -Be 'FwoGZXIvYXdzEBY'
-            $result['Credential'] | Should -Be 'cred-object'
-            $result['NetworkCredential'] | Should -BeOfType [PSCredential]
-            $result['ProfileLocation'] | Should -Be '/home/user/.aws/credentials'
-            $result['EndpointUrl'] | Should -Be 'https://custom.endpoint.com'
+            $result | Should -BeOfType [PSCustomObject]
+            $result.Region | Should -Be 'us-west-2'
+            $result.ProfileName | Should -Be 'default'
+            $result.AccessKey | Should -Be 'AKIAIOSFODNN7EXAMPLE'
+            $result.SecretKey | Should -Be 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+            $result.SessionToken | Should -Be 'FwoGZXIvYXdzEBY'
+            $result.Credential | Should -Be 'cred-object'
+            $result.NetworkCredential | Should -BeOfType [PSCredential]
+            $result.ProfileLocation | Should -Be '/home/user/.aws/credentials'
+            $result.EndpointUrl | Should -Be 'https://custom.endpoint.com'
         }
 
-        It 'Returns empty hashtable when no parameters are passed directly' {
+        It 'Returns empty PSCustomObject when no parameters are passed directly' {
             $result = New-AWSParamSplat
 
-            $result | Should -BeOfType [hashtable]
-            $result.Count | Should -Be 0
+            $result | Should -BeOfType [PSCustomObject]
         }
     }
 
-    Context 'Pipeline input' {
+    Context 'Pipeline input (outputs PSCustomObject)' {
 
         It 'Accepts pipeline input by property name' {
             $pipelineObj = [PSCustomObject]@{
@@ -173,12 +170,10 @@ Describe 'New-AWSParamSplat' {
 
             $result = $pipelineObj | New-AWSParamSplat
 
-            $result.Keys | Should -Contain 'Region'
-            $result.Keys | Should -Contain 'ProfileName'
-            $result.Keys | Should -Contain 'AccessKey'
-            $result['Region'] | Should -Be 'eu-west-1'
-            $result['ProfileName'] | Should -Be 'prod'
-            $result.Count | Should -Be 3
+            $result | Should -BeOfType [PSCustomObject]
+            $result.Region | Should -Be 'eu-west-1'
+            $result.ProfileName | Should -Be 'prod'
+            $result.AccessKey | Should -Be 'AKIAIOSFODNN7EXAMPLE'
         }
 
         It 'Accepts pipeline input with aliases' {
@@ -192,12 +187,11 @@ Describe 'New-AWSParamSplat' {
 
             $result = $pipelineObj | New-AWSParamSplat
 
-            $result['Region'] | Should -Be 'ap-southeast-1'
-            $result['ProfileName'] | Should -Be 'dev'
-            $result['AccessKey'] | Should -Be 'AKIAIOSFODNN7EXAMPLE'
-            $result['SecretKey'] | Should -Be 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-            $result['SessionToken'] | Should -Be 'token123'
-            $result.Count | Should -Be 5
+            $result.Region | Should -Be 'ap-southeast-1'
+            $result.ProfileName | Should -Be 'dev'
+            $result.AccessKey | Should -Be 'AKIAIOSFODNN7EXAMPLE'
+            $result.SecretKey | Should -Be 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+            $result.SessionToken | Should -Be 'token123'
         }
 
         It 'Accepts NetworkCredential via pipeline' {
@@ -210,11 +204,35 @@ Describe 'New-AWSParamSplat' {
 
             $result = $pipelineObj | New-AWSParamSplat
 
-            $result.Keys | Should -Contain 'Region'
-            $result.Keys | Should -Contain 'ProfileName'
-            $result.Keys | Should -Contain 'NetworkCredential'
-            $result['NetworkCredential'] | Should -BeOfType [PSCredential]
-            $result.Count | Should -Be 3
+            $result.Region | Should -Be 'us-east-1'
+            $result.ProfileName | Should -Be 'saml-profile'
+            $result.NetworkCredential | Should -BeOfType [PSCredential]
+        }
+
+        It 'Handles multiple items through the pipeline' {
+            $items = @(
+                [PSCustomObject]@{ Region = 'us-east-1'; ProfileName = 'dev' }
+                [PSCustomObject]@{ Region = 'eu-west-1'; ProfileName = 'prod' }
+                [PSCustomObject]@{ Region = 'ap-southeast-1'; ProfileName = 'staging' }
+            )
+
+            $results = @($items | New-AWSParamSplat)
+
+            $results.Count | Should -Be 3
+            $results[0].Region | Should -Be 'us-east-1'
+            $results[0].ProfileName | Should -Be 'dev'
+            $results[1].Region | Should -Be 'eu-west-1'
+            $results[1].ProfileName | Should -Be 'prod'
+            $results[2].Region | Should -Be 'ap-southeast-1'
+            $results[2].ProfileName | Should -Be 'staging'
+        }
+
+        It 'Output can be piped to downstream cmdlets by property name' {
+            # Verify the output has named properties (not hashtable keys)
+            $result = New-AWSParamSplat -Region 'us-east-1' -ProfileName 'test'
+
+            $result.PSObject.Properties.Name | Should -Contain 'Region'
+            $result.PSObject.Properties.Name | Should -Contain 'ProfileName'
         }
     }
 
@@ -223,25 +241,22 @@ Describe 'New-AWSParamSplat' {
         It 'Region accepts object type (string or AWSRegion instance)' {
             $result = New-AWSParamSplat -Region ([PSCustomObject]@{ SystemName = 'us-east-1' })
 
-            $result.Keys | Should -Contain 'Region'
-            $result['Region'].SystemName | Should -Be 'us-east-1'
+            $result.Region.SystemName | Should -Be 'us-east-1'
         }
 
         It 'Credential accepts object type (AWSCredentials)' {
             $credObj = [PSCustomObject]@{ AccessKey = 'AKIA'; SecretKey = 'secret' }
             $result = New-AWSParamSplat -Credential $credObj
 
-            $result.Keys | Should -Contain 'Credential'
-            $result['Credential'].AccessKey | Should -Be 'AKIA'
+            $result.Credential.AccessKey | Should -Be 'AKIA'
         }
 
         It 'NetworkCredential accepts PSCredential type' {
             $cred = [PSCredential]::new('domain\user', (ConvertTo-SecureString 'pass' -AsPlainText -Force))
             $result = New-AWSParamSplat -NetworkCredential $cred
 
-            $result.Keys | Should -Contain 'NetworkCredential'
-            $result['NetworkCredential'] | Should -BeOfType [PSCredential]
-            $result['NetworkCredential'].UserName | Should -Be 'domain\user'
+            $result.NetworkCredential | Should -BeOfType [PSCredential]
+            $result.NetworkCredential.UserName | Should -Be 'domain\user'
         }
     }
 }
