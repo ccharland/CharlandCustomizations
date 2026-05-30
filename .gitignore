@@ -4,6 +4,9 @@ output/
 *.nupkg
 *.psd1.bak
 
+# Test coverage reports
+tests/coverage/
+
 # Editor / OS
 .DS_Store
 Thumbs.db

@@ -9,6 +9,16 @@ function Install-GitHooks {
 
     .PARAMETER Force
         Overwrites an existing pre-commit hook without prompting.
+
+    .EXAMPLE
+        PS C:\> Install-GitHooks
+
+        Installs the pre-commit hook from .githooks/pre-commit to .git/hooks/pre-commit.
+
+    .EXAMPLE
+        PS C:\> Install-GitHooks -Force
+
+        Overwrites an existing pre-commit hook without prompting.
     #>
     [CmdletBinding()]
     param(
