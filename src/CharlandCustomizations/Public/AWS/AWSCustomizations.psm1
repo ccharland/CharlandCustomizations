@@ -13,10 +13,13 @@ function  Get-AWSMFASession {
   <#
   .SYNOPSIS
     Changes your active AWS connection to a temporary session using MFA Authentiation.
+  .DESCRIPTION
+    Retrieves temporary STS session credentials by authenticating with a one-time MFA token code.
+    Returns credentials that can be passed to Set-AWSCredential.
   .EXAMPLE
     PS C:\> Set-AWSCredential -Credential (Get-AWSMFASession -TokenCode <OTP>)
 
-    Changes your active AWS sessio
+    Changes your active AWS session to one authenticated with MFA.
   #>
   param(
     [Parameter(mandatory = $true)]
@@ -379,6 +382,15 @@ function Get-AccountListFromProfiles {
   <#
   .SYNOPSIS
     Lists  AWS ProfileName, Account, and AccountAlias
+  .DESCRIPTION
+    Enumerates all locally stored AWS credential profiles and retrieves the associated
+    account ID and account alias for each by calling Get-STSCallerIdentity and Get-IAMAccountAlias.
+  .EXAMPLE
+    PS C:\> Get-AccountListFromProfiles
+
+    ProfileName  Account       AccountAlias
+    -----------  -------       ------------
+    default      123456789012  my-account
   #>
   Get-AWSCredential -ListProfileDetail  | ForEach-Object { Select-Object -InputObject $_   Profilename, @{Name = "Account"; Expression = { (Get-STSCallerIdentity -ProfileName  $_.ProfileName).Account } }, @{Name = "AccountAlias"; Expression = { Get-IAMAccountAlias -ProfileName  $_.ProfileName } } }
 }
@@ -806,6 +818,10 @@ us-east-2          0        1        1           2           0   True
 	and save the credentials in $home/.aws/credentials
 .PARAMETER Role
 	The name of the role you want to assume,
+.EXAMPLE
+	PS C:\> Use-AssumedRole -Role MyAdminRole
+
+	Assumes the specified role and stores the temporary credentials in ~/.aws/credentials.
 #>
 function Use-AssumedRole($Role) {
   $RoleSessionName = (Get-STSCallerIdentity).UserId.Split(':')[-1]

@@ -22,6 +22,11 @@ Set-Variable -Name S3_BUCKET_PATTERN -Value 'cf-templates-*' -Option ReadOnly -S
 .SYNOPSIS
 Creates CloudFormation stacks from directory structure.
 
+.DESCRIPTION
+Deploys one or more CloudFormation stacks using a directory-based convention where each
+subdirectory contains a template.template, parameters.json, tags.json, and capabilities.json.
+Templates are uploaded to S3 and validated before stack creation.
+
 .PARAMETER Path
 Directory containing stack subdirectories. Defaults to current location.
 
@@ -223,6 +228,10 @@ function New-CFNStackFromDirectory {
 .SYNOPSIS
 Validates CloudFormation templates from directory structure.
 
+.DESCRIPTION
+Reads the template body from the stack directory and passes it to Test-CFNTemplate
+for validation without creating or modifying any stacks.
+
 .PARAMETER StackName
 Stack names to validate.
 
@@ -335,6 +344,11 @@ function Test-CFNStackFromDirectory {
 <#
 .SYNOPSIS
 Exports CloudFormation stack information to directory structure.
+
+.DESCRIPTION
+Retrieves a CloudFormation stack's template, parameters, tags, capabilities, outputs,
+and metadata, then writes them to a directory structure organized as
+{AccountID}/{Region}/{StackName}.
 
 .PARAMETER StackName
 Stack names to export.
