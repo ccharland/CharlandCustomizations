@@ -10,3 +10,5 @@ tests/coverage/
 # Editor / OS
 .DS_Store
 Thumbs.db
+
+temp/
