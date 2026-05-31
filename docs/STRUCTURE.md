@@ -23,6 +23,11 @@ CharlandCustomizations/
 │           ├── Invoke-CCScriptMultiAccountRegion.ps1
 │           ├── Set-CCFileSignature.ps1
 │           ├── Update-CCPowershell7.ps1
+│           ├── Clear-CCAuthenticodeSignature.ps1
+│           ├── Install-CCProfilesFromSource.ps1
+│           ├── Invoke-CCScriptMultiAccountRegion.ps1
+│           ├── Set-CCFileSignature.ps1
+│           ├── Update-CCPowershell7.ps1
 │           ├── AWS/
 │           │   ├── AWSCustomizations.psm1
 │           │   ├── Audit/Audit-AWSAccount.psm1
@@ -30,8 +35,8 @@ CharlandCustomizations/
 │           │   └── S3/S3Customizations.psm1
 │           └── Git/
 │               ├── GitCustomizations.psm1
-│               ├── Install-CCGitHook.ps1
-│               └── Test-CCCommitSignature.ps1
+│               ├── Install-CCGitHooks.ps1
+│               └── Test-CCCommitSignatures.ps1
 ├── tests/                         # Pester tests
 ├── build/                         # Build output (gitignored)
 ├── docs/                          # Documentation

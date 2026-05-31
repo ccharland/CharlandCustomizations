@@ -15,6 +15,10 @@ The CloudFormation command set was created by extracting and consolidating Cloud
 - **`Update-CCCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
 - **`Test-CCCFNStackFromDirectory`** - Validates CloudFormation templates from directories
 - **`Out-CCCFNStackInfo`** - Exports stack information for backup and redeployment
+- **`New-CCCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
+- **`Update-CCCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
+- **`Test-CCCFNStackFromDirectory`** - Validates CloudFormation templates from directories
+- **`Out-CCCFNStackInfo`** - Exports stack information for backup and redeployment
 
 ### Template and Directory Utilities
 - **`New-CCCFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
@@ -181,7 +185,7 @@ This module consolidates the following CloudFormation-related scripts:
 - `Update-CCCFNStackFromDirectory.ps1`
 - `Out-CCCFNStackInfo.ps1`
 - `New-CCCFNStackDirectory.ps1`
-- `Edit-CCCFTTEbsVolume.ps1`
+- `Edit-CCCFTTEbsVolumes.ps1`
 
 ## Error Handling and Best Practices
 

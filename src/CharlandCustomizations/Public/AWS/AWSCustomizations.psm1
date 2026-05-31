@@ -10,6 +10,7 @@ Write-Verbose  "Loading AWSCustomizations.psm1"
 # Module-level cache for SSO tokens to avoid repeated authentication
 $script:SSOTokenCache = @{}
 function  Get-CCAWSMFASession {
+function  Get-CCAWSMFASession {
   <#
   .SYNOPSIS
     Changes your active AWS connection to a temporary session using MFA Authentiation.

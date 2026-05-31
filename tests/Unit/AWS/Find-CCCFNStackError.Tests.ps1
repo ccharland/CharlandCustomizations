@@ -8,11 +8,15 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
+<<<<<<<< HEAD:tests/Unit/AWS/Find-CFNStackError.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
 Describe 'Find-CCCFNStackError' -Tag 'Unit' {
 ========
 Describe 'Find-CFNStackError' -Tag 'Unit' {
 >>>>>>>> 1c34aea (Rename FInd-cfnstackerrors to find-cfnstackerror):tests/Unit/AWS/Find-CFNStackError.Tests.ps1
+========
+Describe 'Find-CCCFNStackError' -Tag 'Unit' {
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
 
     BeforeAll {
         $moduleName = 'AWSCustomizations'
@@ -81,11 +85,15 @@ Describe 'Find-CFNStackError' -Tag 'Unit' {
 
         It 'Includes stacks with non-null StackStatusReason in output' {
             # Act — capture all output including formatted objects
+<<<<<<<< HEAD:tests/Unit/AWS/Find-CFNStackError.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
             $output = Find-CCCFNStackError *>&1 | Out-String
 ========
             $output = Find-CFNStackError *>&1 | Out-String
 >>>>>>>> 1c34aea (Rename FInd-cfnstackerrors to find-cfnstackerror):tests/Unit/AWS/Find-CFNStackError.Tests.ps1
+========
+            $output = Find-CCCFNStackError *>&1 | Out-String
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
 
             # Assert — stacks with errors appear in output
             $output | Should -Match 'FailingStack1'
@@ -94,11 +102,15 @@ Describe 'Find-CFNStackError' -Tag 'Unit' {
 
         It 'Excludes stacks with null StackStatusReason from error output' {
             # Act
+<<<<<<<< HEAD:tests/Unit/AWS/Find-CFNStackError.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
             $output = Find-CCCFNStackError *>&1 | Out-String
 ========
             $output = Find-CFNStackError *>&1 | Out-String
 >>>>>>>> 1c34aea (Rename FInd-cfnstackerrors to find-cfnstackerror):tests/Unit/AWS/Find-CFNStackError.Tests.ps1
+========
+            $output = Find-CCCFNStackError *>&1 | Out-String
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
 
             # Assert — healthy stacks do not appear anywhere in the output
             $output | Should -Not -Match 'HealthyStack1'
@@ -107,11 +119,15 @@ Describe 'Find-CFNStackError' -Tag 'Unit' {
 
         It 'Calls Get-CFNStackResourceSummary only for stacks with errors' {
             # Act
+<<<<<<<< HEAD:tests/Unit/AWS/Find-CFNStackError.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
             Find-CCCFNStackError *>&1 | Out-Null
 ========
             Find-CFNStackError *>&1 | Out-Null
 >>>>>>>> 1c34aea (Rename FInd-cfnstackerrors to find-cfnstackerror):tests/Unit/AWS/Find-CFNStackError.Tests.ps1
+========
+            Find-CCCFNStackError *>&1 | Out-Null
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
 
             # Assert — Get-CFNStackResourceSummary called for each error stack
             Should -Invoke Get-CFNStackResourceSummary -ModuleName $moduleName -Times 2 -Exactly
@@ -159,11 +175,15 @@ Describe 'Find-CFNStackError' -Tag 'Unit' {
                 Mock Get-CFNStackResourceSummary { @() } -ModuleName $moduleName
 
                 # Act — capture all output
+<<<<<<<< HEAD:tests/Unit/AWS/Find-CFNStackError.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
                 $output = Find-CCCFNStackError *>&1 | Out-String
 ========
                 $output = Find-CFNStackError *>&1 | Out-String
 >>>>>>>> 1c34aea (Rename FInd-cfnstackerrors to find-cfnstackerror):tests/Unit/AWS/Find-CFNStackError.Tests.ps1
+========
+                $output = Find-CCCFNStackError *>&1 | Out-String
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Find-CCCFNStackError.Tests.ps1
 
                 # Assert — each stack with non-null reason appears in output
                 foreach ($name in $expectedErrorStacks) {
