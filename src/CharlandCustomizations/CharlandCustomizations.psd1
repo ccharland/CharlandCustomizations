@@ -75,7 +75,7 @@ NestedModules = @('Public/AWS/AWSCustomizations.psm1',
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Install-ProfilesFromSource', 'Invoke-ScriptMultiAccountRegion', 
                'Set-FileSignature', 'Update-Powershell7', 
-               'Clear-AuthenticodeSignature', 'Find-CFNStackErrors', 
+               'Clear-AuthenticodeSignature', 'Find-CFNStackError', 
                'Set-AWSProfileWithMFA', 'Get-AWSMFASession', 
                'Start-MultiStackDriftDetection', 
                'Get-AWSAccountListOfDriftedResources', 'Get-AWSObjectCount', 

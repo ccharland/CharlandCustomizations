@@ -29,14 +29,14 @@ function  Get-AWSMFASession {
 }
 
 
-function Find-CFNStackErrors {
+function Find-CFNStackError {
   <#
 .SYNOPSIS
    Finds Stacks and resources in an "error state".
 .DESCRIPTION
     Script reports any stack or resource where "StatusReason" has a non-null value
 .EXAMPLE
-    PS C:\> Find-CFNSTackErrors
+    PS C:\> Find-CFNSTackError
 
 StackName  StackStatus              StackStatusReason
 ---------  -----------              -----------------

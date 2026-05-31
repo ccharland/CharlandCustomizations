@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Find-CFNStackErrors' -Tag 'Unit' {
+Describe 'Find-CFNStackError' -Tag 'Unit' {
 
     BeforeAll {
         $moduleName = 'AWSCustomizations'
@@ -77,7 +77,7 @@ Describe 'Find-CFNStackErrors' -Tag 'Unit' {
 
         It 'Includes stacks with non-null StackStatusReason in output' {
             # Act — capture all output including formatted objects
-            $output = Find-CFNStackErrors *>&1 | Out-String
+            $output = Find-CFNStackError *>&1 | Out-String
 
             # Assert — stacks with errors appear in output
             $output | Should -Match 'FailingStack1'
@@ -86,7 +86,7 @@ Describe 'Find-CFNStackErrors' -Tag 'Unit' {
 
         It 'Excludes stacks with null StackStatusReason from error output' {
             # Act
-            $output = Find-CFNStackErrors *>&1 | Out-String
+            $output = Find-CFNStackError *>&1 | Out-String
 
             # Assert — healthy stacks do not appear anywhere in the output
             $output | Should -Not -Match 'HealthyStack1'
@@ -95,7 +95,7 @@ Describe 'Find-CFNStackErrors' -Tag 'Unit' {
 
         It 'Calls Get-CFNStackResourceSummary only for stacks with errors' {
             # Act
-            Find-CFNStackErrors *>&1 | Out-Null
+            Find-CFNStackError *>&1 | Out-Null
 
             # Assert — Get-CFNStackResourceSummary called for each error stack
             Should -Invoke Get-CFNStackResourceSummary -ModuleName $moduleName -Times 2 -Exactly
@@ -143,7 +143,7 @@ Describe 'Find-CFNStackErrors' -Tag 'Unit' {
                 Mock Get-CFNStackResourceSummary { @() } -ModuleName $moduleName
 
                 # Act — capture all output
-                $output = Find-CFNStackErrors *>&1 | Out-String
+                $output = Find-CFNStackError *>&1 | Out-String
 
                 # Assert — each stack with non-null reason appears in output
                 foreach ($name in $expectedErrorStacks) {
