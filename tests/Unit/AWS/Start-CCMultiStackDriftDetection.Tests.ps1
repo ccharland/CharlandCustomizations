@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Start-MultiStackDriftDetection' -Tag 'Unit' {
+Describe 'Start-CCMultiStackDriftDetection' -Tag 'Unit' {
 
     Context 'Calls Start-CFNStackDriftDetection for eligible stacks' {
 
@@ -40,7 +40,7 @@ Describe 'Start-MultiStackDriftDetection' -Tag 'Unit' {
             Mock Write-Progress {} -ModuleName AWSCustomizations
 
             # Act
-            Start-MultiStackDriftDetection -StackName 'eligible-stack-1', 'eligible-stack-2'
+            Start-CCMultiStackDriftDetection -StackName 'eligible-stack-1', 'eligible-stack-2'
 
             # Assert (Req 3.6)
             Should -Invoke Start-CFNStackDriftDetection -ModuleName AWSCustomizations -Times 2 -Exactly
@@ -70,7 +70,7 @@ Describe 'Start-MultiStackDriftDetection' -Tag 'Unit' {
             Mock Write-Progress {} -ModuleName AWSCustomizations
 
             # Act
-            Start-MultiStackDriftDetection -StackName 'rollback-stack'
+            Start-CCMultiStackDriftDetection -StackName 'rollback-stack'
 
             # Assert (Req 3.7)
             Should -Invoke Start-CFNStackDriftDetection -ModuleName AWSCustomizations -Times 0 -Exactly
@@ -97,7 +97,7 @@ Describe 'Start-MultiStackDriftDetection' -Tag 'Unit' {
             Mock Write-Progress {} -ModuleName AWSCustomizations
 
             # Act
-            Start-MultiStackDriftDetection -StackName 'delete-failed-stack'
+            Start-CCMultiStackDriftDetection -StackName 'delete-failed-stack'
 
             # Assert (Req 3.7)
             Should -Invoke Start-CFNStackDriftDetection -ModuleName AWSCustomizations -Times 0 -Exactly
@@ -124,7 +124,7 @@ Describe 'Start-MultiStackDriftDetection' -Tag 'Unit' {
             Mock Write-Progress {} -ModuleName AWSCustomizations
 
             # Act
-            Start-MultiStackDriftDetection -StackName 'rollback-failed-stack'
+            Start-CCMultiStackDriftDetection -StackName 'rollback-failed-stack'
 
             # Assert (Req 3.7)
             Should -Invoke Start-CFNStackDriftDetection -ModuleName AWSCustomizations -Times 0 -Exactly
@@ -186,7 +186,7 @@ Describe 'Start-MultiStackDriftDetection' -Tag 'Unit' {
 
                 # Act
                 $stackNames = $testStacks | ForEach-Object { $_.Name }
-                Start-MultiStackDriftDetection -StackName $stackNames
+                Start-CCMultiStackDriftDetection -StackName $stackNames
 
                 # Assert — cumulative drift detection calls match cumulative expected
                 Should -Invoke Start-CFNStackDriftDetection -ModuleName AWSCustomizations -Times $cumulativeExpected -Exactly

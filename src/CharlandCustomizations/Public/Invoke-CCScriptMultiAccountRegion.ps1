@@ -1,4 +1,4 @@
-function Invoke-ScriptMultiAccountRegion {
+﻿function Invoke-CCScriptMultiAccountRegion {
   <#
 .SYNOPSIS
     Invokes AWS commands across multiple accounts and regions to gather data.
@@ -58,12 +58,12 @@ function Invoke-ScriptMultiAccountRegion {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Invoke-ScriptMultiAccountRegion -ProfileName 'dev','prod' -Region 'us-east-1' `
+    Invoke-CCScriptMultiAccountRegion -ProfileName 'dev','prod' -Region 'us-east-1' `
         -ScriptBlock { Get-STSCallerIdentity } -IncludeRegion -IncludeProfileName
 
 .EXAMPLE
     Get-AWSCredential -ListProfileDetail | Select-Object -ExpandProperty ProfileName |
-        Invoke-ScriptMultiAccountRegion -Region 'us-east-1' `
+        Invoke-CCScriptMultiAccountRegion -Region 'us-east-1' `
             -ScriptBlock { Get-S3Bucket } -IncludeAccountId -IncludeProfileName
 #>
   [CmdletBinding()]
@@ -104,7 +104,7 @@ function Invoke-ScriptMultiAccountRegion {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -182,7 +182,7 @@ function Invoke-ScriptMultiAccountRegion {
       }
 
       # Resolve the profile into concrete AccessKey/SecretKey/SessionToken.
-      # For profiles stored in the credentials file (e.g., from Update-SSOCredentialList),
+      # For profiles stored in the credentials file (e.g., from Update-CCSSOCredentialList),
       # read the keys directly. This avoids SSO token re-resolution and SDK caching issues.
       $resolvedCreds = $null
       try {

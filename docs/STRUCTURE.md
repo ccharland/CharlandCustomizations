@@ -18,14 +18,20 @@ CharlandCustomizations/
 │       │   ├── New-AWSParamSplat.ps1
 │       │   └── CFNPrivateFunctions.ps1
 │       └── Public/                      # Exported functions
-│           ├── *.ps1                    # Root public functions
+│           ├── Clear-CCAuthenticodeSignature.ps1
+│           ├── Install-CCProfilesFromSource.ps1
+│           ├── Invoke-CCScriptMultiAccountRegion.ps1
+│           ├── Set-CCFileSignature.ps1
+│           ├── Update-CCPowershell7.ps1
 │           ├── AWS/
 │           │   ├── AWSCustomizations.psm1
 │           │   ├── Audit/Audit-AWSAccount.psm1
 │           │   ├── CloudFormation/CloudFormation-TemplateProcessing.psm1
 │           │   └── S3/S3Customizations.psm1
 │           └── Git/
-│               └── GitCustomizations.psm1
+│               ├── GitCustomizations.psm1
+│               ├── Install-CCGitHooks.ps1
+│               └── Test-CCCommitSignatures.ps1
 ├── tests/                         # Pester tests
 ├── build/                         # Build output (gitignored)
 ├── docs/                          # Documentation
@@ -37,7 +43,7 @@ CharlandCustomizations/
 
 ### `src/CharlandCustomizations/`
 
-The module source. This is the working directory for development. The module manifest (`CharlandCustomizations.psd1`) defines the module version, exported functions, and metadata including `DefaultCommandPrefix = 'CC'`.
+The module source. This is the working directory for development. The module manifest (`CharlandCustomizations.psd1`) defines the module version, exported functions, and metadata.
 
 - **`Public/`** — Functions exported by the module. Organized by domain (AWS, Git).
 - **`Private/`** — Internal helper functions not exported to consumers.
@@ -86,18 +92,13 @@ The module loader (`CharlandCustomizations.psm1`) initializes script-based funct
 
 ## Command Prefix
 
-The module manifest sets `DefaultCommandPrefix = 'CC'`. When imported normally, all exported commands get the CC prefix:
+The CC prefix is hardcoded directly into every public function name. The source code function names match exactly what users type at the command line:
 
 ```powershell
-# Exported as Find-CCCFNStackErrors
-Find-CFNStackErrors  # function name in source
-
-# Exported as Get-CCEC2SGInUse
-Get-EC2SGInUse       # function name in source
+# Function name in source and at the command line are identical
+Find-CCCFNStackError
+Get-CCEC2SGInUse
+Clear-CCAuthenticodeSignature
 ```
 
-To import without the prefix (development):
-
-```powershell
-Import-Module ./src/CharlandCustomizations/CharlandCustomizations.psd1 -Prefix ''
-```
+No `DefaultCommandPrefix` is used. This makes function names explicit and discoverable without relying on PowerShell's implicit prefix mechanism.

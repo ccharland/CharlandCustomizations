@@ -1,4 +1,4 @@
-function Clear-AuthenticodeSignature {
+function Clear-CCAuthenticodeSignature {
 <#
 .SYNOPSIS
     Removes the Authenticode signature block from PowerShell script files.
@@ -13,15 +13,15 @@ function Clear-AuthenticodeSignature {
     Accepts pipeline input from Get-ChildItem via the FullName property.
 
 .EXAMPLE
-    ./Clear-AuthenticodeSignature.ps1 -Path ./MyScript.ps1
+    Clear-CCAuthenticodeSignature -Path ./MyScript.ps1
     Removes the signature from a single file.
 
 .EXAMPLE
-    Get-ChildItem *.ps1 | ./Clear-AuthenticodeSignature.ps1
+    Get-ChildItem *.ps1 | Clear-CCAuthenticodeSignature
     Removes signatures from all .ps1 files in the current directory via pipeline.
 
 .EXAMPLE
-    Get-ChildItem -Recurse -Include *.ps1,*.psm1 | ./Clear-AuthenticodeSignature.ps1
+    Get-ChildItem -Recurse -Include *.ps1,*.psm1 | Clear-CCAuthenticodeSignature
     Removes signatures from all PowerShell files recursively.
 
 .NOTES

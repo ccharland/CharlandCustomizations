@@ -4,10 +4,10 @@
 #>
 BeforeAll {
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Invoke-ScriptMultiAccountRegion.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Invoke-CCScriptMultiAccountRegion.ps1"
 }
 
-Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
+Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
 
     BeforeEach {
         # Default mocks for AWS cmdlets
@@ -26,7 +26,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-ScriptMultiAccountRegion -ProfileName 'profile1', 'profile2' `
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'profile1', 'profile2' `
                 -Region 'us-east-1', 'us-west-2', 'eu-west-1' `
                 -ScriptBlock $sb
 
@@ -37,7 +37,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-ScriptMultiAccountRegion -ProfileName 'dev', 'staging', 'prod' `
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'dev', 'staging', 'prod' `
                 -Region 'us-east-1', 'eu-west-1' `
                 -ScriptBlock $sb
 
@@ -48,7 +48,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-ScriptMultiAccountRegion -ProfileName 'single' `
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'single' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -65,7 +65,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Name = 'TestResource' } }
 
-            $results = Invoke-ScriptMultiAccountRegion -ProfileName 'myprofile' `
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -IncludeAccountId
@@ -86,7 +86,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Name = 'Resource' } }
 
-            $results = Invoke-ScriptMultiAccountRegion -ProfileName 'dev', 'prod' `
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'dev', 'prod' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -IncludeAccountId
@@ -102,7 +102,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
         It 'Writes warning containing profile, region, and exception message when ScriptBlock throws' {
             $sb = { throw 'Access Denied' }
 
-            Invoke-ScriptMultiAccountRegion -ProfileName 'failprofile' `
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'failprofile' `
                 -Region 'us-west-2' `
                 -ScriptBlock $sb `
                 -WarningVariable capturedWarnings 3>&1 | Out-Null
@@ -129,7 +129,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Name = 'test' } }
 
-            Invoke-ScriptMultiAccountRegion -Region 'us-east-1' `
+            Invoke-CCScriptMultiAccountRegion -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -ErrorVariable capturedErrors `
                 -ErrorAction SilentlyContinue 2>&1 | Out-Null
@@ -158,7 +158,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++; [PSCustomObject]@{ Name = 'Result' } }
 
-            Invoke-ScriptMultiAccountRegion -ProfileName 'badprofile', 'goodprofile' `
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'badprofile', 'goodprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -WarningVariable capturedWarnings 3>&1 | Out-Null
@@ -183,7 +183,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-ScriptMultiAccountRegion -ProfileName 'first', 'middle', 'last' `
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'first', 'middle', 'last' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb 3>&1 | Out-Null
 
@@ -208,7 +208,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
                 $script:callCount = 0
                 $sb = { $script:callCount++ }
 
-                Invoke-ScriptMultiAccountRegion -ProfileName $profiles `
+                Invoke-CCScriptMultiAccountRegion -ProfileName $profiles `
                     -Region $regions `
                     -ScriptBlock $sb
 
@@ -233,7 +233,7 @@ Describe 'Invoke-ScriptMultiAccountRegion' -Tag 'Unit' {
 
                 $sb = { [PSCustomObject]@{ Name = "Resource-$([guid]::NewGuid().ToString().Substring(0,8))" } }
 
-                $results = Invoke-ScriptMultiAccountRegion -ProfileName $profiles `
+                $results = Invoke-CCScriptMultiAccountRegion -ProfileName $profiles `
                     -Region $regions `
                     -ScriptBlock $sb `
                     -IncludeAccountId

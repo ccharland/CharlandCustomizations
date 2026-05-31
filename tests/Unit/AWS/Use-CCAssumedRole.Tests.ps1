@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Use-AssumedRole' -Tag 'Unit' {
+Describe 'Use-CCAssumedRole' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-STSCallerIdentity {
@@ -41,7 +41,7 @@ Describe 'Use-AssumedRole' -Tag 'Unit' {
 
         It 'Calls Use-STSRole with the resolved ARN from Get-IAMRole' {
             # Act
-            Use-AssumedRole -Role 'TestRole'
+            Use-CCAssumedRole -Role 'TestRole'
 
             # Assert - Use-STSRole called with the ARN resolved by Get-IAMRole
             Should -Invoke Use-STSRole -Times 1 -ModuleName AWSCustomizations -ParameterFilter {
@@ -51,7 +51,7 @@ Describe 'Use-AssumedRole' -Tag 'Unit' {
 
         It 'Calls Set-AWSCredential with the temporary credentials returned by Use-STSRole' {
             # Act
-            Use-AssumedRole -Role 'TestRole'
+            Use-CCAssumedRole -Role 'TestRole'
 
             # Assert - Set-AWSCredential called with temp creds from Use-STSRole
             Should -Invoke Set-AWSCredential -Times 1 -ModuleName AWSCustomizations -ParameterFilter {

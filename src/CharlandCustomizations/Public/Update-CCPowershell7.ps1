@@ -1,4 +1,4 @@
-function Update-Powershell7 {
+function Update-CCPowershell7 {
 <#
 .SYNOPSIS
     Updates PowerShell 7 to the current stable release (cross-platform).
@@ -23,7 +23,7 @@ function Update-Powershell7 {
     Visit https://github.com/PowerShell/PowerShell/releases for manual installation.
 
 .EXAMPLE
-    Update-Powershell7
+    Update-CCPowershell7
     Detects OS and updates using the available package manager.
 #>
   [CmdletBinding()]
@@ -65,9 +65,9 @@ function Update-Powershell7 {
     if (Test-Path /etc/os-release) {
       $osInfo = Get-Content /etc/os-release | ConvertFrom-StringData
       $distroId = $osInfo.ID -replace '"', ''
-      
+
       Write-Output "Linux ($distroId) detected. Run the appropriate command:"
-      
+
       if ($distroId -in @('ubuntu', 'debian')) {
         Write-Output "  sudo apt update && sudo apt install -y powershell"
       }

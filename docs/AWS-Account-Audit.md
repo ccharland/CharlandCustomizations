@@ -12,18 +12,18 @@ The `audit-AWSAccount.psm1` module was created by extracting and consolidating n
 
 ### Security and EC2 Functions
 
-- **`Get-EC2SGInUse`** - Shows resources associated with each EC2 Security Group in a region
-- **`Get-EC2KeyTagNameStatus`** - Checks if EC2 resources have required tags like "Name" or "Environment"
-- **`Get-EC2SnapshotReport`** - Gets a detailed listing of EC2 snapshots with batch processing
-- **`Get-EC2VolumeReport`** - Reports on all EC2 volumes and their attachment status
-- **`Start-EC2RetryLoop`** - Implements retry logic for EC2 operations
+- **`Get-CCEC2SGInUse`** - Shows resources associated with each EC2 Security Group in a region
+- **`Get-CCEC2KeyTagNameStatus`** - Checks if EC2 resources have required tags like "Name" or "Environment"
+- **`Get-CCEC2SnapshotReport`** - Gets a detailed listing of EC2 snapshots with batch processing
+- **`Get-CCEC2VolumeReport`** - Reports on all EC2 volumes and their attachment status
+- **`Start-CCEC2RetryLoop`** - Implements retry logic for EC2 operations
 
 ### Account and IAM Auditing
 
-- **`Get-IAMAuditList`** - Consolidated IAM credential report from multiple accounts
-- **`Get-GlobalAuditReportItem`** - Creates a count of various AWS resources across regions
-- **`Out-AWSSupportingInfo`** - Collects and saves AWS account-specific supporting information
-- **`Out-AWSNetworkingComponent`** - Exports VPC, subnet, route table, VPN, prefix list, and transit gateway details
+- **`Get-CCIAMAuditList`** - Consolidated IAM credential report from multiple accounts
+- **`Get-CCGlobalAuditReportItem`** - Creates a count of various AWS resources across regions
+- **`Out-CCAWSSupportingInfo`** - Collects and saves AWS account-specific supporting information
+- **`Out-CCAWSNetworkingComponent`** - Exports VPC, subnet, route table, VPN, prefix list, and transit gateway details
 
 ## Prerequisites
 
@@ -54,47 +54,47 @@ The `audit-AWSAccount.psm1` module was created by extracting and consolidating n
 
 ```powershell
 # Get all security groups and their associated resources
-Get-EC2SGInUse
+Get-CCEC2SGInUse
 
 # Check specific security group
-Get-EC2SGInUse -GroupId "sg-12345678" -Region "us-west-2"
+Get-CCEC2SGInUse -GroupId "sg-12345678" -Region "us-west-2"
 
 # Find unused security groups
-Get-EC2SGInUse | Where-Object UsedByCount -eq 0
+Get-CCEC2SGInUse | Where-Object UsedByCount -eq 0
 ```
 
 ### Tag Compliance Check
 
 ```powershell
 # Check if all EC2 resources have a "Name" tag
-Get-EC2KeyTagNameStatus -TagKey "Name"
+Get-CCEC2KeyTagNameStatus -TagKey "Name"
 
 # Check for "Environment" tag with custom filter
 $filter = @{name='resource-type';values='instance'}
-Get-EC2KeyTagNameStatus -TagKey "Environment" -filter $filter
+Get-CCEC2KeyTagNameStatus -TagKey "Environment" -filter $filter
 ```
 
 ### Account Auditing
 
 ```powershell
 # Get resource counts across multiple regions
-Get-GlobalAuditReportItem -Region @("us-east-1", "us-west-2")
+Get-CCGlobalAuditReportItem -Region @("us-east-1", "us-west-2")
 
 # Export supporting information for current account
-Out-AWSSupportingInfo -Region "us-east-1" -RootPath "C:\AWSReports"
+Out-CCAWSSupportingInfo -Region "us-east-1" -RootPath "C:\AWSReports"
 
 # Export networking information for current account
-Out-AWSNetworkingComponent -Region "us-east-1" -RootPath "C:\AWSReports"
+Out-CCAWSNetworkingComponent -Region "us-east-1" -RootPath "C:\AWSReports"
 ```
 
 ### Snapshot and Volume Reports
 
 ```powershell
 # Get detailed snapshot report
-Get-EC2SnapshotReport | Export-Csv -Path "snapshots.csv" -NoTypeInformation
+Get-CCEC2SnapshotReport | Export-Csv -Path "snapshots.csv" -NoTypeInformation
 
 # Get volume attachment status
-Get-EC2VolumeReport | Where-Object InstanceID -eq "NoInstance"
+Get-CCEC2VolumeReport | Where-Object InstanceID -eq "NoInstance"
 ```
 
 ### Multi-Account IAM Audit
@@ -102,7 +102,7 @@ Get-EC2VolumeReport | Where-Object InstanceID -eq "NoInstance"
 ```powershell
 # Audit multiple AWS profiles
 $profiles = @('Profile1', 'Profile2', 'Profile3')
-Get-IAMAuditList -ProfileName $profiles | Out-File -Path "iam-audit.csv"
+Get-CCIAMAuditList -ProfileName $profiles | Out-File -Path "iam-audit.csv"
 ```
 
 ## Function Details
@@ -110,33 +110,33 @@ Get-IAMAuditList -ProfileName $profiles | Out-File -Path "iam-audit.csv"
 Each function includes comprehensive help documentation. Use `Get-Help` to learn more:
 
 ```powershell
-Get-Help Get-EC2SGInUse -Detailed
-Get-Help Get-GlobalAuditReportItem -Examples
+Get-Help Get-CCEC2SGInUse -Detailed
+Get-Help Get-CCGlobalAuditReportItem -Examples
 ```
 
 ## Source Scripts
 
 This module consolidates the following scripts from the original repository:
 
-- `Get-EC2SGInUse.ps1`
-- `Out-AWSSupportingInfo.ps1`
-- `Get-IAMAuditList.ps1`
-- `Get-GlobalAuditReportItem.ps1`
-- `Get-EC2KeyTagNameStatus.ps1`
-- `Get-EC2SnapshotReport.ps1`
-- `Get-EC22volumereport.ps1`
-- `Start-EC2RetryLoop.ps1`
+- `Get-CCEC2SGInUse.ps1`
+- `Out-CCAWSSupportingInfo.ps1`
+- `Get-CCIAMAuditList.ps1`
+- `Get-CCGlobalAuditReportItem.ps1`
+- `Get-CCEC2KeyTagNameStatus.ps1`
+- `Get-CCEC2SnapshotReport.ps1`
+- `Get-CCEC2VolumeReport.ps1`
+- `Start-CCEC2RetryLoop.ps1`
 
 ## Excluded Scripts
 
 The following CloudFormation-related scripts are **NOT** included in this module:
 
-- `New-CFNStackFromDirectory.ps1`
-- `Verify-CFNStackFromDirectory.ps1`
-- `Update-CFNStackFromDirectory.ps1`
-- `Out-CFNStackInfo.ps1`
-- `New-CFNStackDirectory.ps1`
-- `Edit-CFTTEbsVolumes.ps1`
+- `New-CCCFNStackFromDirectory.ps1`
+- `Test-CCCFNStackFromDirectory.ps1`
+- `Update-CCCFNStackFromDirectory.ps1`
+- `Out-CCCFNStackInfo.ps1`
+- `New-CCCFNStackDirectory.ps1`
+- `Edit-CCCFTTEbsVolumes.ps1`
 
 These are available separately in the `TemplateProcessing.psm1` module.
 

@@ -66,30 +66,30 @@ PowerShellVersion = '7.2'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('Public/AWS/AWSCustomizations.psm1', 
-               'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1', 
-               'Public/AWS/S3/S3Customizations.psm1', 
-               'Public/AWS/Audit/Audit-AWSAccount.psm1', 
+NestedModules = @('Public/AWS/AWSCustomizations.psm1',
+               'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1',
+               'Public/AWS/S3/S3Customizations.psm1',
+               'Public/AWS/Audit/Audit-AWSAccount.psm1',
                'Public/Git/GitCustomizations.psm1')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Install-ProfilesFromSource', 'Invoke-ScriptMultiAccountRegion', 
-               'Set-FileSignature', 'Update-Powershell7', 
-               'Clear-AuthenticodeSignature', 'Find-CFNStackError', 
-               'Set-AWSProfileWithMFA', 'Get-AWSMFASession', 
-               'Start-MultiStackDriftDetection', 
-               'Get-AWSAccountListOfDriftedResources', 'Get-AWSObjectCount', 
-               'Set-AWSEnv', 'Update-SSOCredentialList', 'Remove-ExpiredAWSProfiles', 
-               'Get-AccountListFromProfiles', 'Use-AssumedRole', 
-               'New-CFNStackFromDirectory', 'Test-CFNStackFromDirectory', 
-               'Out-CFNStackInfo', 'Update-CFNStackFromDirectory', 
-               'New-CFNStackDirectory', 'Edit-CFTTEbsVolumes', 'Clear-S3Bucket', 
-               'Get-EC2SGInUse', 'Get-EC2Count', 'Find-EC2DBSG', 
-               'Out-AWSSupportingInfo', 'Out-AWSNetworkingComponent', 
-               'Get-IAMAuditList', 'Get-GlobalAuditReportItem', 
-               'Get-EC2KeyTagNameStatus', 'Get-EC2SnapshotReport', 
-               'Get-EC2VolumeReport', 'Start-EC2RetryLoop', 'Find-OpenSecurityGroup', 
-               'Test-CommitSignatures', 'Install-GitHooks'
+FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccountRegion',
+               'Set-CCFileSignature', 'Update-CCPowershell7',
+               'Clear-CCAuthenticodeSignature', 'Find-CCCFNStackError',
+               'Set-CCAWSProfileWithMFA', 'Get-CCAWSMFASession',
+               'Start-CCMultiStackDriftDetection',
+               'Get-CCAWSAccountListOfDriftedResources', 'Get-CCAWSObjectCount',
+               'Set-CCAWSEnv', 'Update-CCSSOCredentialList', 'Remove-CCExpiredAWSProfiles',
+               'Get-CCAccountListFromProfiles', 'Use-CCAssumedRole',
+               'New-CCCFNStackFromDirectory', 'Test-CCCFNStackFromDirectory',
+               'Out-CCCFNStackInfo', 'Update-CCCFNStackFromDirectory',
+               'New-CCCFNStackDirectory', 'Edit-CCCFTTEbsVolumes', 'Clear-CCS3Bucket',
+               'Get-CCEC2SGInUse', 'Get-CCEC2Count', 'Find-CCEC2DBSG',
+               'Out-CCAWSSupportingInfo', 'Out-CCAWSNetworkingComponent',
+               'Get-CCIAMAuditList', 'Get-CCGlobalAuditReportItem',
+               'Get-CCEC2KeyTagNameStatus', 'Get-CCEC2SnapshotReport',
+               'Get-CCEC2VolumeReport', 'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup',
+               'Test-CCCommitSignatures', 'Install-CCGitHooks'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -145,9 +145,6 @@ PrivateData = @{
 
 # HelpInfo URI of this module
 # HelpInfoURI = ''
-
-# Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-DefaultCommandPrefix = 'CC'
 
 }
 

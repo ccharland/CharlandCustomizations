@@ -11,13 +11,13 @@ The CloudFormation command set was created by extracting and consolidating Cloud
 ## Functions Included
 
 ### Stack Management Functions
-- **`New-CFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
-- **`Update-CFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
-- **`Test-CFNStackFromDirectory`** - Validates CloudFormation templates from directories
-- **`Out-CFNStackInfo`** - Exports stack information for backup and redeployment
+- **`New-CCCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
+- **`Update-CCCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
+- **`Test-CCCFNStackFromDirectory`** - Validates CloudFormation templates from directories
+- **`Out-CCCFNStackInfo`** - Exports stack information for backup and redeployment
 
 ### Template and Directory Utilities
-- **`New-CFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
+- **`New-CCCFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
 
 
 ## Directory Structure Convention
@@ -32,7 +32,7 @@ This module uses a standardized directory structure for CloudFormation stack man
       ├── parameters.json        # Stack parameters
       ├── capabilities.json      # Required capabilities (e.g., CAPABILITY_IAM)
       ├── tags.json              # Stack tags
-      └── outputs.json           # Stack outputs (created by Out-CFNStackInfo)
+      └── outputs.json           # Stack outputs (created by Out-CCCFNStackInfo)
 ```
 
 ## Prerequisites
@@ -70,59 +70,59 @@ StackName: directory name to put stack specific information into.
 ### Stack Creation
 ```powershell
 # Create a single stack from directory structure
-New-CFNStackFromDirectory -StackName "MyStack" -Path "C:\CloudFormation"
+New-CCCFNStackFromDirectory -StackName "MyStack" -Path "C:\CloudFormation"
 
 # Verify template without creating stack
-New-CFNStackFromDirectory -StackName "MyStack" -VerifyOnly
+New-CCCFNStackFromDirectory -StackName "MyStack" -VerifyOnly
 
 # Create all stacks in a directory
-New-CFNStackFromDirectory -Path "C:\CloudFormation"
+New-CCCFNStackFromDirectory -Path "C:\CloudFormation"
 ```
 
 ### Stack Updates with Change Sets
 ```powershell
 # Create change set for review
-Update-CFNStackFromDirectory -StackName "MyStack"
+Update-CCCFNStackFromDirectory -StackName "MyStack"
 
 # Create and immediately execute change set
-Update-CFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
+Update-CCCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
 
 # Verify what would change without creating change set
-Update-CFNStackFromDirectory -StackName "MyStack" -VerifyOnly
+Update-CCCFNStackFromDirectory -StackName "MyStack" -VerifyOnly
 ```
 
 ### Template Validation
 ```powershell
 # Validate single template
-Test-CFNStackFromDirectory -StackName "MyStack"
+Test-CCCFNStackFromDirectory -StackName "MyStack"
 
 # Validate multiple templates via pipeline
-"Stack1", "Stack2", "Stack3" | Test-CFNStackFromDirectory -Region us-west-2
+"Stack1", "Stack2", "Stack3" | Test-CCCFNStackFromDirectory -Region us-west-2
 
 # Use custom template filename
-Test-CFNStackFromDirectory -StackName "MyStack" -TemplateName "custom-template.yaml"
+Test-CCCFNStackFromDirectory -StackName "MyStack" -TemplateName "custom-template.yaml"
 ```
 
 ### Stack Information Export
 ```powershell
 # Export single stack information
-Out-CFNStackInfo -StackName "MyStack" -RootPath "C:\Backups"
+Out-CCCFNStackInfo -StackName "MyStack" -RootPath "C:\Backups"
 
 # Export all stacks via pipeline
-Get-CFNStack | Out-CFNStackInfo -RootPath "C:\Backups"
+Get-CFNStack | Out-CCCFNStackInfo -RootPath "C:\Backups"
 
 # Export to specific region directory
-"Stack1", "Stack2" | Out-CFNStackInfo -Region us-west-2 -RootPath "C:\Backups"
+"Stack1", "Stack2" | Out-CCCFNStackInfo -Region us-west-2 -RootPath "C:\Backups"
 ```
 
 ### Directory Setup
 ```powershell
 # Create new stack directory with template
 $templateContent = Get-Content "template.yaml" -Raw
-New-CFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent
+New-CCCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent
 
 # Create directory and validate template
-New-CFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Path "C:\Stacks"
+New-CCCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Path "C:\Stacks"
 ```
 
 
@@ -132,7 +132,7 @@ New-CFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Path
 ```powershell
 # 1. Create directory structure
 $template = Get-Content "my-template.yaml" -Raw
-New-CFNStackDirectory -StackName "ProductionStack" -TemplateBody $template
+New-CCCFNStackDirectory -StackName "ProductionStack" -TemplateBody $template
 
 # 2. Add parameters and tags (manually edit JSON files)
 # Edit: ProductionStack/parameters.json
@@ -140,16 +140,16 @@ New-CFNStackDirectory -StackName "ProductionStack" -TemplateBody $template
 # Edit: ProductionStack/capabilities.json
 
 # 3. Validate template
-Test-CFNStackFromDirectory -StackName "ProductionStack"
+Test-CCCFNStackFromDirectory -StackName "ProductionStack"
 
 # 4. Create stack
-New-CFNStackFromDirectory -StackName "ProductionStack"
+New-CCCFNStackFromDirectory -StackName "ProductionStack"
 
 # 5. Later, update stack with change set
-Update-CFNStackFromDirectory -StackName "ProductionStack"
+Update-CCCFNStackFromDirectory -StackName "ProductionStack"
 
 # 6. Export stack info for backup
-Out-CFNStackInfo -StackName "ProductionStack" -RootPath "C:\StackBackups"
+Out-CCCFNStackInfo -StackName "ProductionStack" -RootPath "C:\StackBackups"
 ```
 
 ### Multi-Region Deployment
@@ -159,7 +159,7 @@ $stackName = "GlobalStack"
 
 foreach ($region in $regions) {
     Write-Host "Deploying to $region..."
-    New-CFNStackFromDirectory -StackName $stackName -Region $region
+    New-CCCFNStackFromDirectory -StackName $stackName -Region $region
 }
 ```
 
@@ -168,20 +168,20 @@ foreach ($region in $regions) {
 Each function includes comprehensive help documentation. Use `Get-Help` to learn more:
 
 ```powershell
-Get-Help New-CFNStackFromDirectory -Detailed
-Get-Help Update-CFNStackFromDirectory -Examples
-Get-Help Test-CFNStackFromDirectory -Full
+Get-Help New-CCCFNStackFromDirectory -Detailed
+Get-Help Update-CCCFNStackFromDirectory -Examples
+Get-Help Test-CCCFNStackFromDirectory -Full
 ```
 
 ## Source Scripts
 
 This module consolidates the following CloudFormation-related scripts:
-- `New-CFNStackFromDirectory.ps1`
-- `Verify-CFNStackFromDirectory.ps1` (renamed to `Test-CFNStackFromDirectory`)
-- `Update-CFNStackFromDirectory.ps1`
-- `Out-CFNStackInfo.ps1`
-- `New-CFNStackDirectory.ps1`
-- `Edit-CFTTEbsVolumes.ps1`
+- `New-CCCFNStackFromDirectory.ps1`
+- `Verify-CFNStackFromDirectory.ps1` (renamed to `Test-CCCFNStackFromDirectory`)
+- `Update-CCCFNStackFromDirectory.ps1`
+- `Out-CCCFNStackInfo.ps1`
+- `New-CCCFNStackDirectory.ps1`
+- `Edit-CCCFTTEbsVolumes.ps1`
 
 ## Error Handling and Best Practices
 
@@ -225,7 +225,7 @@ The module automatically uploads templates to S3 for CloudFormation operations. 
    ```
    Error: Stack does not exist in region
    ```
-   Solution: Use `New-CFNStackFromDirectory` to create new stacks, not `Update-CFNStackFromDirectory`.
+   Solution: Use `New-CCCFNStackFromDirectory` to create new stacks, not `Update-CCCFNStackFromDirectory`.
 
 
 ## Version History

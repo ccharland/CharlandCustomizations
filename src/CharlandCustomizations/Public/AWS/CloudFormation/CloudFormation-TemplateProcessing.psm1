@@ -61,9 +61,9 @@ AWS region. Defaults to default region.
 Validate only, don't create stack.
 
 .EXAMPLE
-New-CFNStackFromDirectory -StackName MyStack -VerifyOnly
+New-CCCFNStackFromDirectory -StackName MyStack -VerifyOnly
 #>
-function New-CFNStackFromDirectory {
+function New-CCCFNStackFromDirectory {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
         $Path = (Get-Location).Path,
@@ -221,7 +221,7 @@ function New-CFNStackFromDirectory {
 }
 
 # ================================================================================================
-# Verify-CFNStackFromDirectory Function
+# Verify-CCCFNStackFromDirectory Function
 # ================================================================================================
 
 <#
@@ -266,9 +266,9 @@ Root directory path.
 Template filename. Defaults to the module constant.
 
 .EXAMPLE
-Test-CFNStackFromDirectory -StackName "MyStack"
+Test-CCCFNStackFromDirectory -StackName "MyStack"
 #>
-function Test-CFNStackFromDirectory {
+function Test-CCCFNStackFromDirectory {
     [CmdletBinding()]
     param (
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
@@ -381,9 +381,9 @@ AWS region.
 Root export path.
 
 .EXAMPLE
-Out-CFNStackInfo -StackName 'MyStack'
+Out-CCCFNStackInfo -StackName 'MyStack'
 #>
-function Out-CFNStackInfo {
+function Out-CCCFNStackInfo {
     [CmdletBinding()]
     param (
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
@@ -501,7 +501,7 @@ function Out-CFNStackInfo {
 }
 
 # ================================================================================================
-# Update-CFNStackFromDirectory Function
+# Update-CCCFNStackFromDirectory Function
 # ================================================================================================
 
 <#
@@ -563,18 +563,18 @@ function Out-CFNStackInfo {
     Change sets allow you to preview changes before applying them to your CloudFormation stack.
 
 .EXAMPLE
-    Update-CFNStackFromDirectory -StackName client-vpn
+    Update-CCCFNStackFromDirectory -StackName client-vpn
     Creates a change set for the client-vpn stack that can be reviewed and executed later.
 
 .EXAMPLE
-    Update-CFNStackFromDirectory -StackName client-vpn -ExecuteChangeSet
+    Update-CCCFNStackFromDirectory -StackName client-vpn -ExecuteChangeSet
     Creates and immediately executes a change set for the client-vpn stack.
 
 .EXAMPLE
-    Update-CFNStackFromDirectory -StackName client-vpn -VerifyOnly
+    Update-CCCFNStackFromDirectory -StackName client-vpn -VerifyOnly
     Verifies the template and shows what would be updated without creating a change set.
 #>
-function Update-CFNStackFromDirectory {
+function Update-CCCFNStackFromDirectory {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
         $Path = (Get-Location).Path,
@@ -638,7 +638,7 @@ function Update-CFNStackFromDirectory {
                     Write-Verbose "Stack $StackName exists in region $Region"
                 }
                 catch {
-                    throw "Stack $StackName does not exist in region $Region. Use New-CFNStackFromDirectory to create a new stack."
+                    throw "Stack $StackName does not exist in region $Region. Use New-CCCFNStackFromDirectory to create a new stack."
                 }
             }
             else {
@@ -828,7 +828,7 @@ function Update-CFNStackFromDirectory {
 }
 
 # ================================================================================================
-# New-CFNStackDirectory Function
+# New-CCCFNStackDirectory Function
 # ================================================================================================
 
 <#
@@ -872,13 +872,13 @@ function Update-CFNStackFromDirectory {
     The CloudFormation template body content. This is mandatory.
 
 .EXAMPLE
-    New-CFNStackDirectory -StackName "MyStack" -TemplateBody $templateContent
+    New-CCCFNStackDirectory -StackName "MyStack" -TemplateBody $templateContent
     Creates a new directory structure for MyStack with the provided template content.
 
 .NOTES
-    This function creates the directory structure and calls Test-CFNStackFromDirectory to validate the template.
+    This function creates the directory structure and calls Test-CCCFNStackFromDirectory to validate the template.
 #>
-function New-CFNStackDirectory {
+function New-CCCFNStackDirectory {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
     param (
         $Path = (Get-Location).Path,
@@ -930,14 +930,14 @@ function New-CFNStackDirectory {
             Set-Content -Path $TemplateFile -Value $TemplateBody
             Write-Output "Created template file: $TemplateFile"
     
-            # call Test-CFNStackFromDirectory to validate the template
-            Test-CFNStackFromDirectory -StackName $StackName -RootPath $Path @awsParams
+            # call Test-CCCFNStackFromDirectory to validate the template
+            Test-CCCFNStackFromDirectory -StackName $StackName -RootPath $Path @awsParams
         }
     }
 }
 
 # ================================================================================================
-# Edit-CFTTEbsVolumes Function
+# Edit-CCCFTTEbsVolumes Function
 # ================================================================================================
 
 <#
@@ -991,13 +991,13 @@ New EBS Volume type (GP2, GP3)
 Optional filename to save the modified template
 
 .EXAMPLE
-Edit-CFTTEbsVolumes -StackName "MyStack" -OldVolumeType "gp2" -NewVolumeType "gp3"
+Edit-CCCFTTEbsVolumes -StackName "MyStack" -OldVolumeType "gp2" -NewVolumeType "gp3"
 Changes all gp2 volumes to gp3 in the MyStack CloudFormation stack
 
 .NOTES
 This function creates a change set to preview changes before applying them.
 #>
-function Edit-CFTTEbsVolumes {
+function Edit-CCCFTTEbsVolumes {
     [CmdletBinding(ConfirmImpact = 'medium', SupportsShouldProcess = $True)]
     param (
         [Parameter(Mandatory = $true)][string]$StackName,
@@ -1138,10 +1138,10 @@ function Edit-CFTTEbsVolumes {
 
 # Export all functions
 Export-ModuleMember -Function @(
-    'New-CFNStackFromDirectory',
-    'Test-CFNStackFromDirectory',
-    'Out-CFNStackInfo',
-    'Update-CFNStackFromDirectory',
-    'New-CFNStackDirectory',
-    'Edit-CFTTEbsVolumes'
+    'New-CCCFNStackFromDirectory',
+    'Test-CCCFNStackFromDirectory',
+    'Out-CCCFNStackInfo',
+    'Update-CCCFNStackFromDirectory',
+    'New-CCCFNStackDirectory',
+    'Edit-CCCFTTEbsVolumes'
 )

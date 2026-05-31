@@ -9,7 +9,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../../src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
 }
 
-Describe 'Get-EC2SGInUse' -Tag 'Unit' {
+Describe 'Get-CCEC2SGInUse' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-EC2SecurityGroup {
@@ -40,7 +40,7 @@ Describe 'Get-EC2SGInUse' -Tag 'Unit' {
     }
 
     It 'Returns a result object with SecurityGroupId and UsedByCount' {
-        $result = Get-EC2SGInUse -GroupId 'sg-12345678'
+        $result = Get-CCEC2SGInUse -GroupId 'sg-12345678'
 
         $result | Should -Not -BeNullOrEmpty
         $result.SecurityGroupId | Should -Be 'sg-12345678'
@@ -49,7 +49,7 @@ Describe 'Get-EC2SGInUse' -Tag 'Unit' {
     }
 
     It 'Queries all resource types for associated security groups' {
-        Get-EC2SGInUse -GroupId 'sg-12345678'
+        Get-CCEC2SGInUse -GroupId 'sg-12345678'
 
         Should -Invoke Get-EC2Instance -ModuleName 'Audit-AWSAccount' -Times 1
         Should -Invoke Get-EC2NetworkInterface -ModuleName 'Audit-AWSAccount' -Times 1
@@ -67,14 +67,14 @@ Describe 'Get-EC2SGInUse' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Get-EC2SGInUse -GroupId 'sg-12345678'
+        $result = Get-CCEC2SGInUse -GroupId 'sg-12345678'
 
         $result.UsedByCount | Should -BeGreaterThan 0
         $result.AssociatedInstances | Should -Match 'i-abc123'
     }
 }
 
-Describe 'Get-EC2Count' -Tag 'Unit' {
+Describe 'Get-CCEC2Count' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-EC2Region {
@@ -91,7 +91,7 @@ Describe 'Get-EC2Count' -Tag 'Unit' {
     }
 
     It 'Returns region data with expected properties' {
-        $result = Get-EC2Count -Region 'us-east-1'
+        $result = Get-CCEC2Count -Region 'us-east-1'
 
         $result | Should -Not -BeNullOrEmpty
         $result.Region | Should -Be 'us-east-1'
@@ -104,7 +104,7 @@ Describe 'Get-EC2Count' -Tag 'Unit' {
     }
 
     It 'Sets ScanOk to true on successful scan' {
-        $result = Get-EC2Count -Region 'us-east-1'
+        $result = Get-CCEC2Count -Region 'us-east-1'
 
         $result.ScanOk | Should -BeTrue
     }
@@ -112,13 +112,13 @@ Describe 'Get-EC2Count' -Tag 'Unit' {
     It 'Sets ScanOk to false when AWS API throws' {
         Mock Get-EC2Instance { throw 'Access Denied' } -ModuleName 'Audit-AWSAccount'
 
-        $result = Get-EC2Count -Region 'us-east-1'
+        $result = Get-CCEC2Count -Region 'us-east-1'
 
         $result.ScanOk | Should -BeFalse
     }
 }
 
-Describe 'Find-EC2DBSG' -Tag 'Unit' {
+Describe 'Find-CCEC2DBSG' -Tag 'Unit' {
 
     BeforeAll {
         Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
@@ -140,7 +140,7 @@ Describe 'Find-EC2DBSG' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Find-EC2DBSG
+        $result = Find-CCEC2DBSG
 
         $result | Should -Not -BeNullOrEmpty
         $result.GroupId | Should -Be 'sg-db001'
@@ -163,14 +163,14 @@ Describe 'Find-EC2DBSG' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Find-EC2DBSG
+        $result = Find-CCEC2DBSG
 
         # Should output a message string, not structured results
         $result | Should -Be 'No security groups with inbound database port rules found.'
     }
 }
 
-Describe 'Find-OpenSecurityGroup' -Tag 'Unit' {
+Describe 'Find-CCOpenSecurityGroup' -Tag 'Unit' {
 
     BeforeAll {
         Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
@@ -192,7 +192,7 @@ Describe 'Find-OpenSecurityGroup' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Find-OpenSecurityGroup
+        $result = Find-CCOpenSecurityGroup
 
         $result | Should -Not -BeNullOrEmpty
         $result.GroupId | Should -Be 'sg-open001'
@@ -225,14 +225,14 @@ Describe 'Find-OpenSecurityGroup' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Find-OpenSecurityGroup
+        $result = Find-CCOpenSecurityGroup
 
         # Result should be an empty PSCustomObject (no findings)
         $result.GroupId | Should -BeNullOrEmpty
     }
 }
 
-Describe 'Get-EC2KeyTagNameStatus' -Tag 'Unit' {
+Describe 'Get-CCEC2KeyTagNameStatus' -Tag 'Unit' {
 
     BeforeAll {
         Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
@@ -251,7 +251,7 @@ Describe 'Get-EC2KeyTagNameStatus' -Tag 'Unit' {
             }
         )
 
-        $result = Get-EC2KeyTagNameStatus -TagKey 'Name' -taglist $taglist
+        $result = Get-CCEC2KeyTagNameStatus -TagKey 'Name' -taglist $taglist
 
         $result | Should -Not -BeNullOrEmpty
         $result.KeyPresent | Should -BeTrue
@@ -268,14 +268,14 @@ Describe 'Get-EC2KeyTagNameStatus' -Tag 'Unit' {
             }
         )
 
-        $result = Get-EC2KeyTagNameStatus -TagKey 'Name' -taglist $taglist
+        $result = Get-CCEC2KeyTagNameStatus -TagKey 'Name' -taglist $taglist
 
         $result | Should -Not -BeNullOrEmpty
         $result.KeyPresent | Should -BeFalse
     }
 }
 
-Describe 'Get-EC2SnapshotReport' -Tag 'Unit' {
+Describe 'Get-CCEC2SnapshotReport' -Tag 'Unit' {
 
     BeforeAll {
         # Mock $AWSHistory for pagination
@@ -300,7 +300,7 @@ Describe 'Get-EC2SnapshotReport' -Tag 'Unit' {
     }
 
     It 'Returns snapshot data with expected properties' {
-        $result = Get-EC2SnapshotReport
+        $result = Get-CCEC2SnapshotReport
 
         $result | Should -Not -BeNullOrEmpty
         $result.SnapshotId | Should -Be 'snap-abc123'
@@ -309,13 +309,13 @@ Describe 'Get-EC2SnapshotReport' -Tag 'Unit' {
     }
 
     It 'Adds tag properties dynamically' {
-        $result = Get-EC2SnapshotReport
+        $result = Get-CCEC2SnapshotReport
 
         $result.'Tag:Name' | Should -Be 'TestSnap'
     }
 }
 
-Describe 'Get-EC2VolumeReport' -Tag 'Unit' {
+Describe 'Get-CCEC2VolumeReport' -Tag 'Unit' {
 
     BeforeAll {
         Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
@@ -336,7 +336,7 @@ Describe 'Get-EC2VolumeReport' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Get-EC2VolumeReport
+        $result = Get-CCEC2VolumeReport
 
         $result | Should -Not -BeNullOrEmpty
         $result.VolumeId | Should -Be 'vol-attached01'
@@ -355,7 +355,7 @@ Describe 'Get-EC2VolumeReport' -Tag 'Unit' {
                 })
         } -ModuleName 'Audit-AWSAccount'
 
-        $result = Get-EC2VolumeReport
+        $result = Get-CCEC2VolumeReport
 
         $result | Should -Not -BeNullOrEmpty
         $result.VolumeId | Should -Be 'vol-free01'
@@ -363,17 +363,17 @@ Describe 'Get-EC2VolumeReport' -Tag 'Unit' {
     }
 }
 
-Describe 'Start-EC2RetryLoop' -Tag 'Unit' {
+Describe 'Start-CCEC2RetryLoop' -Tag 'Unit' {
 
     It 'Returns result on first successful attempt' {
-        $result = Start-EC2RetryLoop -ScriptBlock { 'success' } -Confirm:$false
+        $result = Start-CCEC2RetryLoop -ScriptBlock { 'success' } -Confirm:$false
 
         $result | Should -Be 'success'
     }
 
     It 'Retries on failure and returns result on subsequent success' {
         $script:attempt = 0
-        $result = Start-EC2RetryLoop -ScriptBlock {
+        $result = Start-CCEC2RetryLoop -ScriptBlock {
             $script:attempt++
             if ($script:attempt -lt 2) { throw 'Temporary failure' }
             'recovered'
@@ -383,12 +383,12 @@ Describe 'Start-EC2RetryLoop' -Tag 'Unit' {
     }
 
     It 'Throws after exhausting all retries' {
-        { Start-EC2RetryLoop -ScriptBlock { throw 'Persistent failure' } -MaxRetries 2 -DelaySeconds 0 -Confirm:$false } |
+        { Start-CCEC2RetryLoop -ScriptBlock { throw 'Persistent failure' } -MaxRetries 2 -DelaySeconds 0 -Confirm:$false } |
             Should -Throw '*All 2 attempts failed*'
     }
 }
 
-Describe 'Get-IAMAuditList' -Tag 'Unit' {
+Describe 'Get-CCIAMAuditList' -Tag 'Unit' {
 
     BeforeAll {
         Mock Request-IAMCredentialReport {
@@ -404,7 +404,7 @@ Describe 'Get-IAMAuditList' -Tag 'Unit' {
 
     It 'Calls Request-IAMCredentialReport and Get-IAMCredentialReport for each profile' {
         # Use two profiles so the ForEach-Object returns an array (avoids single-item scalar quirk)
-        $result = Get-IAMAuditList -ProfileName @('profile1', 'profile2')
+        $result = Get-CCIAMAuditList -ProfileName @('profile1', 'profile2')
 
         $result | Should -Not -BeNullOrEmpty
         Should -Invoke Request-IAMCredentialReport -ModuleName 'Audit-AWSAccount' -Times 2
@@ -412,7 +412,7 @@ Describe 'Get-IAMAuditList' -Tag 'Unit' {
     }
 }
 
-Describe 'Get-GlobalAuditReportItem' -Tag 'Unit' {
+Describe 'Get-CCGlobalAuditReportItem' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-STSCallerIdentity {
@@ -444,7 +444,7 @@ Describe 'Get-GlobalAuditReportItem' -Tag 'Unit' {
     }
 
     It 'Returns audit data with account and region properties' {
-        $result = @(Get-GlobalAuditReportItem -Region @('us-east-1'))
+        $result = @(Get-CCGlobalAuditReportItem -Region @('us-east-1'))
 
         # Function emits Write-Output $RegionName then returns $output array
         # Filter to the PSCustomObject result
@@ -455,7 +455,7 @@ Describe 'Get-GlobalAuditReportItem' -Tag 'Unit' {
     }
 
     It 'Returns resource count properties' {
-        $result = @(Get-GlobalAuditReportItem -Region @('us-east-1'))
+        $result = @(Get-CCGlobalAuditReportItem -Region @('us-east-1'))
 
         $auditItem = $result | Where-Object { $_ -is [PSCustomObject] -and $_.account }
         $auditItem.VMCount | Should -Be 0
@@ -465,7 +465,7 @@ Describe 'Get-GlobalAuditReportItem' -Tag 'Unit' {
     }
 }
 
-Describe 'Out-AWSSupportingInfo' -Tag 'Unit' {
+Describe 'Out-CCAWSSupportingInfo' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-STSCallerIdentity {
@@ -494,13 +494,13 @@ Describe 'Out-AWSSupportingInfo' -Tag 'Unit' {
     }
 
     It 'Calls Get-STSCallerIdentity to determine account ID' {
-        Out-AWSSupportingInfo -RootPath 'TestDrive:\'
+        Out-CCAWSSupportingInfo -RootPath 'TestDrive:\'
 
         Should -Invoke Get-STSCallerIdentity -ModuleName 'Audit-AWSAccount' -Times 1
     }
 
     It 'Retrieves SSM parameters, secrets, and CFN exports' {
-        Out-AWSSupportingInfo -RootPath 'TestDrive:\'
+        Out-CCAWSSupportingInfo -RootPath 'TestDrive:\'
 
         Should -Invoke Get-SSMParameterList -ModuleName 'Audit-AWSAccount' -Times 1
         Should -Invoke Get-SECSecretList -ModuleName 'Audit-AWSAccount' -Times 1
@@ -508,7 +508,7 @@ Describe 'Out-AWSSupportingInfo' -Tag 'Unit' {
     }
 }
 
-Describe 'Out-AWSNetworkingComponent' -Tag 'Unit' {
+Describe 'Out-CCAWSNetworkingComponent' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-STSCallerIdentity {
@@ -532,13 +532,13 @@ Describe 'Out-AWSNetworkingComponent' -Tag 'Unit' {
     }
 
     It 'Calls Get-STSCallerIdentity to determine account ID' {
-        Out-AWSNetworkingComponent -RootPath 'TestDrive:\'
+        Out-CCAWSNetworkingComponent -RootPath 'TestDrive:\'
 
         Should -Invoke Get-STSCallerIdentity -ModuleName 'Audit-AWSAccount' -Times 1
     }
 
     It 'Retrieves VPC networking components' {
-        Out-AWSNetworkingComponent -RootPath 'TestDrive:\'
+        Out-CCAWSNetworkingComponent -RootPath 'TestDrive:\'
 
         Should -Invoke Get-EC2VpnConnection -ModuleName 'Audit-AWSAccount' -Times 1
         Should -Invoke Get-EC2Vpc -ModuleName 'Audit-AWSAccount' -Times 1

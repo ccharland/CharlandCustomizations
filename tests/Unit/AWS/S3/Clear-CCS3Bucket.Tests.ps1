@@ -9,7 +9,7 @@ BeforeAll {
     Import-Module $modulePath -Force
 }
 
-Describe 'Clear-S3Bucket' -Tag 'Unit' {
+Describe 'Clear-CCS3Bucket' -Tag 'Unit' {
 
     BeforeAll {
         # Mock Get-S3Version to return versioned objects and delete markers
@@ -37,7 +37,7 @@ Describe 'Clear-S3Bucket' -Tag 'Unit' {
 
         It 'Does not call Remove-S3Object when -WhatIf is specified' {
             # Act
-            Clear-S3Bucket -BucketName 'test-bucket' -WhatIf
+            Clear-CCS3Bucket -BucketName 'test-bucket' -WhatIf
 
             # Assert
             Should -Not -Invoke Remove-S3Object -ModuleName S3Customizations
@@ -48,7 +48,7 @@ Describe 'Clear-S3Bucket' -Tag 'Unit' {
 
         It 'Calls Remove-S3Object for each versioned object and delete marker with -Force' {
             # Act
-            Clear-S3Bucket -BucketName 'test-bucket' -Force
+            Clear-CCS3Bucket -BucketName 'test-bucket' -Force
 
             # Assert — 2 versions + 1 delete marker = 3 calls
             Should -Invoke Remove-S3Object -Times 3 -Exactly -ModuleName S3Customizations
@@ -56,7 +56,7 @@ Describe 'Clear-S3Bucket' -Tag 'Unit' {
 
         It 'Passes correct Key and VersionId for each version' {
             # Act
-            Clear-S3Bucket -BucketName 'test-bucket' -Force
+            Clear-CCS3Bucket -BucketName 'test-bucket' -Force
 
             # Assert
             Should -Invoke Remove-S3Object -ModuleName S3Customizations -ParameterFilter {

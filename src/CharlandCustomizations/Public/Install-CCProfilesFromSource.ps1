@@ -1,4 +1,4 @@
-function Install-ProfilesFromSource {
+function Install-CCProfilesFromSource {
 <#
 .SYNOPSIS
     Installs or updates PowerShell profiles from a shared source location.
@@ -27,11 +27,11 @@ function Install-ProfilesFromSource {
     Use -WhatIf to preview which files would be copied without making changes.
 
 .EXAMPLE
-    Install-ProfilesFromSource -Path C:\Users\MyFolder\GitHub\PowerShell\Profiles
+    Install-CCProfilesFromSource -Path C:\Users\MyFolder\GitHub\PowerShell\Profiles
     Copies matching profile files from the specified path to their system locations.
 
 .EXAMPLE
-    Install-ProfilesFromSource
+    Install-CCProfilesFromSource
     Uses the current directory as the source for profile files.
 #>
   [CmdletBinding(SupportsShouldProcess)]

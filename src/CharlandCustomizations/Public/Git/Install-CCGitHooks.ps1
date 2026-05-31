@@ -1,4 +1,4 @@
-function Install-GitHooks {
+function Install-CCGitHooks {
     <#
     .SYNOPSIS
         Installs git hooks for the current repository.
@@ -11,12 +11,12 @@ function Install-GitHooks {
         Overwrites an existing pre-commit hook without prompting.
 
     .EXAMPLE
-        PS C:\> Install-GitHooks
+        PS C:\> Install-CCGitHooks
 
         Installs the pre-commit hook from .githooks/pre-commit to .git/hooks/pre-commit.
 
     .EXAMPLE
-        PS C:\> Install-GitHooks -Force
+        PS C:\> Install-CCGitHooks -Force
 
         Overwrites an existing pre-commit hook without prompting.
     #>

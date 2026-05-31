@@ -1,4 +1,4 @@
-function Set-FileSignature {
+function Set-CCFileSignature {
 <#
 .SYNOPSIS
     Sets Authenticode signature on PowerShell files.
@@ -28,15 +28,15 @@ function Set-FileSignature {
     System.Management.Automation.Signature - The signature result for each file.
 
 .EXAMPLE
-    Set-FileSignature -Path .\MyScript.ps1
+    Set-CCFileSignature -Path .\MyScript.ps1
     Signs a single file using the auto-detected certificate.
 
 .EXAMPLE
-    Get-ChildItem .\Modules\*.psm1 | Set-FileSignature
+    Get-ChildItem .\Modules\*.psm1 | Set-CCFileSignature
     Signs all .psm1 files in the Modules directory via pipeline.
 
 .EXAMPLE
-    Set-FileSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
+    Set-CCFileSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
     Signs a file using an explicitly specified timestamp server.
 #>
   [CmdletBinding()]

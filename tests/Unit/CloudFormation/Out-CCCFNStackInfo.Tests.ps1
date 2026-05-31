@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
-Describe 'Out-CFNStackInfo' -Tag 'Unit' {
+Describe 'Out-CCCFNStackInfo' -Tag 'Unit' {
 
     BeforeAll {
         # Mock AWS identity and region cmdlets
@@ -43,8 +43,8 @@ Describe 'Out-CFNStackInfo' -Tag 'Unit' {
     Context 'Exports stack info in {AccountID}/{Region}/{StackName} directory structure' {
 
         BeforeEach {
-            # Run Out-CFNStackInfo with TestDrive as the root path
-            Out-CFNStackInfo -StackName 'test-stack' -RootPath "TestDrive:\"
+            # Run Out-CCCFNStackInfo with TestDrive as the root path
+            Out-CCCFNStackInfo -StackName 'test-stack' -RootPath "TestDrive:\"
         }
 
         It 'Creates the {AccountID}/{Region}/{StackName} directory structure' {

@@ -9,10 +9,10 @@ BeforeAll {
             param($FilePath, $TimestampServer, $Certificate)
         }
     }
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-FileSignature.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CCFileSignature.ps1"
 }
 
-Describe 'Set-FileSignature' -Tag 'Unit' {
+Describe 'Set-CCFileSignature' -Tag 'Unit' {
 
     BeforeAll {
         # Mock Set-AuthenticodeSignature to prevent actual signing
@@ -26,7 +26,7 @@ Describe 'Set-FileSignature' -Tag 'Unit' {
         It 'Throws terminating error when no valid code-signing certificate is found' {
             # Arrange - pass $null as MyCert to simulate no certificate found
             # Act & Assert
-            { Set-FileSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
+            { Set-CCFileSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
                 Should -Throw '*No valid codesign certificate found*'
         }
     }
@@ -44,7 +44,7 @@ Describe 'Set-FileSignature' -Tag 'Unit' {
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 
             # Act
-            Set-FileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+            Set-CCFileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
 
             # Assert
             Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
@@ -66,7 +66,7 @@ Describe 'Set-FileSignature' -Tag 'Unit' {
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 
             # Act
-            Set-FileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+            Set-CCFileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
 
             # Assert
             Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
@@ -87,7 +87,7 @@ Describe 'Set-FileSignature' -Tag 'Unit' {
             }
 
             # Act & Assert
-            { Set-FileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1' } |
+            { Set-CCFileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1' } |
                 Should -Throw '*No Timestamp server could be set, aborting.*'
         }
     }

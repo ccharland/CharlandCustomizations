@@ -2,7 +2,7 @@
 
 Public release home for my PowerShell module and related automation.
 
-This module uses the prefix "CC" for its commands
+All public commands use the "CC" prefix hardcoded in the noun (e.g., `Find-CCCFNStackError`, `Set-CCAWSEnv`)
 
 ## Repository baseline
 

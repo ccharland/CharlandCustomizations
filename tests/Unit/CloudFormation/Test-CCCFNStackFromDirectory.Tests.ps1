@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
-Describe 'Test-CFNStackFromDirectory' -Tag 'Unit' {
+Describe 'Test-CCCFNStackFromDirectory' -Tag 'Unit' {
 
     BeforeAll {
         # Mock AWS cmdlets used in the begin block
@@ -36,7 +36,7 @@ Describe 'Test-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Calls Test-CFNTemplate with -TemplateBody matching the file content' {
             # Act
-            Test-CFNStackFromDirectory -RootPath "$TestDrive" -StackName 'my-stack'
+            Test-CCCFNStackFromDirectory -RootPath "$TestDrive" -StackName 'my-stack'
 
             # Assert — verify Test-CFNTemplate was called with the template body from the file
             Should -Invoke Test-CFNTemplate -ModuleName 'CloudFormation-TemplateProcessing' -Times 1 -ParameterFilter {

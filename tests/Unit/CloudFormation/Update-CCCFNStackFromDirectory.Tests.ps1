@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
-Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
+Describe 'Update-CCCFNStackFromDirectory' -Tag 'Unit' {
 
     BeforeAll {
         Mock Get-STSCallerIdentity {
@@ -63,7 +63,7 @@ Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Does not call New-CFNChangeSet when -WhatIf is specified (Req 4.4)' {
             # Act
-            Update-CFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -WhatIf -Confirm:$false
+            Update-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -WhatIf -Confirm:$false
 
             # Assert
             Should -Not -Invoke New-CFNChangeSet -ModuleName 'CloudFormation-TemplateProcessing'
@@ -71,7 +71,7 @@ Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Does not call Start-CFNChangeSet when -WhatIf is specified (Req 4.4)' {
             # Act
-            Update-CFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -ExecuteChangeSet -WhatIf -Confirm:$false
+            Update-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -ExecuteChangeSet -WhatIf -Confirm:$false
 
             # Assert
             Should -Not -Invoke Start-CFNChangeSet -ModuleName 'CloudFormation-TemplateProcessing'
@@ -82,7 +82,7 @@ Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Creates a change set via New-CFNChangeSet' {
             # Act
-            Update-CFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -Confirm:$false
+            Update-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -Confirm:$false
 
             # Assert
             Should -Invoke New-CFNChangeSet -Times 1 -Exactly -ModuleName 'CloudFormation-TemplateProcessing'
@@ -90,7 +90,7 @@ Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Executes the change set via Start-CFNChangeSet when -ExecuteChangeSet is specified' {
             # Act
-            Update-CFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -ExecuteChangeSet -Confirm:$false
+            Update-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -ExecuteChangeSet -Confirm:$false
 
             # Assert
             Should -Invoke Start-CFNChangeSet -Times 1 -Exactly -ModuleName 'CloudFormation-TemplateProcessing'
@@ -98,7 +98,7 @@ Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Uploads template to S3 before creating change set' {
             # Act
-            Update-CFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -Confirm:$false
+            Update-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -Confirm:$false
 
             # Assert
             Should -Invoke Write-S3Object -Times 1 -Exactly -ModuleName 'CloudFormation-TemplateProcessing'
@@ -106,7 +106,7 @@ Describe 'Update-CFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Validates template via Test-CFNTemplate' {
             # Act
-            Update-CFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -Confirm:$false
+            Update-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'test-stack' -Confirm:$false
 
             # Assert
             Should -Invoke Test-CFNTemplate -Times 1 -Exactly -ModuleName 'CloudFormation-TemplateProcessing'

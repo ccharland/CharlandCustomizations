@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Remove-ExpiredAWSProfiles' -Tag 'Unit' {
+Describe 'Remove-CCExpiredAWSProfiles' -Tag 'Unit' {
 
     Context 'Expired profile (ExpiredToken error)' {
 
@@ -29,7 +29,7 @@ Describe 'Remove-ExpiredAWSProfiles' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
-            Remove-ExpiredAWSProfiles
+            Remove-CCExpiredAWSProfiles
 
             # Assert (Req 3.5)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 1 -Exactly
@@ -55,7 +55,7 @@ Describe 'Remove-ExpiredAWSProfiles' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
-            Remove-ExpiredAWSProfiles
+            Remove-CCExpiredAWSProfiles
 
             # Assert (Req 3.13)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 0 -Exactly

@@ -9,7 +9,7 @@ Write-Verbose  "Loading AWSCustomizations.psm1"
 
 # Module-level cache for SSO tokens to avoid repeated authentication
 $script:SSOTokenCache = @{}
-function  Get-AWSMFASession {
+function  Get-CCAWSMFASession {
   <#
   .SYNOPSIS
     Changes your active AWS connection to a temporary session using MFA Authentiation.
@@ -17,7 +17,7 @@ function  Get-AWSMFASession {
     Retrieves temporary STS session credentials by authenticating with a one-time MFA token code.
     Returns credentials that can be passed to Set-AWSCredential.
   .EXAMPLE
-    PS C:\> Set-AWSCredential -Credential (Get-AWSMFASession -TokenCode <OTP>)
+    PS C:\> Set-AWSCredential -Credential (Get-CCAWSMFASession -TokenCode <OTP>)
 
     Changes your active AWS session to one authenticated with MFA.
   #>
@@ -29,14 +29,14 @@ function  Get-AWSMFASession {
 }
 
 
-function Find-CFNStackError {
+function Find-CCCFNStackError {
   <#
 .SYNOPSIS
    Finds Stacks and resources in an "error state".
 .DESCRIPTION
     Script reports any stack or resource where "StatusReason" has a non-null value
 .EXAMPLE
-    PS C:\> Find-CFNSTackError
+    PS C:\> Find-CCCFNStackError
 
 StackName  StackStatus              StackStatusReason
 ---------  -----------              -----------------
@@ -146,7 +146,7 @@ Stack4    UPDATE_COMPLETE ALambdaFunction   Resource skipped during UpdateRollba
 }
 
 
-function Set-AWSProfileWithMFA {
+function Set-CCAWSProfileWithMFA {
   <#
 .SYNOPSIS
     Retrieves temporary STS session credentials using MFA authentication.
@@ -184,12 +184,12 @@ function Set-AWSProfileWithMFA {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    PS C:\> Set-AWSCredential -Credential (Set-AWSProfileWithMFA -ProfileName myprofile -TokenCode 123456)
+    PS C:\> Set-AWSCredential -Credential (Set-CCAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456)
 
     Authenticates with MFA and sets the returned credentials as the active session.
 
 .EXAMPLE
-    PS C:\> Set-AWSProfileWithMFA -ProfileName myprofile -TokenCode 123456 -Region us-east-1
+    PS C:\> Set-CCAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456 -Region us-east-1
 
     Retrieves MFA session credentials for a specific region.
 #>
@@ -246,7 +246,7 @@ function Set-AWSProfileWithMFA {
   }
 }
 
-function Set-AWSEnv {
+function Set-CCAWSEnv {
   <#
 .SYNOPSIS
   Sets AWS Credential variables for use with command line tools
@@ -260,15 +260,15 @@ function Set-AWSEnv {
   Skip confirmation prompts
   
 .EXAMPLE
-  PS> Set-AWSEnv
+  PS> Set-CCAWSEnv
   Sets AWS environment variables from current credential
   
 .EXAMPLE
-  PS> Set-AWSEnv -WhatIf
+  PS> Set-CCAWSEnv -WhatIf
   Shows what environment variables would be set without actually setting them
   
 .EXAMPLE
-  PS> Set-AWSEnv -Confirm:$false
+  PS> Set-CCAWSEnv -Confirm:$false
   Sets environment variables without confirmation
   
 .NOTES
@@ -347,7 +347,7 @@ function Set-AWSEnv {
     Write-Verbose "Operation cancelled by user"
   }
 }
-function Remove-ExpiredAWSProfiles {
+function Remove-CCExpiredAWSProfiles {
   <#
   .SYNOPSIS
     Removes expired temporary credentials stored in local credential stores.
@@ -355,7 +355,7 @@ function Remove-ExpiredAWSProfiles {
     Tests all AWS Profiles by calling Get-STSCallerIdentity. If the call fails with an
     ExpiredToken error, the profile is removed from the credential store.
   .EXAMPLE
-    Remove-ExpiredAWSProfiles
+    Remove-CCExpiredAWSProfiles
     Scans all profiles with a credential file location and removes any with expired tokens.
   #>
   [CmdletBinding()]
@@ -378,7 +378,7 @@ function Remove-ExpiredAWSProfiles {
     }
   }
 }
-function Get-AccountListFromProfiles {
+function Get-CCAccountListFromProfiles {
   <#
   .SYNOPSIS
     Lists  AWS ProfileName, Account, and AccountAlias
@@ -386,7 +386,7 @@ function Get-AccountListFromProfiles {
     Enumerates all locally stored AWS credential profiles and retrieves the associated
     account ID and account alias for each by calling Get-STSCallerIdentity and Get-IAMAccountAlias.
   .EXAMPLE
-    PS C:\> Get-AccountListFromProfiles
+    PS C:\> Get-CCAccountListFromProfiles
 
     ProfileName  Account       AccountAlias
     -----------  -------       ------------
@@ -395,20 +395,20 @@ function Get-AccountListFromProfiles {
   Get-AWSCredential -ListProfileDetail  | ForEach-Object { Select-Object -InputObject $_   Profilename, @{Name = "Account"; Expression = { (Get-STSCallerIdentity -ProfileName  $_.ProfileName).Account } }, @{Name = "AccountAlias"; Expression = { Get-IAMAccountAlias -ProfileName  $_.ProfileName } } }
 }
 
-function Start-MultiStackDriftDetection {
+function Start-CCMultiStackDriftDetection {
   <#
 .SYNOPSIS
   Detects drift on all stacks passed into the function
 .DESCRIPTION
-  Start-MultiStackDriftDetection  will detect Stack drift on all stack names passed into it,
+  Start-CCMultiStackDriftDetection  will detect Stack drift on all stack names passed into it,
   and will bypass the stacks that it doesn't make sense to do the drift detection on.
 
 .EXAMPLE
-  PS C:\> (Get-CFNstack).StackName |Select-Object -first 5  |Start-MultiStackDriftDetection
+  PS C:\> (Get-CFNstack).StackName |Select-Object -first 5  |Start-CCMultiStackDriftDetection
   Starts a drift detection of the first 5 stacks listed.
 
 .EXAMPLE
-PS C:\> Start-MultiStackDriftDetection
+PS C:\> Start-CCMultiStackDriftDetection
 
 Does stack drift detection on all stacks within a region.
 
@@ -530,7 +530,7 @@ Stackname or list of stackNames to start
   }
 }
 
-function Get-AWSAccountListOfDriftedResources {
+function Get-CCAWSAccountListOfDriftedResources {
   <#
 .SYNOPSIS
     Lists all drifted resources across CloudFormation stacks in an AWS account.
@@ -567,10 +567,10 @@ function Get-AWSAccountListOfDriftedResources {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Get-AWSAccountListOfDriftedResources -Region us-east-1 -ProfileName myprofile
+    Get-CCAWSAccountListOfDriftedResources -Region us-east-1 -ProfileName myprofile
 
 .EXAMPLE
-    Get-AWSAccountListOfDriftedResources -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
+    Get-CCAWSAccountListOfDriftedResources -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
 #>
   [CmdletBinding()]
   param (
@@ -627,7 +627,7 @@ function Get-AWSAccountListOfDriftedResources {
   }
 }
 
-function Get-AWSObjectCount {
+function Get-CCAWSObjectCount {
   <#
 .SYNOPSIS
     Quick scan to see if a region is in use.
@@ -660,7 +660,7 @@ function Get-AWSObjectCount {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    PS C:\> .\Get-AWSObjectCount.ps1 |Format-Table
+    PS C:\> .\Get-CCAWSObjectCount.ps1 |Format-Table
 
 
 
@@ -684,7 +684,7 @@ us-west-1               0        1        0           0           0   True
 us-west-2               0        1        0           0           0   True
 
 .EXAMPLE
-PS C:\> .\Get-AWSObjectCount.ps1 -Region us-east-1
+PS C:\> .\Get-CCAWSObjectCount.ps1 -Region us-east-1
 
 
 Region      : us-east-1
@@ -696,7 +696,7 @@ LambdaCount : 36
 ScanOk      : True
 
 .EXAMPLE
-.\Get-AWSObjectCount.ps1 -Region @('us-east-1','us-east-2') |Format-Table
+.\Get-CCAWSObjectCount.ps1 -Region @('us-east-1','us-east-2') |Format-Table
 
 
 Region    StackCount VPCCount EC2Count BucketCount LambdaCount ScanOk
@@ -819,11 +819,11 @@ us-east-2          0        1        1           2           0   True
 .PARAMETER Role
 	The name of the role you want to assume,
 .EXAMPLE
-	PS C:\> Use-AssumedRole -Role MyAdminRole
+	PS C:\> Use-CCAssumedRole -Role MyAdminRole
 
 	Assumes the specified role and stores the temporary credentials in ~/.aws/credentials.
 #>
-function Use-AssumedRole($Role) {
+function Use-CCAssumedRole($Role) {
   $RoleSessionName = (Get-STSCallerIdentity).UserId.Split(':')[-1]
   $RoleArnToAssume = (Get-IAMRole -RoleName $Role).Arn
   try {
@@ -849,10 +849,10 @@ function Use-AssumedRole($Role) {
 
 
 # ================================================================================================
-# Update-SSOCredentialList Function
+# Update-CCSSOCredentialList Function
 # ================================================================================================
 
-function Update-SSOCredentialList {
+function Update-CCSSOCredentialList {
   <#
 .SYNOPSIS
     Retrieves SSO credentials for all accounts/roles and updates ~/.aws/credentials.
@@ -905,10 +905,10 @@ function Update-SSOCredentialList {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Update-SSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' -Region 'us-east-1'
+    Update-CCSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' -Region 'us-east-1'
 
 .EXAMPLE
-    Update-SSOCredentialList -StartUrl 'https://mycompany.awsapps.com/start' -Region 'us-east-1' `
+    Update-CCSSOCredentialList -StartUrl 'https://mycompany.awsapps.com/start' -Region 'us-east-1' `
         -RoleFilter 'Admin*' -ProfilePrefix 'sso-'
 #>
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]

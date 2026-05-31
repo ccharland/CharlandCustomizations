@@ -10,12 +10,12 @@
 
 .NOTES
     Used by:
-        - New-CFNStackFromDirectory
-        - Test-CFNStackFromDirectory
-        - Out-CFNStackInfo
-        - Update-CFNStackFromDirectory
-        - New-CFNStackDirectory
-        - Edit-CFTTEbsVolumes
+        - New-CCCFNStackFromDirectory
+        - Test-CCCFNStackFromDirectory
+        - Out-CCCFNStackInfo
+        - Update-CCCFNStackFromDirectory
+        - New-CCCFNStackDirectory
+        - Edit-CCCFTTEbsVolumes
 #>
 
 # ================================================================================================
