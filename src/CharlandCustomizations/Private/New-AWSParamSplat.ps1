@@ -12,12 +12,45 @@ function New-AWSParamSplat {
         actually provided. This eliminates repetitive parameter-building code across
         all AWS functions in the module.
 
+        Supported parameters: Region, ProfileName, AccessKey, SecretKey,
+        SessionToken, Credential, NetworkCredential, ProfileLocation, EndpointUrl.
+
+        Parameter types and aliases match the AWS Tools for PowerShell common
+        parameters exactly, enabling pipeline passthrough compatibility.
+
         Only keys present in $PSBoundParameters are included, which prevents
         overriding AWS session defaults when a parameter is not specified.
 
     .PARAMETER BoundParameters
         The $PSBoundParameters dictionary from the calling function. Pass this
         directly from the caller to filter out non-AWS parameters automatically.
+
+    .PARAMETER Region
+        The system name of an AWS region or an AWSRegion instance.
+
+    .PARAMETER ProfileName
+        The user-defined name of an AWS credentials or SAML-based role profile.
+
+    .PARAMETER AccessKey
+        The AWS access key for the user account.
+
+    .PARAMETER SecretKey
+        The AWS secret key for the user account.
+
+    .PARAMETER SessionToken
+        The session token if the access and secret keys are temporary session-based credentials.
+
+    .PARAMETER Credential
+        An AWSCredentials object instance containing access and secret key information.
+
+    .PARAMETER NetworkCredential
+        Used with SAML-based authentication when ProfileName references a SAML role profile.
+
+    .PARAMETER ProfileLocation
+        The name and location of the ini-format credential file.
+
+    .PARAMETER EndpointUrl
+        The endpoint to make the call against.
 
     .EXAMPLE
         $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
@@ -45,36 +78,102 @@ function New-AWSParamSplat {
         Shows the standard usage pattern. Only Region and ProfileName are passed
         through; StackName is excluded because it is not an AWS common parameter.
     #>
-    [CmdletBinding()]
-    [OutputType([hashtable])]
+    [CmdletBinding(DefaultParameterSetName = 'Direct')]
+    [OutputType([hashtable], ParameterSetName = 'BoundParameters')]
+    [OutputType([PSCustomObject], ParameterSetName = 'Direct')]
+    # Suppress: New- verb triggers ShouldProcess rule but this function only builds an object
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
+        Justification = 'Function builds a parameter object, does not change system state')]
+    # Suppress: Credential accepts AWSCredentials (AWS SDK type), not PSCredential
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'Credential',
+        Justification = 'Credential parameter accepts AWSCredentials object, not a password')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUsePSCredentialType', '',
+        Justification = 'Credential parameter accepts AWSCredentials object, not PSCredential')]
+    # Suppress: NetworkCredential typed as [object] to avoid pipeline binding errors
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'NetworkCredential',
+        Justification = 'NetworkCredential typed as [object] for pipeline compatibility')]
     param(
-        [Parameter(Mandatory)]
-        [System.Collections.Generic.Dictionary[string, object]]$BoundParameters
+        [Parameter(Mandatory, ParameterSetName = 'BoundParameters')]
+        [System.Collections.Generic.Dictionary[string, object]]$BoundParameters,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [Alias('RegionToCall')]
+        [object]$Region,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [Alias('StoredCredentials', 'AWSProfileName')]
+        [string]$ProfileName,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [Alias('AK')]
+        [string]$AccessKey,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [Alias('SK', 'SecretAccessKey')]
+        [string]$SecretKey,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [Alias('ST')]
+        [string]$SessionToken,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [object]$Credential,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [object]$NetworkCredential,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [Alias('AWSProfilesLocation', 'ProfilesLocation')]
+        [string]$ProfileLocation,
+
+        [Parameter(ParameterSetName = 'Direct', ValueFromPipelineByPropertyName)]
+        [string]$EndpointUrl
     )
 
-    # Known AWS Tools for PowerShell common credential and region parameter names
-    $awsParamNames = @(
-        'Region'
-        'ProfileName'
-        'AccessKey'
-        'SecretKey'
-        'SessionToken'
-        'Credential'
-        'ProfileLocation'
-        'EndpointUrl'
-    )
-
-    $splat = @{}
-
-    foreach ($key in $BoundParameters.Keys) {
-        if ($key -in $awsParamNames) {
-            $value = $BoundParameters[$key]
-            # Exclude null values and empty strings, but allow non-string objects
-            if ($null -ne $value -and ($value -isnot [string] -or $value -ne '')) {
-                $splat[$key] = $value
-            }
-        }
+    begin {
+        # Known AWS Tools for PowerShell common credential and region parameter names
+        $awsParamNames = @(
+            'Region'
+            'ProfileName'
+            'AccessKey'
+            'SecretKey'
+            'SessionToken'
+            'Credential'
+            'NetworkCredential'
+            'ProfileLocation'
+            'EndpointUrl'
+        )
     }
 
-    return $splat
+    process {
+        $splat = @{}
+
+        if ($PSCmdlet.ParameterSetName -eq 'BoundParameters') {
+            # Filter from caller's $PSBoundParameters dictionary
+            foreach ($key in $BoundParameters.Keys) {
+                if ($key -in $awsParamNames) {
+                    $value = $BoundParameters[$key]
+                    # Exclude null values and empty strings, but allow non-string objects
+                    if ($null -ne $value -and ($value -isnot [string] -or $value -ne '')) {
+                        $splat[$key] = $value
+                    }
+                }
+            }
+            $splat
+        }
+        else {
+            # Build from directly-passed or pipeline-bound parameters
+            foreach ($key in $awsParamNames) {
+                if ($PSBoundParameters.ContainsKey($key)) {
+                    $value = $PSBoundParameters[$key]
+                    # Exclude null values and empty strings, but allow non-string objects
+                    if ($null -ne $value -and ($value -isnot [string] -or $value -ne '')) {
+                        $splat[$key] = $value
+                    }
+                }
+            }
+            # Output as PSCustomObject so properties bind via pipeline to downstream cmdlets
+            [PSCustomObject]$splat
+        }
+    }
 }
