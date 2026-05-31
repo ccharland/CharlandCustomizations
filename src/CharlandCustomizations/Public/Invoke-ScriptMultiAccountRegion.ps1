@@ -35,6 +35,9 @@ function Invoke-ScriptMultiAccountRegion {
 .PARAMETER ThrottleLimit
     Seconds to wait between calls to avoid throttling. Defaults to 0.
 
+.PARAMETER NoProgress
+    Suppress progress bar output.
+
 .PARAMETER AccessKey
     AWS access key for explicit credentials. Optional.
 
@@ -67,7 +70,7 @@ function Invoke-ScriptMultiAccountRegion {
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string[]]$ProfileName,
 
-    [Parameter()]
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string[]]$Region,
 
     [Parameter(Mandatory)]
@@ -85,6 +88,9 @@ function Invoke-ScriptMultiAccountRegion {
     [Parameter()]
     [ValidateRange(0, 60)]
     [int]$ThrottleLimit = 0,
+
+    [Parameter()]
+    [switch]$NoProgress,
 
     # AWS common parameters (credential passthrough for Get-STSCallerIdentity validation)
     [Parameter()]
@@ -154,9 +160,11 @@ function Invoke-ScriptMultiAccountRegion {
   process {
     foreach ($prof in $ProfileName) {
       $profileCount++
-      Write-Progress -Id 1 -Activity "Processing AWS Profiles" `
-        -Status "Profile: $prof (#$profileCount)" `
-        -CurrentOperation "Authenticating..."
+      if (-not $NoProgress) {
+        Write-Progress -Id 1 -Activity "Processing AWS Profiles" `
+          -Status "Profile: $prof (#$profileCount)" `
+          -CurrentOperation "Authenticating..."
+      }
 
       # Validate credentials before doing any work for this profile
       # Override ProfileName per iteration; base awsParams carries other credential params
@@ -205,9 +213,11 @@ function Invoke-ScriptMultiAccountRegion {
       foreach ($r in $Region) {
         $regionIndex++
         $regionPercent = [int](($regionIndex / $regionTotal) * 100)
-        Write-Progress -Id 2 -ParentId 1 -Activity "Processing Regions for '$prof'" `
-          -Status "Region: $r ($regionIndex of $regionTotal)" `
-          -PercentComplete $regionPercent
+        if (-not $NoProgress) {
+          Write-Progress -Id 2 -ParentId 1 -Activity "Processing Regions for '$prof'" `
+            -Status "Region: $r ($regionIndex of $regionTotal)" `
+            -PercentComplete $regionPercent
+        }
 
         Write-Verbose "Executing against Profile='$prof', Region='$r'"
 
@@ -281,11 +291,15 @@ function Invoke-ScriptMultiAccountRegion {
           Start-Sleep -Seconds $ThrottleLimit
         }
       }
-      Write-Progress -Id 2 -ParentId 1 -Activity "Processing Regions for '$prof'" -Completed
+      if (-not $NoProgress) {
+        Write-Progress -Id 2 -ParentId 1 -Activity "Processing Regions for '$prof'" -Completed
+      }
     }
   }
 
   end {
-    Write-Progress -Id 1 -Activity "Processing AWS Profiles" -Completed
+    if (-not $NoProgress) {
+      Write-Progress -Id 1 -Activity "Processing AWS Profiles" -Completed
+    }
   }
 }
