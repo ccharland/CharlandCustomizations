@@ -10,8 +10,9 @@ function Invoke-ScriptMultiAccountRegion {
     and compare data across your AWS estate.
 
     Designed for read-only data gathering (e.g., Get-EC2SecurityGroup, Get-S3Bucket,
-    Get-IAMUser). The ScriptBlock receives -ProfileName and -Region via
-    PSDefaultParameterValues so AWS cmdlets inside the block automatically use them.
+    Get-IAMUser). The ScriptBlock runs with AWS environment variables
+    (AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_SESSION_TOKEN or AWS_PROFILE, plus
+    AWS_DEFAULT_REGION) set for each account/region iteration.
 
 .PARAMETER ProfileName
     One or more AWS profile names to iterate over. Accepts pipeline input.
