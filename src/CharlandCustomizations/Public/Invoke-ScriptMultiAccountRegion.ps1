@@ -113,7 +113,6 @@ function Invoke-ScriptMultiAccountRegion {
     $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
     $awsParams.Remove('ProfileName') | Out-Null
     $awsParams.Remove('Region') | Out-Null
-
     if (-not $ProfileName) {
       # Try the shell's current stored credential profile name
       $currentProfile = $null
@@ -173,6 +172,35 @@ function Invoke-ScriptMultiAccountRegion {
         continue
       }
 
+      # Resolve the profile into concrete AccessKey/SecretKey/SessionToken.
+      # For profiles stored in the credentials file (e.g., from Update-SSOCredentialList),
+      # read the keys directly. This avoids SSO token re-resolution and SDK caching issues.
+      $resolvedCreds = $null
+      try {
+        # Get-AWSCredential -ProfileName with the profile's location resolves correctly
+        # because it reads directly from the ini file, not from the SSO token cache.
+        $profileDetail = Get-AWSCredential -ListProfileDetail |
+          Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
+
+        if ($profileDetail -and $profileDetail.ProfileLocation) {
+          $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
+          if ($credObj) {
+            $resolvedCreds = $credObj.GetCredentials()
+          }
+        }
+
+        if (-not $resolvedCreds) {
+          # Fall back: try without explicit ProfileLocation
+          $credObj = Get-AWSCredential -ProfileName $prof
+          if ($credObj) {
+            $resolvedCreds = $credObj.GetCredentials()
+          }
+        }
+      }
+      catch {
+        Write-Verbose "Could not resolve credentials for profile '$prof': $_"
+      }
+
       $regionIndex = 0
       foreach ($r in $Region) {
         $regionIndex++
@@ -184,21 +212,31 @@ function Invoke-ScriptMultiAccountRegion {
         Write-Verbose "Executing against Profile='$prof', Region='$r'"
 
         try {
-          $originalDefaults = $PSDefaultParameterValues.Clone()
-          $PSDefaultParameterValues['*:ProfileName'] = $prof
-          $PSDefaultParameterValues['*:Region'] = $r
+          # Save current environment variables
+          $origAK = $env:AWS_ACCESS_KEY_ID
+          $origSK = $env:AWS_SECRET_ACCESS_KEY
+          $origST = $env:AWS_SESSION_TOKEN
+          $origRegion = $env:AWS_DEFAULT_REGION
+          $origProfile = $env:AWS_PROFILE
 
-          # Module-scoped functions cannot modify the caller's $PSDefaultParameterValues.
-          # Use [scriptblock]::Create() to build an unbound scriptblock (not tied to any
-          # module's session state) that sets $PSDefaultParameterValues and then invokes
-          # the user's original ScriptBlock. Unbound scriptblocks execute in the global/
-          # caller scope where AWS cmdlets will see the default parameter values.
-          $invoker = [scriptblock]::Create(@"
-            `$PSDefaultParameterValues['*:ProfileName'] = '$($prof -replace "'", "''")'
-            `$PSDefaultParameterValues['*:Region'] = '$($r -replace "'", "''")'
-            & `$args[0]
-"@)
-          $results = & $invoker $ScriptBlock
+          if ($resolvedCreds -and $resolvedCreds.AccessKey) {
+            # Set environment variables that the AWS SDK always respects
+            $env:AWS_ACCESS_KEY_ID = $resolvedCreds.AccessKey
+            $env:AWS_SECRET_ACCESS_KEY = $resolvedCreds.SecretKey
+            $env:AWS_SESSION_TOKEN = $resolvedCreds.Token
+            $env:AWS_DEFAULT_REGION = $r
+            $env:AWS_PROFILE = $null
+          }
+          else {
+            $env:AWS_ACCESS_KEY_ID = $null
+            $env:AWS_SECRET_ACCESS_KEY = $null
+            $env:AWS_SESSION_TOKEN = $null
+            $env:AWS_DEFAULT_REGION = $r
+            $env:AWS_PROFILE = $prof
+          }
+
+          Write-Verbose "Invoking scriptblock for Profile='$prof', Region='$r'"
+          $results = & $ScriptBlock
 
           if ($results) {
             foreach ($item in $results) {
@@ -230,17 +268,12 @@ function Invoke-ScriptMultiAccountRegion {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
         }
         finally {
-          # Restore module-scoped defaults
-          $PSDefaultParameterValues.Clear()
-          foreach ($key in $originalDefaults.Keys) {
-            $PSDefaultParameterValues[$key] = $originalDefaults[$key]
-          }
-          # Clean up caller/global scope defaults set by the unbound invoker scriptblock
-          $cleanup = [scriptblock]::Create(
-            "`$PSDefaultParameterValues.Remove('*:ProfileName'); " +
-            "`$PSDefaultParameterValues.Remove('*:Region')"
-          )
-          & $cleanup
+          # Restore original environment variables
+          $env:AWS_ACCESS_KEY_ID = $origAK
+          $env:AWS_SECRET_ACCESS_KEY = $origSK
+          $env:AWS_SESSION_TOKEN = $origST
+          $env:AWS_DEFAULT_REGION = $origRegion
+          $env:AWS_PROFILE = $origProfile
         }
 
         if ($ThrottleLimit -gt 0) {
