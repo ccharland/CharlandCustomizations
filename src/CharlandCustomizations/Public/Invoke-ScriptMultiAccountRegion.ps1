@@ -191,23 +191,18 @@ function Invoke-ScriptMultiAccountRegion {
           Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
 
         if ($profileDetail -and $profileDetail.ProfileLocation) {
-        if ($profileDetail -and $profileDetail.ProfileLocation) {
           $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
           if ($credObj -and $credObj.GetCredentials) {
             $resolvedCreds = $credObj.GetCredentials()
           }
         }
-        }
 
-        if (-not $resolvedCreds) {
-          # Fall back: try without explicit ProfileLocation
         if (-not $resolvedCreds) {
           # Fall back: try without explicit ProfileLocation
           $credObj = Get-AWSCredential -ProfileName $prof
           if ($credObj -and $credObj.GetCredentials) {
             $resolvedCreds = $credObj.GetCredentials()
           }
-        }
         }
       }
       catch {
