@@ -125,7 +125,7 @@ Minimum tests:
 - `Test-CCCFNStackFromDirectory`
 - `Out-CCCFNStackInfo`
 - `New-CCCFNStackDirectory`
-- `Edit-CCCFTTEbsVolume`
+- `Edit-CCCFTTEbsVolumes`
 - `Test-CCCommitSignature`
 - `Scripts/Test-CodeQuality.ps1`
 

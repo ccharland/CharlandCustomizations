@@ -133,10 +133,10 @@ Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
 
 ```powershell
 # Validate commit signatures
-Test-CCCommitSignatures
+Test-CCCommitSignature
 
 # Check last 10 commits
-Test-CCCommitSignatures -Count 10
+Test-CCCommitSignature -Count 10
 ```
 
 ## Module Management

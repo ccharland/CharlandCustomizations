@@ -35,8 +35,8 @@ CharlandCustomizations/
 │           │   └── S3/S3Customizations.psm1
 │           └── Git/
 │               ├── GitCustomizations.psm1
-│               ├── Install-CCGitHooks.ps1
-│               └── Test-CCCommitSignatures.ps1
+│               ├── Install-CCGitHook.ps1
+│               └── Test-CCCommitSignature.ps1
 ├── tests/                         # Pester tests
 ├── build/                         # Build output (gitignored)
 ├── docs/                          # Documentation
