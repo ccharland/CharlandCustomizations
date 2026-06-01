@@ -99,7 +99,7 @@ These commands can delete resources, modify credentials, publish artifacts, writ
 - `Invoke-CCScriptMultiAccountRegion`
 - `Set-CCFileSignature`
 - `Clear-CCAuthenticodeSignature`
-- `Install-CCGitHooks`
+- `Install-CCGitHook`
 - `Scripts/Build-Module.ps1`
 - `Scripts/Publish-CharlandCustomizations.ps1`
 - `Scripts/Register-LocalRepository.ps1`
@@ -126,7 +126,7 @@ Minimum tests:
 - `Out-CCCFNStackInfo`
 - `New-CCCFNStackDirectory`
 - `Edit-CCCFTTEbsVolumes`
-- `Test-CCCommitSignatures`
+- `Test-CCCommitSignature`
 - `Scripts/Test-CodeQuality.ps1`
 
 Minimum tests:
@@ -203,8 +203,8 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 | `Get-CCEC2VolumeReport` | Function | P3 | Pending | Pending | Volume mocks |
 | `Start-CCEC2RetryLoop` | Function | P3 | Pending | Pending | Retry behavior |
 | `Find-CCOpenSecurityGroup` | Function | P3 | Pending | Pending | Security group rules |
-| `Test-CCCommitSignatures` | Function | P2 | Pending | Pending | Temporary git repo |
-| `Install-CCGitHooks` | Function | P1 | Pending | Pending | File mutation |
+| `Test-CCCommitSignature` | Function | P2 | Pending | Pending | Temporary git repo |
+| `Install-CCGitHook` | Function | P1 | Pending | Pending | File mutation |
 | `New-AWSParamSplat` | Private Helper | P2 | Ready | Ready | Existing tests in `tests/New-AWSParamSplat.Tests.ps1` |
 | `Scripts/Build-Module.ps1` | Script | P1 | Pending | Pending | Build/package gate |
 | `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Pending | Pending | Publish flow with mocks |

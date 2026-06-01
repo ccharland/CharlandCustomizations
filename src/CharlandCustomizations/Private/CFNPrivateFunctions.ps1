@@ -149,7 +149,7 @@ function Get-CFNContext {
     }
 }
 
-function Get-StackFiles {
+function Get-StackFile {
     param($StackPath)
     @{
         Parameters   = if (Test-Path ([CFNStackDirectoryInfo]::GetParametersPath($StackPath))) { Get-Content ([CFNStackDirectoryInfo]::GetParametersPath($StackPath)) -Raw | ConvertFrom-Json } else { @() }

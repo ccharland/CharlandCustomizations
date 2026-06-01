@@ -89,7 +89,7 @@ FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccount
                'Get-CCIAMAuditList', 'Get-CCGlobalAuditReportItem',
                'Get-CCEC2KeyTagNameStatus', 'Get-CCEC2SnapshotReport',
                'Get-CCEC2VolumeReport', 'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup',
-               'Test-CCCommitSignatures', 'Install-CCGitHooks'
+               'Test-CCCommitSignature', 'Install-CCGitHook'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.

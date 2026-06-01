@@ -1,4 +1,4 @@
-function Test-CCCommitSignatures {
+function Test-CCCommitSignature {
     <#
     .SYNOPSIS
         Tests that commits are signed (GPG or SSH)
@@ -17,19 +17,19 @@ function Test-CCCommitSignatures {
         Branch to check (default: current branch)
         
     .EXAMPLE
-        Test-CCCommitSignatures
+        Test-CCCommitSignature
         Checks the last commit
         
     .EXAMPLE
-        Test-CCCommitSignatures -Count 10
+        Test-CCCommitSignature -Count 10
         Checks the last 10 commits
         
     .EXAMPLE
-        Test-CCCommitSignatures -Range "HEAD~5..HEAD"
+        Test-CCCommitSignature -Range "HEAD~5..HEAD"
         Checks specific commit range
         
     .EXAMPLE
-        Test-CCCommitSignatures -Branch main
+        Test-CCCommitSignature -Branch main
         Checks commits on main branch
     #>
     [CmdletBinding()]
