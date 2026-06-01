@@ -181,7 +181,7 @@ This module consolidates the following CloudFormation-related scripts:
 - `Update-CCCFNStackFromDirectory.ps1`
 - `Out-CCCFNStackInfo.ps1`
 - `New-CCCFNStackDirectory.ps1`
-- `Edit-CCCFTTEbsVolumes.ps1`
+- `Edit-CCCFTTEbsVolume.ps1`
 
 ## Error Handling and Best Practices
 

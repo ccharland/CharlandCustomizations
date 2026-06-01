@@ -937,7 +937,7 @@ function New-CCCFNStackDirectory {
 }
 
 # ================================================================================================
-# Edit-CCCFTTEbsVolumes Function
+# Edit-CCCFTTEbsVolume Function
 # ================================================================================================
 
 <#
@@ -991,13 +991,13 @@ New EBS Volume type (GP2, GP3)
 Optional filename to save the modified template
 
 .EXAMPLE
-Edit-CCCFTTEbsVolumes -StackName "MyStack" -OldVolumeType "gp2" -NewVolumeType "gp3"
+Edit-CCCFTTEbsVolume -StackName "MyStack" -OldVolumeType "gp2" -NewVolumeType "gp3"
 Changes all gp2 volumes to gp3 in the MyStack CloudFormation stack
 
 .NOTES
 This function creates a change set to preview changes before applying them.
 #>
-function Edit-CCCFTTEbsVolumes {
+function Edit-CCCFTTEbsVolume {
     [CmdletBinding(ConfirmImpact = 'medium', SupportsShouldProcess = $True)]
     param (
         [Parameter(Mandatory = $true)][string]$StackName,
@@ -1143,5 +1143,5 @@ Export-ModuleMember -Function @(
     'Out-CCCFNStackInfo',
     'Update-CCCFNStackFromDirectory',
     'New-CCCFNStackDirectory',
-    'Edit-CCCFTTEbsVolumes'
+    'Edit-CCCFTTEbsVolume'
 )

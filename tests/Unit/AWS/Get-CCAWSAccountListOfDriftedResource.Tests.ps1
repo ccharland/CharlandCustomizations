@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Get-CCAWSAccountListOfDriftedResources' -Tag 'Unit' {
+Describe 'Get-CCAWSAccountListOfDriftedResource' -Tag 'Unit' {
 
     Context 'Returns only MODIFIED or DELETED resources, excludes NOT_MODIFIED and IN_SYNC' {
 
@@ -52,7 +52,7 @@ Describe 'Get-CCAWSAccountListOfDriftedResources' -Tag 'Unit' {
         }
 
         It 'Returns MODIFIED and DELETED resources in output (Req 3.8)' {
-            $result = Get-CCAWSAccountListOfDriftedResources
+            $result = Get-CCAWSAccountListOfDriftedResource
 
             $logicalIds = $result | Select-Object -ExpandProperty LogicalResourceId
             $logicalIds | Should -Contain 'ModifiedResource'
@@ -60,21 +60,21 @@ Describe 'Get-CCAWSAccountListOfDriftedResources' -Tag 'Unit' {
         }
 
         It 'Excludes NOT_MODIFIED resources from output (Req 3.8)' {
-            $result = Get-CCAWSAccountListOfDriftedResources
+            $result = Get-CCAWSAccountListOfDriftedResource
 
             $logicalIds = $result | Select-Object -ExpandProperty LogicalResourceId
             $logicalIds | Should -Not -Contain 'NotModifiedResource'
         }
 
         It 'Excludes IN_SYNC resources from output (Req 3.8)' {
-            $result = Get-CCAWSAccountListOfDriftedResources
+            $result = Get-CCAWSAccountListOfDriftedResource
 
             $logicalIds = $result | Select-Object -ExpandProperty LogicalResourceId
             $logicalIds | Should -Not -Contain 'InSyncResource'
         }
 
         It 'Calls Get-CFNStackResourceDrift only for drifted resources (Req 3.8)' {
-            Get-CCAWSAccountListOfDriftedResources | Out-Null
+            Get-CCAWSAccountListOfDriftedResource | Out-Null
 
             Should -Invoke Get-CFNStackResourceDrift -ModuleName AWSCustomizations -Times 2 -Exactly
         }
@@ -129,7 +129,7 @@ Describe 'Get-CCAWSAccountListOfDriftedResources' -Tag 'Unit' {
                 } -ModuleName AWSCustomizations
 
                 # Act
-                $result = @(Get-CCAWSAccountListOfDriftedResources)
+                $result = @(Get-CCAWSAccountListOfDriftedResource)
 
                 # Assert: result count matches expected drifted count
                 $result.Count | Should -Be $expectedIds.Count -Because "Iteration $iteration : only MODIFIED/DELETED should be returned"

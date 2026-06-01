@@ -136,7 +136,7 @@ The following CloudFormation-related scripts are **NOT** included in this module
 - `Update-CCCFNStackFromDirectory.ps1`
 - `Out-CCCFNStackInfo.ps1`
 - `New-CCCFNStackDirectory.ps1`
-- `Edit-CCCFTTEbsVolumes.ps1`
+- `Edit-CCCFTTEbsVolume.ps1`
 
 These are available separately in the `TemplateProcessing.psm1` module.
 

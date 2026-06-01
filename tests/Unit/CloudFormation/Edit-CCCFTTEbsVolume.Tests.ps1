@@ -7,7 +7,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
-Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
+Describe 'Edit-CCCFTTEbsVolume' -Tag 'Unit' {
 
     BeforeAll {
         $moduleName = 'CloudFormation-TemplateProcessing'
@@ -75,7 +75,7 @@ Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
 
         It 'Replaces all occurrences of OldVolumeType with NewVolumeType in the template' {
             # Act
-            Edit-CCCFTTEbsVolumes -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
+            Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
 
             # Assert — New-CFNChangeSet should receive a template body with gp3, not gp2
             Should -Invoke New-CFNChangeSet -ModuleName $moduleName -Times 1 -ParameterFilter {
@@ -85,7 +85,7 @@ Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
 
         It 'Calls New-CFNChangeSet to create the change set' {
             # Act
-            Edit-CCCFTTEbsVolumes -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
+            Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
 
             # Assert
             Should -Invoke New-CFNChangeSet -ModuleName $moduleName -Times 1
@@ -139,7 +139,7 @@ Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
                 } -ModuleName $moduleName
 
                 # Act
-                Edit-CCCFTTEbsVolumes -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
+                Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
 
                 # Assert — zero occurrences of OldVolumeType remain
                 $remainingOccurrences = ([regex]::Matches($capturedBody, [regex]::Escape($oldType))).Count

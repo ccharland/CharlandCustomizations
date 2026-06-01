@@ -347,7 +347,7 @@ function Set-CCAWSEnv {
     Write-Verbose "Operation cancelled by user"
   }
 }
-function Remove-CCExpiredAWSProfiles {
+function Remove-CCExpiredAWSProfile {
   <#
   .SYNOPSIS
     Removes expired temporary credentials stored in local credential stores.
@@ -355,7 +355,7 @@ function Remove-CCExpiredAWSProfiles {
     Tests all AWS Profiles by calling Get-STSCallerIdentity. If the call fails with an
     ExpiredToken error, the profile is removed from the credential store.
   .EXAMPLE
-    Remove-CCExpiredAWSProfiles
+    Remove-CCExpiredAWSProfile
     Scans all profiles with a credential file location and removes any with expired tokens.
   #>
   [CmdletBinding()]
@@ -378,7 +378,7 @@ function Remove-CCExpiredAWSProfiles {
     }
   }
 }
-function Get-CCAccountListFromProfiles {
+function Get-CCAccountListFromProfile {
   <#
   .SYNOPSIS
     Lists  AWS ProfileName, Account, and AccountAlias
@@ -386,7 +386,7 @@ function Get-CCAccountListFromProfiles {
     Enumerates all locally stored AWS credential profiles and retrieves the associated
     account ID and account alias for each by calling Get-STSCallerIdentity and Get-IAMAccountAlias.
   .EXAMPLE
-    PS C:\> Get-CCAccountListFromProfiles
+    PS C:\> Get-CCAccountListFromProfile
 
     ProfileName  Account       AccountAlias
     -----------  -------       ------------
@@ -530,7 +530,7 @@ Stackname or list of stackNames to start
   }
 }
 
-function Get-CCAWSAccountListOfDriftedResources {
+function Get-CCAWSAccountListOfDriftedResource {
   <#
 .SYNOPSIS
     Lists all drifted resources across CloudFormation stacks in an AWS account.
@@ -567,10 +567,10 @@ function Get-CCAWSAccountListOfDriftedResources {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Get-CCAWSAccountListOfDriftedResources -Region us-east-1 -ProfileName myprofile
+    Get-CCAWSAccountListOfDriftedResource -Region us-east-1 -ProfileName myprofile
 
 .EXAMPLE
-    Get-CCAWSAccountListOfDriftedResources -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
+    Get-CCAWSAccountListOfDriftedResource -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
 #>
   [CmdletBinding()]
   param (

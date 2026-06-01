@@ -53,7 +53,7 @@ Test-CFNTemplateFromFile -Path ./template.yaml
 Get-CFNStack | Start-CCMultiStackDriftDetection
 
 # List drifted resources
-Get-CCAWSAccountListOfDriftedResources
+Get-CCAWSAccountListOfDriftedResource
 ```
 
 ### AWS Account Audit
@@ -82,10 +82,10 @@ Out-CCAWSNetworkingComponent -Region us-east-1 -RootPath ./accounts
 
 ```powershell
 # List accounts from profiles
-Get-CCAccountListFromProfiles
+Get-CCAccountListFromProfile
 
 # Clean up expired credentials
-Remove-CCExpiredAWSProfiles
+Remove-CCExpiredAWSProfile
 
 # Quick resource scan by region
 Get-CCAWSObjectCount

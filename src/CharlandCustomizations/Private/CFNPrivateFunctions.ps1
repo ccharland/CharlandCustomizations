@@ -15,7 +15,7 @@
         - Out-CCCFNStackInfo
         - Update-CCCFNStackFromDirectory
         - New-CCCFNStackDirectory
-        - Edit-CCCFTTEbsVolumes
+        - Edit-CCCFTTEbsVolume
 #>
 
 # ================================================================================================

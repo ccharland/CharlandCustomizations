@@ -94,7 +94,7 @@ These commands can delete resources, modify credentials, publish artifacts, writ
 - `Update-CCCFNStackFromDirectory`
 - `Set-CCAWSProfileWithMFA`
 - `Update-CCSSOCredentialList`
-- `Remove-CCExpiredAWSProfiles`
+- `Remove-CCExpiredAWSProfile`
 - `Use-CCAssumedRole`
 - `Invoke-CCScriptMultiAccountRegion`
 - `Set-CCFileSignature`
@@ -118,14 +118,14 @@ Minimum tests:
 - `Find-CCCFNStackErrors`
 - `Get-CCAWSMFASession`
 - `Set-CCAWSEnv`
-- `Get-CCAccountListFromProfiles`
+- `Get-CCAccountListFromProfile`
 - `Start-CCMultiStackDriftDetection`
-- `Get-CCAWSAccountListOfDriftedResources`
+- `Get-CCAWSAccountListOfDriftedResource`
 - `Get-CCAWSObjectCount`
 - `Test-CCCFNStackFromDirectory`
 - `Out-CCCFNStackInfo`
 - `New-CCCFNStackDirectory`
-- `Edit-CCCFTTEbsVolumes`
+- `Edit-CCCFTTEbsVolume`
 - `Test-CCCommitSignature`
 - `Scripts/Test-CodeQuality.ps1`
 
@@ -177,19 +177,19 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 | `Set-CCAWSProfileWithMFA` | Function | P1 | Pending | Pending | Credential mutation |
 | `Get-CCAWSMFASession` | Function | P2 | Pending | Pending | STS mocks |
 | `Start-CCMultiStackDriftDetection` | Function | P2 | Pending | Pending | CloudFormation mocks |
-| `Get-CCAWSAccountListOfDriftedResources` | Function | P2 | Pending | Pending | CloudFormation mocks |
+| `Get-CCAWSAccountListOfDriftedResource` | Function | P2 | Pending | Pending | CloudFormation mocks |
 | `Get-CCAWSObjectCount` | Function | P2 | Pending | Pending | AWS inventory mocks |
 | `Set-CCAWSEnv` | Function | P2 | Pending | Pending | Environment mutation |
 | `Update-CCSSOCredentialList` | Function | P1 | Pending | Pending | SSO credential file behavior |
-| `Remove-CCExpiredAWSProfiles` | Function | P1 | Pending | Pending | Credential file mutation |
-| `Get-CCAccountListFromProfiles` | Function | P2 | Pending | Pending | Local credential parsing |
+| `Remove-CCExpiredAWSProfile` | Function | P1 | Pending | Pending | Credential file mutation |
+| `Get-CCAccountListFromProfile` | Function | P2 | Pending | Pending | Local credential parsing |
 | `Use-CCAssumedRole` | Function | P1 | Pending | Pending | Credential/environment mutation |
 | `New-CCCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation create flow |
 | `Test-CCCFNStackFromDirectory` | Function | P2 | Pending | Pending | Template validation flow |
 | `Out-CCCFNStackInfo` | Function | P2 | Pending | Pending | Output file/report behavior |
 | `Update-CCCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation update flow |
 | `New-CCCFNStackDirectory` | Function | P2 | Pending | Pending | File creation |
-| `Edit-CCCFTTEbsVolumes` | Function | P2 | Pending | Pending | Template transformation |
+| `Edit-CCCFTTEbsVolume` | Function | P2 | Pending | Pending | Template transformation |
 | `Clear-CCS3Bucket` | Function | P1 | Pending | Pending | Destructive S3 behavior |
 | `Get-CCEC2SGInUse` | Function | P3 | Pending | Pending | EC2/security group mocks |
 | `Get-CCEC2Count` | Function | P3 | Pending | Pending | EC2 mocks |
