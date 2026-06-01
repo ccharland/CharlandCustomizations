@@ -7,11 +7,15 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
+<<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
 Describe 'Edit-CCCFTTEbsVolume' -Tag 'Unit' {
 ========
 Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
 >>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
+========
+Describe 'Edit-CCCFTTEbsVolume' -Tag 'Unit' {
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
 
     BeforeAll {
         $moduleName = 'CloudFormation-TemplateProcessing'
@@ -79,11 +83,15 @@ Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
 
         It 'Replaces all occurrences of OldVolumeType with NewVolumeType in the template' {
             # Act
+<<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
             Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
 ========
             Edit-CCCFTTEbsVolumes -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
 >>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
+========
+            Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
 
             # Assert — New-CFNChangeSet should receive a template body with gp3, not gp2
             Should -Invoke New-CFNChangeSet -ModuleName $moduleName -Times 1 -ParameterFilter {
@@ -93,11 +101,15 @@ Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
 
         It 'Calls New-CFNChangeSet to create the change set' {
             # Act
+<<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
             Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
 ========
             Edit-CCCFTTEbsVolumes -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
 >>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
+========
+            Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType 'gp2' -NewVolumeType 'gp3' -Confirm:$false *>&1 | Out-Null
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
 
             # Assert
             Should -Invoke New-CFNChangeSet -ModuleName $moduleName -Times 1
@@ -151,11 +163,15 @@ Describe 'Edit-CCCFTTEbsVolumes' -Tag 'Unit' {
                 } -ModuleName $moduleName
 
                 # Act
+<<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
 <<<<<<<< HEAD:tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
                 Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
 ========
                 Edit-CCCFTTEbsVolumes -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
 >>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolumes.Tests.ps1
+========
+                Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/CloudFormation/Edit-CCCFTTEbsVolume.Tests.ps1
 
                 # Assert — zero occurrences of OldVolumeType remain
                 $remainingOccurrences = ([regex]::Matches($capturedBody, [regex]::Escape($oldType))).Count
