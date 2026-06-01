@@ -125,7 +125,7 @@ PrivateData = @{
         ProjectUri = 'https://github.com/ccharland/CharlandCustomizations'
 
         # A URL to an icon representing this module.
-        # IconUri = ''
+        IconUri = 'https://raw.githubusercontent.com/ccharland/CharlandCustomizations/main/Assets/icon-512.png'
 
         # ReleaseNotes of this module
         ReleaseNotes = 'Initial public release - module structure and steering files.'
