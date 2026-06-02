@@ -23,7 +23,7 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Set-AWSCredential {} -ModuleName AWSCustomizations
 
             Mock Get-STSCallerIdentity {
-                throw 'ExpiredToken: The security token included in the request is expired'
+                throw 'The security token included in the request is invalid'
             } -ModuleName AWSCustomizations
 
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
@@ -59,6 +59,54 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
 
             # Assert (Req 3.13)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 0 -Exactly
+        }
+    }
+
+    Context 'WhatIf behavior' {
+
+        It 'Does not call Remove-AWSCredentialProfile when WhatIf is used' {
+            # Arrange
+            Mock Get-AWSCredential {
+                @(
+                    [PSCustomObject]@{ ProfileName = 'expired-profile'; ProfileLocation = '~/.aws/credentials' }
+                )
+            } -ModuleName AWSCustomizations
+
+            Mock Get-STSCallerIdentity {
+                throw 'The security token included in the request is invalid'
+            } -ModuleName AWSCustomizations
+
+            Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
+
+            # Act
+            Remove-CCExpiredAWSProfile -WhatIf
+
+            # Assert
+            Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 0 -Exactly
+        }
+    }
+
+    Context 'Force behavior' {
+
+        It 'Passes Force to Remove-AWSCredentialProfile when Force is specified' {
+            # Arrange
+            Mock Get-AWSCredential {
+                @(
+                    [PSCustomObject]@{ ProfileName = 'expired-profile'; ProfileLocation = '~/.aws/credentials' }
+                )
+            } -ModuleName AWSCustomizations
+
+            Mock Get-STSCallerIdentity {
+                throw 'The security token included in the request is invalid'
+            } -ModuleName AWSCustomizations
+
+            Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
+
+            # Act
+            Remove-CCExpiredAWSProfile -Force -Confirm:$false
+
+            # Assert
+            Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 1 -Exactly -ParameterFilter { $Force }
         }
     }
 }

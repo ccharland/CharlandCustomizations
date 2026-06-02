@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     AWS PowerShell Customizations and scripts.
 #>
@@ -97,7 +97,7 @@ Stack4    UPDATE_COMPLETE ALambdaFunction   Resource skipped during UpdateRollba
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -215,7 +215,7 @@ function Set-CCAWSProfileWithMFA {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -253,24 +253,24 @@ function Set-CCAWSEnv {
 .DESCRIPTION
   Sets environment variables for Access key, secret key, token,
   default region based on the results of Get-AWSCredential and Get-DefaultAWSRegion.
-  
+
   This function modifies environment variables and supports -WhatIf and -Confirm.
-  
+
 .PARAMETER Force
   Skip confirmation prompts
-  
+
 .EXAMPLE
   PS> Set-CCAWSEnv
   Sets AWS environment variables from current credential
-  
+
 .EXAMPLE
   PS> Set-CCAWSEnv -WhatIf
   Shows what environment variables would be set without actually setting them
-  
+
 .EXAMPLE
   PS> Set-CCAWSEnv -Confirm:$false
   Sets environment variables without confirmation
-  
+
 .NOTES
   Requires an active AWS credential to be set via Set-AWSCredential
 #>
@@ -286,7 +286,7 @@ function Set-CCAWSEnv {
     Write-Error -Message "AWSCredential not set. Run Set-AWSCredential first." -Category InvalidOperation
     return
   }
-  
+
   if (-not $creds) {
     Write-Error -Message "AWSCredential not set. Run Set-AWSCredential first." -Category InvalidOperation
     return
@@ -303,42 +303,42 @@ function Set-CCAWSEnv {
 
   # Get region
   $region = (Get-DefaultAWSRegion).Region
-  
+
   # Prepare the changes
   $changes = @(
     "AWS_ACCESS_KEY_ID = $($creds.AccessKey.Substring(0, 4))..."
     "AWS_DEFAULT_REGION = $region"
     "AWS_SECRET_ACCESS_KEY = [REDACTED]"
   )
-  
+
   if ($creds.UseToken) {
     $changes += "AWS_SESSION_TOKEN = [REDACTED]"
   }
   else {
     $changes += "AWS_SESSION_TOKEN = [CLEARED]"
   }
-  
+
   $changeDescription = "Setting AWS environment variables for: $identityInfo"
-  
+
   if ($Force -or $PSCmdlet.ShouldProcess($changeDescription, "Set environment variables")) {
     Write-Verbose "Setting AWS environment variables"
-    
+
     $env:AWS_ACCESS_KEY_ID = $creds.AccessKey
     $env:AWS_DEFAULT_REGION = $region
     $env:AWS_SECRET_ACCESS_KEY = $creds.SecretKey
-    
+
     if ($creds.UseToken) {
       $env:AWS_SESSION_TOKEN = $creds.Token
     }
     else {
       $env:AWS_SESSION_TOKEN = $null
     }
-    
+
     Write-Host "AWS environment variables set successfully" -ForegroundColor Green
     Write-Host "  Account: $($identity.Account)" -ForegroundColor Cyan
     Write-Host "  Region: $region" -ForegroundColor Cyan
     Write-Host "  Access Key: $($creds.AccessKey.Substring(0, 4))..." -ForegroundColor Cyan
-    
+
     if ($creds.UseToken) {
       Write-Host "  Session Token: Set (temporary credentials)" -ForegroundColor Cyan
     }
@@ -357,27 +357,51 @@ function Remove-CCExpiredAWSProfile {
   .EXAMPLE
     Remove-CCExpiredAWSProfile
     Scans all profiles with a credential file location and removes any with expired tokens.
+  .EXAMPLE
+    Remove-CCExpiredAWSProfile -WhatIf
+    Shows which profiles would be removed without performing any deletion.
+  .PARAMETER Force
+    Passes Force to Remove-AWSCredentialProfile to suppress downstream confirmation prompts.
   #>
-  [CmdletBinding()]
-  param()
+  [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+  param(
+    [switch]$Force
+  )
+  $MessageList = @("The security token included in the request is invalid")
+
+  # $ignored_messages= @("No access" "not allowed to assume the role?" )
+
 
   Get-AWSCredential -ListProfileDetail | Where-Object ProfileLocation | ForEach-Object {
     $profileItem = $_
     try {
-      Set-AWSCredential -ProfileName $profileItem.ProfileName
-      Get-STSCallerIdentity -ErrorAction Stop | Out-Null
+      # Set-AWSCredential -ProfileName $profileItem.ProfileName
+      Get-STSCallerIdentity -ProfileName $profileItem.ProfileName | Out-Null
     }
     catch {
-      if ($_.Exception.Message -match 'ExpiredToken') {
-        Write-Verbose "Removing expired profile: $($profileItem.ProfileName)"
-        Remove-AWSCredentialProfile -ProfileName $profileItem.ProfileName
+      if ($_.Exception.Message -in $MessageList) {
+        Write-Output "Removing profile: $($profileItem.ProfileName) Message: $($_.Exception.Message)"
+        if ($PSCmdlet.ShouldProcess($profileItem.ProfileName, 'Remove expired AWS credential profile')) {
+          $removeProfileSplat = @{ ProfileName = $profileItem.ProfileName }
+          if ($Force) {
+            $removeProfileSplat.Force = $true
+          }
+
+          if (Remove-AWSCredentialProfile @removeProfileSplat) {
+            Write-Verbose "Profile '$($profileItem.ProfileName)' removed successfully."
+          }
+          else {
+            Write-Error "Failed to remove profile '$($profileItem.ProfileName)'."
+          }
+        }
       }
       else {
-        Write-Verbose "Profile '$($profileItem.ProfileName)' failed with non-expired error: $_"
+        Write-Verbose "Profile '$($profileItem.ProfileName)' not removed. Message: $($_.Exception.Message)"
       }
     }
   }
 }
+
 function Get-CCAccountListFromProfile {
   <#
   .SYNOPSIS
@@ -461,7 +485,7 @@ Stackname or list of stackNames to start
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -594,7 +618,7 @@ function Get-CCAWSAccountListOfDriftedResource {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -725,7 +749,7 @@ us-east-2          0        1        1           2           0   True
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -922,7 +946,7 @@ function Update-CCSSOCredentialList {
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
     [string]$Region,
-    
+
     [Parameter()]
     [string]$ProfileName,
 
@@ -952,7 +976,7 @@ function Update-CCSSOCredentialList {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -977,7 +1001,7 @@ function Update-CCSSOCredentialList {
     AccessKey = 'AKAEXAMPLE123ACCESS'
     SecretKey = 'PseudoS3cret4cceSSKey123PseudoS3cretKey'
   }
-  
+
   # Ensure credentials directory exists
   $credDir = Split-Path $CredentialFile -Parent
   if (-not (Test-Path $credDir)) {
