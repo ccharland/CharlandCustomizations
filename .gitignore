@@ -12,3 +12,4 @@ tests/coverage/
 Thumbs.db
 
 temp/
+.vscode/settings.json

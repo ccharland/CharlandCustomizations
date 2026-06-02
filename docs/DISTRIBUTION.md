@@ -60,6 +60,11 @@ PSGallery publish guardrails:
 - `HEAD` must have immutable release tag `ModuleVersion[-Prerelease]` from `CharlandCustomizations.psd1` (for example, `0.2.0-beta1` or `0.2.0`)
 - Publish path should target signed build output in `build/CharlandCustomizations/<version>/`
 
+Source signature compliance gate:
+
+- Run `./Scripts/Test-SignatureCompliance.ps1` before package or publish
+- Gate scope defaults to `Scripts/` and `src/CharlandCustomizations/`
+
 ### Environment Variable Example
 
 ```powershell
@@ -170,6 +175,10 @@ git commit -m "Prepare release v0.3.0"
 ### 2. Create Package
 
 ```powershell
+# Validate source signatures before packaging
+./Scripts/Test-SignatureCompliance.ps1
+
+# Build signed release artifacts
 ./Scripts/Build-Module.ps1 -Clean -Package
 ```
 
