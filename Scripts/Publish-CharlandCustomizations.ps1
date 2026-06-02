@@ -48,6 +48,34 @@ if (-not (Test-Path -Path $manifestPath)) {
     throw "Module manifest not found at $manifestPath"
 }
 
+if ($Repository -ieq 'PSGallery') {
+    $manifestData = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
+    $expectedReleaseTag = $manifestData.Version.ToString()
+    $prerelease = $manifestData.PrivateData.PSData.Prerelease
+    if ($prerelease) {
+        $expectedReleaseTag = "$expectedReleaseTag-$prerelease"
+    }
+
+    if (-not (Get-Command -Name git -ErrorAction SilentlyContinue)) {
+        throw "Publishing to PSGallery requires git to verify release branch/tag. Expected tag: '$expectedReleaseTag'."
+    }
+
+    $repoRoot = (& git -C $resolvedPath rev-parse --show-toplevel 2>$null | Select-Object -First 1)
+    if (-not $repoRoot) {
+        throw 'Publishing to PSGallery requires running inside a git repository.'
+    }
+
+    $currentBranch = (& git -C $repoRoot branch --show-current 2>$null | Select-Object -First 1)
+    if ($currentBranch -ne 'main') {
+        throw "Publishing to PSGallery is only allowed from branch 'main'. Current branch: '$currentBranch'."
+    }
+
+    $headTags = @(& git -C $repoRoot tag --points-at HEAD 2>$null)
+    if ($expectedReleaseTag -notin $headTags) {
+        throw "Publishing to PSGallery requires immutable release tag '$expectedReleaseTag' on HEAD (ModuleVersion[-Prerelease])."
+    }
+}
+
 if (-not $SkipSignatureValidation) {
     $filesToValidate = Get-ChildItem -Path $resolvedPath -Recurse -File |
         Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' }

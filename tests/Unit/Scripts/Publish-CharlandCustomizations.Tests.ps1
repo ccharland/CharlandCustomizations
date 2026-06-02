@@ -12,6 +12,32 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
         # Mock Resolve-Path to return a string path that Join-Path can consume
         Mock Resolve-Path { '/fake/module/path' }
         Mock Test-Path { return $true }
+        Mock Test-ModuleManifest {
+            [PSCustomObject]@{
+                Version = [version]'0.2.0'
+                PrivateData = @{
+                    PSData = @{
+                        Prerelease = 'beta1'
+                    }
+                }
+            }
+        }
+        Mock git {
+            param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+
+            $gitCommand = $RemainingArgs -join ' '
+            if ($gitCommand -match 'rev-parse --show-toplevel') {
+                return 'C:/fake/repo'
+            }
+            if ($gitCommand -match 'branch --show-current') {
+                return 'main'
+            }
+            if ($gitCommand -match 'tag --points-at HEAD') {
+                return '0.2.0-beta1'
+            }
+
+            return $null
+        }
         Mock Get-ChildItem {
             @(
                 [PSCustomObject]@{ FullName = '/fake/module/path/CharlandCustomizations.psd1'; Extension = '.psd1' },
@@ -20,12 +46,78 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             )
         }
         Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'Valid' } }
+        Mock Get-Command { return @{ Name = 'git' } } -ParameterFilter { $Name -eq 'git' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
         Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-Secret' }
         Mock Publish-Module {}
         Mock Publish-PSResource {}
         Mock Read-Host { return 'fake-api-key' }
+    }
+
+    Context 'PSGallery release gating' {
+
+        It 'Throws when publishing to PSGallery from a non-main branch' {
+            # Arrange
+            Mock git {
+                param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+
+                $gitCommand = $RemainingArgs -join ' '
+                if ($gitCommand -match 'rev-parse --show-toplevel') {
+                    return 'C:/fake/repo'
+                }
+                if ($gitCommand -match 'branch --show-current') {
+                    return 'feature/test'
+                }
+                if ($gitCommand -match 'tag --points-at HEAD') {
+                    return '0.2.0-beta1'
+                }
+
+                return $null
+            }
+
+            # Act & Assert
+            { & $script:ScriptPath -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
+                Should -Throw "*only allowed from branch 'main'*"
+        }
+
+        It 'Throws when required release tag is not on HEAD' {
+            # Arrange
+            Mock git {
+                param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+
+                $gitCommand = $RemainingArgs -join ' '
+                if ($gitCommand -match 'rev-parse --show-toplevel') {
+                    return 'C:/fake/repo'
+                }
+                if ($gitCommand -match 'branch --show-current') {
+                    return 'main'
+                }
+                if ($gitCommand -match 'tag --points-at HEAD') {
+                    return 'v0.2.0-beta1'
+                }
+
+                return $null
+            }
+
+            # Act & Assert
+            { & $script:ScriptPath -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
+                Should -Throw "*requires immutable release tag '0.2.0-beta1'*"
+        }
+
+        It 'Does not enforce git branch/tag gate for non-PSGallery repositories' {
+            # Arrange
+            Mock git {
+                param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+                return $null
+            }
+
+            # Act
+            & $script:ScriptPath -Path '/fake/module/path' -Repository 'InternalRepo' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Publish-Module -Times 1 -Exactly
+        }
     }
 
     Context 'Signature validation' {
