@@ -12,12 +12,48 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
         # Mock Resolve-Path to return a string path that Join-Path can consume
         Mock Resolve-Path { '/fake/module/path' }
         Mock Test-Path { return $true }
+        Mock Get-ChildItem {
+            @(
+                [PSCustomObject]@{ FullName = '/fake/module/path/CharlandCustomizations.psd1'; Extension = '.psd1' },
+                [PSCustomObject]@{ FullName = '/fake/module/path/CharlandCustomizations.psm1'; Extension = '.psm1' },
+                [PSCustomObject]@{ FullName = '/fake/module/path/Public/Example.ps1'; Extension = '.ps1' }
+            )
+        }
+        Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'Valid' } }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
         Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-Secret' }
         Mock Publish-Module {}
         Mock Publish-PSResource {}
         Mock Read-Host { return 'fake-api-key' }
+    }
+
+    Context 'Signature validation' {
+
+        It 'Validates signatures before publishing by default' {
+            # Act
+            & $script:ScriptPath -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Get-AuthenticodeSignature -Times 3 -Exactly
+        }
+
+        It 'Skips signature validation when -SkipSignatureValidation is specified' {
+            # Act
+            & $script:ScriptPath -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet -SkipSignatureValidation
+
+            # Assert
+            Should -Invoke Get-AuthenticodeSignature -Times 0 -Exactly
+        }
+
+        It 'Throws when a module file signature is invalid' {
+            # Arrange
+            Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'HashMismatch' } }
+
+            # Act & Assert
+            { & $script:ScriptPath -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
+                Should -Throw '*valid Authenticode signatures*'
+        }
     }
 
     Context 'Legacy PowerShellGet publishing' {
@@ -65,6 +101,19 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
                 $Repository -eq 'PSGallery' -and
                 $ApiKey -eq 'test-api-key'
             }
+        }
+
+        It 'Skips publishing when -WhatIf is specified' {
+            # Arrange - make Publish-PSResource available so ShouldProcess can short-circuit it
+            Mock Get-Command { return @{ Name = 'Publish-PSResource' } } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-PSResourceRepository' }
+
+            # Act
+            & $script:ScriptPath -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -WhatIf
+
+            # Assert
+            Should -Invoke Publish-PSResource -Times 0 -Exactly
+            Should -Invoke Publish-Module -Times 0 -Exactly
         }
     }
 
