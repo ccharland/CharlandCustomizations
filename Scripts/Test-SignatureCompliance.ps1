@@ -3,7 +3,9 @@
     Validates Authenticode signatures for release-critical PowerShell files.
 .DESCRIPTION
     Scans one or more directories for .ps1, .psm1, and .psd1 files and verifies
-    each file has a valid Authenticode signature.
+    each file has a valid Authenticode signature with a timestamp counter-signature.
+    Files signed without a timestamp certificate are treated as non-compliant because
+    the signature will expire with the signing certificate.
 .PARAMETER Path
     One or more root paths to scan recursively.
     Defaults to Scripts and src/CharlandCustomizations.
@@ -14,7 +16,11 @@
     Validates signatures in Scripts and src/CharlandCustomizations.
 .EXAMPLE
     ./Scripts/Test-SignatureCompliance.ps1 -Path ./Scripts,./src/CharlandCustomizations
-    Validates signatures for the provided paths.
+    Validates signatures for the provided paths.    
+.OUTPUTS
+    PSCustomObject
+
+    If any files fail signature validation, an object is returned with its AuthentiCode signature status and the file path. 
 #>
 [CmdletBinding()]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
@@ -33,6 +39,18 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+$isPipelineOutput = $MyInvocation.PipelineLength -gt 1
+$isRedirectedOutput = $false
+$shouldRenderTable = $false
+try {
+    $isRedirectedOutput = [Console]::IsOutputRedirected
+    $shouldRenderTable = -not $isPipelineOutput -and -not $isRedirectedOutput
+}
+catch {
+    # Non-console hosts should favor object output over table rendering.
+    $shouldRenderTable = $false
+}
+
 $resolvedPaths = foreach ($candidatePath in $Path) {
     if (-not (Test-Path -Path $candidatePath)) {
         throw "Validation path does not exist: $candidatePath"
@@ -44,7 +62,7 @@ $resolvedPaths = foreach ($candidatePath in $Path) {
 $filesToValidate = @(
     foreach ($resolvedPath in $resolvedPaths) {
         Get-ChildItem -Path $resolvedPath -Recurse -File |
-            Where-Object { $_.Extension -in $IncludeExtension }
+        Where-Object { $_.Extension -in $IncludeExtension }
     }
 )
 
@@ -59,26 +77,42 @@ foreach ($file in $filesToValidate) {
     if ($signature.Status -ne 'Valid') {
         Write-Warning "Invalid signature found: $($file.FullName)"
         $invalidSignatures += [PSCustomObject]@{
-            File   = $file.FullName
+            Path   = $file.FullName
             Status = $signature.Status
+        }
+    }
+    elseif (-not $signature.TimeStamperCertificate) {
+        # A valid signature without a timestamp will expire with the signing certificate.
+        Write-Warning "Missing timestamp certificate: $($file.FullName)"
+        $invalidSignatures += [PSCustomObject]@{
+            Path   = $file.FullName
+            Status = 'MissingTimestamp'
         }
     }
 }
 
 if ($invalidSignatures.Count -gt 0) {
     Write-Host "Signature compliance failed. Invalid signatures: $($invalidSignatures.Count)" -ForegroundColor Red
-    $invalidSignatures | Format-Table status, File  -AutoSize | Out-Host
-    throw 'One or more files are unsigned or have invalid Authenticode signatures.'
+
+    if ($shouldRenderTable) {
+        $invalidSignatures | Format-Table Status, Path -AutoSize | Out-Host
+    }
+
+    if ($isPipelineOutput -or $isRedirectedOutput) {
+        # Emit objects so callers can pipe/filter/export invalid results.
+        $invalidSignatures | Write-Output
+        return
+    }
+
+    throw 'One or more files are unsigned, have invalid Authenticode signatures, or are missing a timestamp certificate.'
 }
 
 Write-Host "Signature compliance passed. Validated $($filesToValidate.Count) file(s)." -ForegroundColor Green
-
-
 # SIG # Begin signature block
 # MIImXQYJKoZIhvcNAQcCoIImTjCCJkoCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC0Nb2gVacg33UA
-# Yf+ff93mT0kW4WrlHoCanTrI9SWgHqCCH3IwggYUMIID/KADAgECAhB6I67aU2mW
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDZckpqAY9D8z2I
+# /i95fpa1TjJPNZ4XGjJAXlZuHYFEaaCCH3IwggYUMIID/KADAgECAhB6I67aU2mW
 # D5HIPlz0x+M/MA0GCSqGSIb3DQEBDAUAMFcxCzAJBgNVBAYTAkdCMRgwFgYDVQQK
 # Ew9TZWN0aWdvIExpbWl0ZWQxLjAsBgNVBAMTJVNlY3RpZ28gUHVibGljIFRpbWUg
 # U3RhbXBpbmcgUm9vdCBSNDYwHhcNMjEwMzIyMDAwMDAwWhcNMzYwMzIxMjM1OTU5
@@ -251,33 +285,33 @@ Write-Host "Signature compliance passed. Validated $($filesToValidate.Count) fil
 # IFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQCAQUA
 # oIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisG
 # AQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcN
-# AQkEMSIEIF9CqUyy5kRQdsTOBqc5GVGkZgZwoHe7m9Sc22GV6XmUMA0GCSqGSIb3
-# DQEBAQUABIICAErI3AO4KAUfuC/9SBXXUNc9u7hPvGsXcPx+O5A/z2geoeTIatxr
-# rhTJd8J7FuAntfv4klfc5d+Y4uL72K31iL/fiVtY9WsXmT1oaMYxJFgQVAPev1Ql
-# KzGox27cFGohoHEG1ER5KIdhuoS5LmifO/5yqjJl2aGgZKals9WtkrRRfvkCmaE7
-# fFiH4qugD2+hk/APdSWGRyElVijuEJhVuLpXyQ72A06sdg1swOL3sW1UT5duHiOp
-# uK+cQzkR2UuuigOjSEGbZFq28lc5+/gdrdtSUHRDV/PYKty4NYYpYoWH70pwGFMd
-# tn6SxUguZ3MvWZkYQ+qplTOMOmdscpdgNqIXMeVr902dEx62S1SaLBZ7QJmrdSil
-# JLtkj23sQdL7Khexa2vHP3lNoUdMbHWMksYaUUSz4IIsnVQVapw4Y67YGwj3axBn
-# y47FGLcyN88RCV7Fk/qRy7okZW6Hp6IiTzMkti5VI/qQFfo8/Mb4bf2YdMxSwQfD
-# 39PhXpcqkUG7C/9BBJWVQp2BaOJjS6mjgmr5NfCjGo3yVdkQb6UKAhezfJsC6nlc
-# 79gnsGj05kdlYzkIm/ECv5KFNKxX+H9xH0iRjCwECne5rHRw6bsljWL7cPNLbZtl
-# Yg1SChyC6CaW2RFgafjHpkG+e9y4i2OWxcoPgh0SucSk17yVQduuh2ejoYIDIzCC
+# AQkEMSIEIIQpRhnsrr9ZMvPD0r9lRG1tYIcR6RDyQjnUTwu4w0kOMA0GCSqGSIb3
+# DQEBAQUABIICAB1gMS7IBVVtLSZHnpg/ohKRTOJpY7hYKdye+ZjgC3G4BnStBV05
+# bWZl2IgX37UwXq/HggfSEdP5qfTDt+u5NmLxwBP8UNErcL+nDRi+nvWkl323+HPH
+# /WMQoFC/uGirj9aIvb/oJyl99UFpw7ZyYnzdpMFbAxLj36oLIDU2I32An/NWk38p
+# W1irkyLejHbeMSMrDYjYNJG5cmH+3aacM0O10KR5wMPa/PC72X6MWNRiKA9D+QtN
+# pacfaMa/3CH+DPN5mFnn7zs7niagsGcmUagYaMmtgWqYIR7JQsM8wknKlQyK1gHO
+# kvZu9b6DReo1gge7vW1ttzaWFS/5pLa94zrKNt9OagcH9Y6VZ4tPAdK2B0dFWRtC
+# HD6pw7iYob2502b/NvxOs6xu57oAtijt/rhMUQZip/3aMs6oiGyZOlGFECxuL4ti
+# sTg8mhQQKbJW2hwJtw7ItT7X2T8owM0BPNjhlQH7WEmfvGrDh63zRHzlmwWe1V2s
+# +DOtuVjp2ch2N0p/KvU+/Ht99iDWgd7yyBe1grwrHLHfVE1yPw6p6raVM06ioBJn
+# 5sYtnz3XoJTjAR0JGI2E8HU9c612rdqo7Yw7QhgSF8qcpZpRaoocSqT+m3Fx6g3S
+# +ca4hU625w299so1t/+pIQWh7WpqXnoq5IqzTCmfcWXMX3gkiZP+1NEvoYIDIzCC
 # Ax8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAWBgNV
 # BAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMgVGlt
 # ZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFlAwQC
 # AgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcN
-# MjYwNjAyMTQ1MzU0WjA/BgkqhkiG9w0BCQQxMgQw4xLG3wO+BLIsGcNK/1ZJzGp6
-# LcleHsdX/z9nIy8hO4Hpzm0xuSQahZENs92T6OeuMA0GCSqGSIb3DQEBAQUABIIC
-# AEPjq16vYMFvO8FElnN+OJRubv8alNKbFO+j9oNysEDO1QO6iIij4N8O1AqgxX+y
-# 7UEWxO3ZBBu1sOJb/YWitJhNQjiCVof8z2EIOcrg3E1faTYgdY2paARK++D8V1cd
-# 7r1yEiaGV8GiB2FP3caOEj0ugAyzdkAC0Cvjw7pr6qExEi6Wst1Diwk8FNOlVHfm
-# OxaCgxjoqpZg7VOk9wfuMY3Q4nLwSY1lcVlkMHMza/ljOogc+f5Vz7cB7gYccOAQ
-# zl1yvoyrdxEn77Q+IUcDBjSRggECrM0nmhPShBhofCTlLn5BTAes0VXU7uUIJ0AK
-# JA4l5xtaTeX63anmeuD3DzozOJenOvVaamiWOOfI6dF+jpfmWb9jSUm5PJ12T/VR
-# jSwESK//L2Pk3FMrHCFs5Pr9825401yXJPS5kq4X/dL/THca0LspHGmKT3eWgiWV
-# 8/DOSKpjMVT3dLl27YVxp+WAnp21QiIq4mdN0ISDkHJ/A1xC0uIMZwwk3vjzsx1d
-# ciDZP+8NqLlKpV2dKYMqyfO7dItZiB+xXFOymNpVC++vMfFDPUhL22nIiLzuNGQi
-# SpO+UjghYiFscYZIBRY7uNybpv4ntkBsYTFxp+0WtGC72NTF3L5hztoilx3dBLyy
-# +7vdiaG+smGcONdgxRGzP9W9n6WWUPL1h03301lsTBn/
+# MjYwNjAzMjEwODMwWjA/BgkqhkiG9w0BCQQxMgQwWXOk2h6hDNRq3mNO/hRYnt/b
+# TZ1btQ4jDcfvCMUgdUc7adChNjpppKfAso0qXn/HMA0GCSqGSIb3DQEBAQUABIIC
+# AIFwMwne1Kw2eSyVKBJ/WFjTFolYjzVJJb8PlfS5sLoFean8lMRNwUvU35ia6bXd
+# AUP9q11AK+2Jy2drRh05TQfutcO5OMWTUCnVJoZymnru5YxvknbQJLIqSjvh0Dfg
+# IsRa8u6I47P6T0DKkA5mZwDLmFuPNLYfq9oav0+doaa/hZnA1lxpXWdas6Yvazp+
+# jeCLWfVkSCKDJeD47kqngi4QbTaOYXNATJuGXXcp5uW3oGQbAUuamXG97jF9a1my
+# Eem608GCL9SLiujU+tN7BIjSY+pJ2SwKZxRJjGMfXqkdPNp7vy9dgL6cHzVdiEQT
+# xRb/x/+clq/5yrJ1VfHVvYyyCGAbWGvD/nJlYcwiLbPsNzfKEMq9br2Pmfkw/GGa
+# hOFYUnytpQOc8f/7H4YaZK1Kw2MWe2H1pCLiKNI3EGzrJySU9X43XFSnNp6LkRbd
+# wtH1VTxEUz0LacrR1q+PV+gWUXngFHaabeDcWW6gPIe17Ky4BqAa7+noU6MQBOp1
+# 3VNR1ojZmDd9E5Y5aH4q32Uk8WvFGTP9vgHF9BNyrzyVO902rcLBSx+eT52P5F53
+# XCbhRFSJ2OCnRJPE03CxJZd5KBNvT5DnP9MZw8VPllb5MLyAGGYEZsC87X76EMhn
+# OXhVKaKoAInc2RzKOyfN1xNm1E6gifN2lwOmf2G/Cppz
 # SIG # End signature block
