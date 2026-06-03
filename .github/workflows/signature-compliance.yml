@@ -1,0 +1,25 @@
+name: Signature Compliance
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Scripts/**/*.ps1'
+      - 'src/CharlandCustomizations/**/*.ps1'
+      - 'src/CharlandCustomizations/**/*.psm1'
+      - 'src/CharlandCustomizations/**/*.psd1'
+  workflow_dispatch:
+
+jobs:
+  validate-signatures:
+    name: Validate Authenticode Signatures
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run signature compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-SignatureCompliance.ps1
