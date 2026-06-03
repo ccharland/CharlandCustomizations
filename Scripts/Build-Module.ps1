@@ -210,6 +210,7 @@ $releaseTag = $version
 if ($prerelease) {
     $releaseTag = "$version-$prerelease"
 }
+$artifactVersion = $releaseTag
 Write-Output "  Version: $version"
 if ($prerelease) {
     Write-Output "  Prerelease: $prerelease"
@@ -218,7 +219,7 @@ Write-Output "  GUID: $($manifest.Guid)"
 
 if (-not $InstallOnly) {
     # Create versioned build directory
-    $BuildPath = Join-Path $BuildRoot "$ModuleName\$version"
+    $BuildPath = Join-Path $BuildRoot "$ModuleName\$artifactVersion"
     Write-Output "Creating build directory: $BuildPath"
     if (Test-Path $BuildPath) {
         Remove-Item $BuildPath -Recurse -Force
@@ -376,7 +377,7 @@ if (-not $InstallOnly -and $Package) {
     }
 
     # Create zip file
-    $zipName = "$ModuleName-$version.zip"
+    $zipName = "$ModuleName-$artifactVersion.zip"
     $zipPath = Join-Path $packageDir $zipName
 
     if (Test-Path $zipPath) {
@@ -396,9 +397,9 @@ if (-not $InstallOnly -and $Package) {
     Write-Output "  Hash file: $hashFile"
 
     # Create README for package
-    $readmePath = Join-Path $packageDir "README-$version.txt"
+    $readmePath = Join-Path $packageDir "README-$artifactVersion.txt"
     $readmeContent = @"
-$ModuleName v$version
+$ModuleName v$artifactVersion
 Distribution Package
 
 Created: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
@@ -525,7 +526,7 @@ else {
 }
 
 if ($Package) {
-    Write-Output "Distribution package: build/packages/$ModuleName-$version.zip"
+    Write-Output "Distribution package: build/packages/$ModuleName-$artifactVersion.zip"
 }
 
 if (-not $performInstall) {
