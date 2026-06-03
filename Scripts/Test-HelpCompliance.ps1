@@ -48,20 +48,39 @@ if (-not (Test-Path -Path $ScriptPath)) {
 Import-Module $ModulePath -Force
 
 $manifest = Import-PowerShellDataFile -Path $ModulePath
-$prefix = $manifest.DefaultCommandPrefix
 
 $failures = @()
 
 # Validate exported functions
 $moduleName = (Get-Item $ModulePath).BaseName
-foreach ($function in $manifest.FunctionsToExport) {
-    $prefixedName = "$prefix$function"
-    Write-Verbose "Checking function: $function (prefixed: $prefixedName)"
+$loadedModule = Get-Module -Name $moduleName | Select-Object -First 1
+# DefaultCommandPrefix from manifest — .Prefix on the module object only reflects Import-Module -Prefix
+$prefix = if ($manifest.DefaultCommandPrefix) { [string]$manifest.DefaultCommandPrefix.Trim() } else { '' }
 
-    # Use Get-Command scoped to this module, then get help from the command info directly
-    $cmd = Get-Command -Name $prefixedName -Module $moduleName -ErrorAction SilentlyContinue
+foreach ($function in $manifest.FunctionsToExport) {
+    # DefaultCommandPrefix inserts between the verb and noun: Verb-PrefixNoun
+    if ($prefix) {
+        $dashIndex = $function.IndexOf('-')
+        if ($dashIndex -gt 0) {
+            $verb = $function.Substring(0, $dashIndex)
+            $noun = $function.Substring($dashIndex + 1)
+            $lookupName = '{0}-{1}{2}' -f $verb, $prefix, $noun
+        }
+        else {
+            $lookupName = $function
+        }
+    }
+    else {
+        $lookupName = $function
+    }
+    Write-Verbose "Checking function: $function (lookup: $lookupName)"
+
+    # Use Get-Command to find the function after module import
+    $cmd = Get-Command -Name $lookupName -ErrorAction SilentlyContinue |
+    Where-Object { $_.Source -eq $moduleName }
+    # Fall back to any match if module filtering misses nested module exports
     if (-not $cmd) {
-        $cmd = Get-Command -Name $function -Module $moduleName -ErrorAction SilentlyContinue
+        $cmd = Get-Command -Name $lookupName -ErrorAction SilentlyContinue | Select-Object -First 1
     }
 
     if ($cmd) {
@@ -71,15 +90,20 @@ foreach ($function in $manifest.FunctionsToExport) {
         $help = $null
     }
 
-    if (-not $help -or [string]::IsNullOrWhiteSpace($help.Synopsis)) {
+    if ($Null -eq $help) {
         $failures += [PSCustomObject]@{
             Name  = $function
             Type  = 'Function'
-            Issue = 'Missing .SYNOPSIS'
+            Issue = 'No help found'
         }
     }
-    elseif ($help.Synopsis -eq $function -or $help.Synopsis -eq $prefixedName) {
-        # PowerShell returns the function name as Synopsis when no help block exists
+    elseif (
+        [string]::IsNullOrWhiteSpace($help.Synopsis) -or
+        $help.Synopsis -eq $function -or
+        ($cmd -and $help.Synopsis -eq $cmd.Name) -or
+        $help.Synopsis -match "^\s*$([regex]::Escape($lookupName))\b"
+    ) {
+        # PowerShell returns the function name or syntax as Synopsis when no help block exists
         $failures += [PSCustomObject]@{
             Name  = $function
             Type  = 'Function'
@@ -94,6 +118,9 @@ foreach ($script in $scripts) {
     Write-Verbose "Checking script: $($script.Name)"
     $help = Get-Help $script.FullName -ErrorAction SilentlyContinue
 
+    # Read first non-blank line to detect auto-generated synopsis
+    $firstLine = Get-Content -Path $script.FullName | Where-Object { $_.Trim() } | Select-Object -First 1
+
     if (-not $help -or [string]::IsNullOrWhiteSpace($help.Synopsis)) {
         $failures += [PSCustomObject]@{
             Name  = $script.Name
@@ -101,7 +128,12 @@ foreach ($script in $scripts) {
             Issue = 'Missing .SYNOPSIS'
         }
     }
-    elseif ($help.Synopsis -eq $script.FullName -or $help.Synopsis -eq $script.Name) {
+    elseif (
+        $help.Synopsis -eq $script.FullName -or
+        $help.Synopsis -eq $script.Name -or
+        $help.Synopsis -match "^\s*$([regex]::Escape($script.Name))\b" -or
+        ($firstLine -and $help.Synopsis.Trim() -eq $firstLine.Trim())
+    ) {
         $failures += [PSCustomObject]@{
             Name  = $script.Name
             Type  = 'Script'
@@ -119,11 +151,12 @@ if ($failures.Count -gt 0) {
 
 Write-Host "Help compliance passed. Validated $($manifest.FunctionsToExport.Count) function(s) and $($scripts.Count) script(s)." -ForegroundColor Green
 
+
 # SIG # Begin signature block
 # MIImXQYJKoZIhvcNAQcCoIImTjCCJkoCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCqS8wjqRTBYxOt
-# apxI24FqIKZfqnDwxZqGrVn02w4SsqCCH3IwggYUMIID/KADAgECAhB6I67aU2mW
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAOpOFJdMJkVnmY
+# 3YhsF/S7O+as1oBVYpTvDTRaIITspKCCH3IwggYUMIID/KADAgECAhB6I67aU2mW
 # D5HIPlz0x+M/MA0GCSqGSIb3DQEBDAUAMFcxCzAJBgNVBAYTAkdCMRgwFgYDVQQK
 # Ew9TZWN0aWdvIExpbWl0ZWQxLjAsBgNVBAMTJVNlY3RpZ28gUHVibGljIFRpbWUg
 # U3RhbXBpbmcgUm9vdCBSNDYwHhcNMjEwMzIyMDAwMDAwWhcNMzYwMzIxMjM1OTU5
@@ -296,33 +329,33 @@ Write-Host "Help compliance passed. Validated $($manifest.FunctionsToExport.Coun
 # IFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQCAQUA
 # oIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisG
 # AQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcN
-# AQkEMSIEIBAoGj61FN0WcfX+/RMyYP+27TyFgwWpEdQtGRJprY0sMA0GCSqGSIb3
-# DQEBAQUABIICAIIXuoW+XYJt3OO0RMC2tLdV6kbN82bWZPD/CrJL/GxzebgdMx6p
-# RNe38ku0g3LXN5kqKEUtyirLTNPBMVVDN9Tb+H2ErdrtF1bLcuCNdjlJou4GCKIj
-# m01L711N6bka7hT7qm8f477CxdigOmXu8FlWyyeZsVKQW8RYyXYxgdxIxlDyAYid
-# vRLlFdc+CvZqjdSnNKyZKYfsuH57L/07NKFLSFZADvoKLvWqsEYUG0f4Bgrj+HvH
-# BKp9aGvKVwchSN3WQjqPpcUqEW6g/R5idE6c8oe1a1m5g/xGyjHx/DEtWnOEFH9d
-# x+PmaE58/dzzOvKgRx62War3ZNcl1aqqvKkc2LfSW7aOhpTP+J+AVRrnrDg3Owqk
-# U122UCFlfOdJXxiNMc315IE7Q4ENx2fbX/Igxm2a5wD52UqcpSaqvBZDzUwigYLy
-# Eo8yiQ1CQS4cp3hGXUBvjnFswnLGKH/8KBT1bQ+32dnSEkOtgiNMRUAuCm0Nf710
-# 2vKH03UZHuSrt1H4HkFwLEMm1IMGNugh6RdiljjKAJ8HoqNXHMKOmg5m4T7QT0cP
-# P+YWLZU1RCNE8PM6lBk5xye/XEnuLXiyvjIHXcBZ3Q4xgcZpH+dbepAjOcf0Rvti
-# gwDDC1NafNc0ZXfsAxy//GErT9h+UnAQt44w7TFpf88jxrJ7VQtO+9qHoYIDIzCC
+# AQkEMSIEIOaTO1ot0S+PTQtbEMktDoT8XBvtLZcIaASTRPE+xgYtMA0GCSqGSIb3
+# DQEBAQUABIICAJi9tpbaPk/vHf7LYurhjekBSXkbKXi6MJ5jbkYAHLrbw/7C81lB
+# +Pz8TY8LkkUohxelHVzyEVGfg0B3RzVTnlYhMlV/zhlDzjFptx/kQDBiNGC10PS9
+# j9QVgKUuE7CoVHfkFEmYNJeUuy3Oxc+NcJfufOBl9e97LlNm7Dc/4LP40e7PEaH7
+# eVtkqbSlCIRLCsOrsTuMLZNPTN2jYeBno5uu90cIA9hmj08EtF7vCbCuWWs7Tuvz
+# k2ceD3AY1oocx6ucXPToyAN+ajEY8yiSZTLeDtTn/uXAzu3tzS7hMqg9YoPON3VM
+# +mtU46C1g1cbrlwS7e+XlnTzqk32Qx3A5PEXG8GF37V0Fzo7txsYlKH6VDhVCc+8
+# 6BhSgwrDBMsVTvD4BskMr3FzwF82RJEeCVhbesN9XD6AMor52oazjrAXZZ8Iq8cx
+# MrbQlxheB2Z/otztEV2j786OIbq6jbRPYSbWin5crjXUo4ud9GBb3PDzh5QsveMz
+# YUkTgznSOi+RB6F02n35i5qOF96PNIo1kDvdRNJHJWoxejIisxLBWkFuAHIZLDQr
+# DJIKTJDnXqzkdZ73sRyD6jpglpUoxo1O6SBQUWFVIxnaQlF0XOWOsou4htK9baVw
+# e0OzAI3sDXwWtPlImkyeISTb8K/zWyz46j5+udd/GJdLPF4TWnOQ68O/oYIDIzCC
 # Ax8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAWBgNV
 # BAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMgVGlt
 # ZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFlAwQC
 # AgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcN
-# MjYwNjAzMjEzODA4WjA/BgkqhkiG9w0BCQQxMgQwk2Fie8lZRyp0OoUqP+50BrxV
-# zvQ8b0qklruf4pt4fmnPVmr0FuR0cj1Y5DKm0DaxMA0GCSqGSIb3DQEBAQUABIIC
-# ALEcowgZznpm8gVuDMV4dCsoAY1nFMDMDsZ3839R9rOytBbAm6wHzTuvr3urRfUK
-# RFpTGBC7SmZUORW6Gf9zran13P4SBKlUlInwaZyvyruVpJZ1Pcc4M/Ja28XmWQOW
-# mZsKXMe894rT2v8oYKpC+3mrF6COcuVH9gFioxQIX98vJ9cHREmFwP4rem8tiFV3
-# E2ZHP5PMT+8/9EmHo5Utybq/ZpWwqYj96aYbd1iIsXSMEMG5V1yC/7WBbQkd7G7v
-# +4jF3qAosOgbzaIkRULtCp0gePFaz6Whn91gTy6cpLYLvg+KRgd4ifH4dUykRCbf
-# qHkfz0S9g1p4gwcHsnGcVAoWASYDfRTpCYDh0xTnXcE9X0fTIYSb331YwZy7NYua
-# pUcdLmi//r18IenTHBumAieG0+wZfc8GEx3v01eJRDqm+dh4ADslmV5+Wh0UrhTe
-# DP18kWt85YfOzujX5lOJN/ubdxk2r86wAVG9yc0fn4JyowPYrvOPfwtJwR0LeJBM
-# v2r4fzhUqUVK3Z8OW8jsLNwAzSewAymWYY11j9ZvRLqwEgJXUNI1itdPD7cLiVYm
-# gHYj0H4J/zSO7KsDGp7p+gW0WlxxhHxEZsPKaCh2hWM+p2MSPCUvXPuc1h+o+pRC
-# UQjVQ9FFB6QegKsJCiZasK7dW/qiqNwHMtGDetenD676
+# MjYwNjAzMjMwNTIzWjA/BgkqhkiG9w0BCQQxMgQwfSDYKzU6rmekE/LW8zP5Xuoj
+# DjDRcXtdJJyXNw5Y/XaQXMqU2+dVYrP93667TNFbMA0GCSqGSIb3DQEBAQUABIIC
+# ABflyI0DDJhJD6oOIvvY8z8VYmdLn3Cbbe+pshkHBQUT68JM+L5kdNK6+lCLIVgI
+# e6MiJ3PWG6t0fGnSCIMkXD6VsZhGU3aV6vsOazt/t8MMdQGD8gDw4a9VCTds6IY9
+# AOenogozuAtp4cM63J14OGKAq1iEIyAiqCCemI7sicQOCyG68j1j6iQlJBMtThuf
+# n4FDFQDPPOZRWpX/HEIqBP2lR0y5rwxksl93Aryhp2gGeST2V3TCRTsZ9xwi/U10
+# Vlk3vSGKeWIjlQyY9wJk2ldyzSEzY7rfTtjPWxtFgVWLsGR4beWTL3UZgdXmB7m5
+# TOgUIWq2DOGvrY4I/nHLdPlrdfLpUYTdc5OuTJo0CCZU8YpLUjK5RUkdDdZFnQkc
+# ZjNErRNi+yWcLFG6TKPxh63okh9t8JGkgi7FLA8ssNLMd2y626/cErpb73Tmhayu
+# m4c437k0eoVbrm02150Wx8IrG0gBUYY5DvArOcRsasmTh6oUcNHjDoM2btclVNKI
+# ouEemzby1zZm92rPbczL3QEHTr+2sz4J10W+7bVittN2agnPPYC4UFFj3QETKKF8
+# owLl1ycLYX2xvTCcSN9HdFkOD3KcahsSaOozTPvCsfJv5IFNwkkx9Ht6Y/HwBmpo
+# 2mW9NAgfzoifUbWxXeNO52KH4afkIh+x29EhMY6F+Aui
 # SIG # End signature block
