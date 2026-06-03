@@ -3,12 +3,45 @@ name: Publish to PowerShell Gallery
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'src/CharlandCustomizations/**'
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
 
 jobs:
+  validate-version:
+    name: Verify tag matches module version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare tag to ModuleVersion in manifest
+        shell: pwsh
+        run: |
+          # Strip the leading 'v' from the tag to get the expected version string
+          $tag = '${{ github.ref_name }}'
+          $tagVersion = $tag -replace '^v', ''
+
+          # Import the manifest and build the full version string
+          $manifest = Import-PowerShellDataFile -Path './src/CharlandCustomizations/CharlandCustomizations.psd1'
+          $moduleVersion = $manifest.ModuleVersion
+          $prerelease = $manifest.PrivateData.PSData.Prerelease
+
+          if ($prerelease) {
+              $manifestVersion = "$moduleVersion-$prerelease"
+          } else {
+              $manifestVersion = $moduleVersion
+          }
+
+          Write-Host "Tag version:      $tagVersion"
+          Write-Host "Manifest version: $manifestVersion"
+
+          if ($tagVersion -ne $manifestVersion) {
+              throw "Version mismatch: tag '$tagVersion' does not match manifest version '$manifestVersion'. Update ModuleVersion/Prerelease in .psd1 or correct the tag."
+          }
+
+          Write-Host "Version match confirmed." -ForegroundColor Green
+
   test:
+    needs: validate-version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
