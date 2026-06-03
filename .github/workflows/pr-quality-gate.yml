@@ -24,13 +24,17 @@ jobs:
             'AWS.Tools.CloudWatch',
             'AWS.Tools.EC2',
             'AWS.Tools.ElastiCache',
+            'AWS.Tools.ElasticLoadBalancing'
             'AWS.Tools.ElasticLoadBalancingV2',
             'AWS.Tools.IdentityManagement',
+            'AWS.Tools.Kafka',
             'AWS.Tools.Lambda',
             'AWS.Tools.RDS',
             'AWS.Tools.S3',
             'AWS.Tools.SecurityToken',
-            'AWS.Tools.SimpleSystemsManagement'
+            'AWS.Tools.SecretsManager',
+            'AWS.Tools.SimpleSystemsManagement',
+            'Microsoft.Powershell.Security'
           ) -Scope CurrentUser -Force -CleanUp
 
       - name: Run Pester tests
