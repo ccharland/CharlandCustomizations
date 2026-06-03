@@ -1,0 +1,56 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pester-tests:
+    name: Pester Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
+
+  code-quality:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Run static analysis
+        shell: pwsh
+        run: ./Scripts/Test-CodeQuality.ps1
+
+  help-validation:
+    name: Comment-Based Help
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run help compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-HelpCompliance.ps1
+
+  manifest-validation:
+    name: Manifest Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run manifest compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-ManifestCompliance.ps1
