@@ -41,6 +41,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install AWS.Tools.Common
+        shell: pwsh
+        run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force
+
       - name: Run help compliance gate
         shell: pwsh
         run: ./Scripts/Test-HelpCompliance.ps1
