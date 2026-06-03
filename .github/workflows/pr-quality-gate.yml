@@ -18,17 +18,19 @@ jobs:
           Install-Module -Name AWS.Tools.Installer -Scope CurrentUser -Force
           Install-AWSToolsModule -Name @(
             'AWS.Tools.Common',
-            'AWS.Tools.SecurityToken',
-            'AWS.Tools.EC2',
-            'AWS.Tools.S3',
-            'AWS.Tools.CloudFormation',
-            'AWS.Tools.IdentityManagement',
-            'AWS.Tools.ElasticLoadBalancingV2',
-            'AWS.Tools.RDS',
-            'AWS.Tools.Lambda',
-            'AWS.Tools.ElastiCache',
             'AWS.Tools.AutoScaling',
-            'AWS.Tools.CloudWatch'
+            'AWS.Tools.CloudFormation',
+            'AWS.Tools.CloudFront',
+            'AWS.Tools.CloudWatch',
+            'AWS.Tools.EC2',
+            'AWS.Tools.ElastiCache',
+            'AWS.Tools.ElasticLoadBalancingV2',
+            'AWS.Tools.IdentityManagement',
+            'AWS.Tools.Lambda',
+            'AWS.Tools.RDS',
+            'AWS.Tools.S3',
+            'AWS.Tools.SecurityToken',
+            'AWS.Tools.SimpleSystemsManagement'
           ) -Scope CurrentUser -Force -CleanUp
 
       - name: Run Pester tests
