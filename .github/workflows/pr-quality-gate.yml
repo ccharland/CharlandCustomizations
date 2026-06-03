@@ -33,8 +33,7 @@ jobs:
             'AWS.Tools.S3',
             'AWS.Tools.SecurityToken',
             'AWS.Tools.SecretsManager',
-            'AWS.Tools.SimpleSystemsManagement',
-            'Microsoft.Powershell.Security'
+            'AWS.Tools.SimpleSystemsManagement'
           ) -Scope CurrentUser -Force -CleanUp
 
       - name: Run Pester tests
