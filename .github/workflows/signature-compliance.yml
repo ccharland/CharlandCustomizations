@@ -11,6 +11,9 @@ on:
       - 'src/CharlandCustomizations/**/*.psd1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate-signatures:
     name: Validate Authenticode Signatures

@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   pester-tests:
     name: Pester Tests
@@ -24,10 +27,12 @@ jobs:
             'AWS.Tools.CloudWatch',
             'AWS.Tools.EC2',
             'AWS.Tools.ECS',
+            'AWS.Tools.EKS',
             'AWS.Tools.ElastiCache',
             'AWS.Tools.ElasticFileSystem',
-            'AWS.Tools.ElasticLoadBalancing'
+            'AWS.Tools.ElasticLoadBalancing',
             'AWS.Tools.ElasticLoadBalancingV2',
+            'AWS.Tools.FSx',
             'AWS.Tools.IdentityManagement',
             'AWS.Tools.Kafka',
             'AWS.Tools.Lambda',
