@@ -10,7 +10,7 @@ jobs:
     name: Pester Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install AWS.Tools modules
         shell: pwsh
@@ -23,6 +23,7 @@ jobs:
             'AWS.Tools.CloudFront',
             'AWS.Tools.CloudWatch',
             'AWS.Tools.EC2',
+            'AWS.Tools.ECS',
             'AWS.Tools.ElastiCache',
             'AWS.Tools.ElasticFileSystem',
             'AWS.Tools.ElasticLoadBalancing'
@@ -30,13 +31,15 @@ jobs:
             'AWS.Tools.IdentityManagement',
             'AWS.Tools.Kafka',
             'AWS.Tools.Lambda',
+            'AWS.Tools.MQ',
             'AWS.Tools.Neptune',
             'AWS.Tools.RDS',
             'AWS.Tools.S3',
-            'AWS.Tools.SSOOIDC'
-            'AWS.Tools.SecurityToken',
             'AWS.Tools.SecretsManager',
-            'AWS.Tools.SimpleSystemsManagement'
+            'AWS.Tools.SecurityToken',
+            'AWS.Tools.SimpleSystemsManagement',
+            'AWS.Tools.SSO',
+            'AWS.Tools.SSOOIDC'
           ) -Scope CurrentUser -Force -CleanUp
 
       - name: Run Pester tests
@@ -53,7 +56,7 @@ jobs:
     name: PSScriptAnalyzer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install PSScriptAnalyzer
         shell: pwsh
@@ -67,7 +70,7 @@ jobs:
     name: Comment-Based Help
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install AWS.Tools.Common
         shell: pwsh
@@ -81,7 +84,7 @@ jobs:
     name: Manifest Compliance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run manifest compliance gate
         shell: pwsh
