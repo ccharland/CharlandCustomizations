@@ -1,100 +1,118 @@
-function Set-FileSignature {
 <#
 .SYNOPSIS
-    Sets Authenticode signature on PowerShell files.
-
+    Validates Authenticode signatures for release-critical PowerShell files.
 .DESCRIPTION
-    Signs files using a code signing certificate from the CurrentUser certificate store.
-    Automatically selects the valid certificate with the longest time before expiration
-    and determines the appropriate timestamp server based on the certificate issuer
-    (Digicert or Sectigo).
-
-.PARAMETER MyCert
-    Code signing certificate to use. If not specified, automatically selects the valid
-    codesign certificate with the longest time before expiration from the CurrentUser store.
-
-.PARAMETER TimeStampServer
-    URL of the timestamp server. If not specified, automatically determined based on the
-    certificate issuer (Digicert or Sectigo).
-
+    Scans one or more directories for .ps1, .psm1, and .psd1 files and verifies
+    each file has a valid Authenticode signature with a timestamp counter-signature.
+    Files signed without a timestamp certificate are treated as non-compliant because
+    the signature will expire with the signing certificate.
 .PARAMETER Path
-    Path(s) to the file(s) to sign. Accepts pipeline input and the FullName property
-    from Get-ChildItem output.
-
-.INPUTS
-    System.String[] - File paths to sign (via pipeline or parameter).
-
+    One or more root paths to scan recursively.
+    Defaults to Scripts and src/CharlandCustomizations.
+.PARAMETER IncludeExtension
+    File extensions to validate. Defaults to .ps1, .psm1, .psd1.
+.EXAMPLE
+    ./Scripts/Test-SignatureCompliance.ps1
+    Validates signatures in Scripts and src/CharlandCustomizations.
+.EXAMPLE
+    ./Scripts/Test-SignatureCompliance.ps1 -Path ./Scripts,./src/CharlandCustomizations
+    Validates signatures for the provided paths.    
 .OUTPUTS
-    System.Management.Automation.Signature - The signature result for each file.
+    PSCustomObject
 
-.EXAMPLE
-    Set-FileSignature -Path .\MyScript.ps1
-    Signs a single file using the auto-detected certificate.
-
-.EXAMPLE
-    Get-ChildItem .\Modules\*.psm1 | Set-FileSignature
-    Signs all .psm1 files in the Modules directory via pipeline.
-
-.EXAMPLE
-    Set-FileSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
-    Signs a file using an explicitly specified timestamp server.
+    If any files fail signature validation, an object is returned with its AuthentiCode signature status and the file path. 
 #>
-  [CmdletBinding()]
-  param (
+[CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Gate script uses Write-Host for high-visibility pass/fail status in release workflows')]
+param(
     [Parameter()]
-    $MyCert = (Get-ChildItem cert:\currentuser\my -CodesigningCert |
-        Where-Object { ($_.NotAfter -gt (Get-Date) ) -and ($_.HasPrivateKey -eq $true) }
-      | Sort-Object -Descending NotAfter | Select-Object -First 1),
+    [string[]]$Path = @(
+        (Join-Path (Split-Path $PSScriptRoot -Parent) 'Scripts'),
+        (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations')
+    ),
 
     [Parameter()]
-    [String]$TimeStampServer = '',
+    [ValidateSet('.ps1', '.psm1', '.psd1')]
+    [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
+)
 
-    [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-    [Alias('FullName')]
-    [String[]]
-    $Path
-  )
+$ErrorActionPreference = 'Stop'
 
-  begin {
-    if ($null -eq $MyCert) {
-      throw 'No valid codesign certificate found'
-    }
-    Write-Verbose $($MyCert.Issuer)
-
-    if ($TimeStampServer -eq '') {
-      Write-Verbose "have a CN? $($MyCert.Issuer.StartsWith('CN'))"
-      if ($MyCert.Issuer.StartsWith('CN=Digicert')) {
-        Write-Verbose 'Digicert cert found'
-        $TimeStampServer = 'http://timestamp.digicert.com'
-      } elseif ($MyCert.Issuer.StartsWith('CN=Sect') ) {
-        Write-Verbose 'Sectigo cert found'
-        $TimeStampServer = 'http://timestamp.sectigo.com'
-      } else {
-        Write-Verbose "Issuer: $($MyCert.Issuer)"
-        Write-Verbose "Digicert? $($MyCert.Issuer.StartsWith('CN=Digicert'))"
-        Write-Verbose "Sectigo? $($MyCert.Issuer.StartsWith('CN=Sect'))"
-        throw 'No Timestamp server could be set, aborting.'
-      }
-    } else {
-      Write-Verbose "Timestamp server entered $($TimeStampServer)"
-    }
-    Write-Verbose "Mycert: $($MyCert)"
-    Write-Verbose "Timestamp server: $($TimeStampServer)"
-  }
-
-  process {
-    foreach ($file in $Path) {
-      Write-Verbose "Signing: $file"
-      Set-AuthenticodeSignature -FilePath $file -TimestampServer $TimeStampServer -Certificate $MyCert
-    }
-  }
+$isPipelineOutput = $MyInvocation.PipelineLength -gt 1
+$isRedirectedOutput = $false
+$shouldRenderTable = $false
+try {
+    $isRedirectedOutput = [Console]::IsOutputRedirected
+    $shouldRenderTable = -not $isPipelineOutput -and -not $isRedirectedOutput
+}
+catch {
+    # Non-console hosts should favor object output over table rendering.
+    $shouldRenderTable = $false
 }
 
+$resolvedPaths = foreach ($candidatePath in $Path) {
+    if (-not (Test-Path -Path $candidatePath)) {
+        throw "Validation path does not exist: $candidatePath"
+    }
+
+    Resolve-Path -Path $candidatePath | Select-Object -ExpandProperty Path
+}
+
+$filesToValidate = @(
+    foreach ($resolvedPath in $resolvedPaths) {
+        Get-ChildItem -Path $resolvedPath -Recurse -File |
+        Where-Object { $_.Extension -in $IncludeExtension }
+    }
+)
+
+if (-not $filesToValidate) {
+    throw "No files were found to validate under paths: $($resolvedPaths -join ', ')"
+}
+
+$invalidSignatures = @()
+foreach ($file in $filesToValidate) {
+    Write-Verbose "Validating $($file.FullName)"
+    $signature = Get-AuthenticodeSignature -FilePath $file.FullName
+    if ($signature.Status -ne 'Valid') {
+        Write-Warning "Invalid signature found: $($file.FullName)"
+        $invalidSignatures += [PSCustomObject]@{
+            Path   = $file.FullName
+            Status = $signature.Status
+        }
+    }
+    elseif (-not $signature.TimeStamperCertificate) {
+        # A valid signature without a timestamp will expire with the signing certificate.
+        Write-Warning "Missing timestamp certificate: $($file.FullName)"
+        $invalidSignatures += [PSCustomObject]@{
+            Path   = $file.FullName
+            Status = 'MissingTimestamp'
+        }
+    }
+}
+
+if ($invalidSignatures.Count -gt 0) {
+    Write-Host "Signature compliance failed. Invalid signatures: $($invalidSignatures.Count)" -ForegroundColor Red
+
+    if ($shouldRenderTable) {
+        $invalidSignatures | Format-Table Status, Path -AutoSize | Out-Host
+    }
+
+    if ($isPipelineOutput -or $isRedirectedOutput) {
+        # Emit objects so callers can pipe/filter/export invalid results.
+        $invalidSignatures | Write-Output
+        return
+    }
+
+    throw 'One or more files are unsigned, have invalid Authenticode signatures, or are missing a timestamp certificate.'
+}
+
+Write-Host "Signature compliance passed. Validated $($filesToValidate.Count) file(s)." -ForegroundColor Green
 # SIG # Begin signature block
 # MIImXQYJKoZIhvcNAQcCoIImTjCCJkoCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAxln0vL+LyVYfo
-# E4w+BHgmmsLR2cSrfFFnYyNPqooSnaCCH3IwggYUMIID/KADAgECAhB6I67aU2mW
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDZckpqAY9D8z2I
+# /i95fpa1TjJPNZ4XGjJAXlZuHYFEaaCCH3IwggYUMIID/KADAgECAhB6I67aU2mW
 # D5HIPlz0x+M/MA0GCSqGSIb3DQEBDAUAMFcxCzAJBgNVBAYTAkdCMRgwFgYDVQQK
 # Ew9TZWN0aWdvIExpbWl0ZWQxLjAsBgNVBAMTJVNlY3RpZ28gUHVibGljIFRpbWUg
 # U3RhbXBpbmcgUm9vdCBSNDYwHhcNMjEwMzIyMDAwMDAwWhcNMzYwMzIxMjM1OTU5
@@ -267,33 +285,33 @@ function Set-FileSignature {
 # IFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQCAQUA
 # oIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwGCisG
 # AQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZIhvcN
-# AQkEMSIEIE1OWlRimddVahmXn2WQmpOsgdBJpYwFkS+gVb42j8uPMA0GCSqGSIb3
-# DQEBAQUABIICAKumngq3HRV8ZbTqfqCMX0HpLVz8tAe73GOahoujqqFimme9VaV+
-# O7Dt7jNDlNA8R6RQuUzRWgxaBvJwdy8vCt56L9+Z7G/Ft6gVntKBy2OLNnq9Ymwa
-# txFV4W00nwN6XJvS6jW4ACFC37r9eIpZ/E043aGuNxtctkGpC7R6mwsjqr3shP38
-# i7oi94oEsVtL/l9Psx0J7H1is/9PoX2NRWlVFE6xeWEutN0xxDmS3kvwoI+HNVOJ
-# g6+ry7Ze3iTgChhQDd2PdStIGGXYpspvP3ycB6YY9pSbRFM335ACQh4ERawwXWDf
-# BlkHxaFmtrphCv8gzKFnvtxyCpWF495XYfylxuFrOvrp8kKzN0hU1heRE3kdWP3U
-# 6IQ291hwAq9PeNXS5ZL9zVZGIgYtwO7wqZ6XQpYgy2OJTrnQwyPXQWhu4ydoxLvJ
-# 9BWdBQ4vlvhBaeAphGzK5wKZXnnVzq6I5R8pNwZgCi0u+hV87BDKeXsCQZECFaQa
-# Gipjp+d1zaiJBvKjHeAcQCPbp01cPZonm65TCzyFhaDhQDyT51G/TWvjcs0tM2H2
-# mikHtFdwznz6MUe/7gi8NMu7XE3iB6URzfRUdKsJwJJozkw428jOs+TG+4ydBVKC
-# y3mkaqr+lTkhxLNLDsJ/en4k9/Q0tJLKiGzv1ooAIaOeVoYg/Ih+JQJAoYIDIzCC
+# AQkEMSIEIIQpRhnsrr9ZMvPD0r9lRG1tYIcR6RDyQjnUTwu4w0kOMA0GCSqGSIb3
+# DQEBAQUABIICAB1gMS7IBVVtLSZHnpg/ohKRTOJpY7hYKdye+ZjgC3G4BnStBV05
+# bWZl2IgX37UwXq/HggfSEdP5qfTDt+u5NmLxwBP8UNErcL+nDRi+nvWkl323+HPH
+# /WMQoFC/uGirj9aIvb/oJyl99UFpw7ZyYnzdpMFbAxLj36oLIDU2I32An/NWk38p
+# W1irkyLejHbeMSMrDYjYNJG5cmH+3aacM0O10KR5wMPa/PC72X6MWNRiKA9D+QtN
+# pacfaMa/3CH+DPN5mFnn7zs7niagsGcmUagYaMmtgWqYIR7JQsM8wknKlQyK1gHO
+# kvZu9b6DReo1gge7vW1ttzaWFS/5pLa94zrKNt9OagcH9Y6VZ4tPAdK2B0dFWRtC
+# HD6pw7iYob2502b/NvxOs6xu57oAtijt/rhMUQZip/3aMs6oiGyZOlGFECxuL4ti
+# sTg8mhQQKbJW2hwJtw7ItT7X2T8owM0BPNjhlQH7WEmfvGrDh63zRHzlmwWe1V2s
+# +DOtuVjp2ch2N0p/KvU+/Ht99iDWgd7yyBe1grwrHLHfVE1yPw6p6raVM06ioBJn
+# 5sYtnz3XoJTjAR0JGI2E8HU9c612rdqo7Yw7QhgSF8qcpZpRaoocSqT+m3Fx6g3S
+# +ca4hU625w299so1t/+pIQWh7WpqXnoq5IqzTCmfcWXMX3gkiZP+1NEvoYIDIzCC
 # Ax8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAWBgNV
 # BAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMgVGlt
 # ZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFlAwQC
 # AgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcN
-# MjYwNjAzMjAzMDE4WjA/BgkqhkiG9w0BCQQxMgQw3ZXS7Q/9x2SzeWtUcN4Of3Zu
-# XPc7VtyfC0NksYpZ5knEFhbr3/urUtOZWn5MnA10MA0GCSqGSIb3DQEBAQUABIIC
-# ADjaj/hP3Au7OQRlXgrASdea3vkHy9S7Da2wX58by1XHaoJY/VnCe2C22bDXSKF4
-# EFwUY9fNBB6PtlatEyHkGtMjvMkyoHZBBJkVRa+ntG8dRnmi3WwJ+zQsirp3sWdq
-# YUy/5K8yVeUkPvHMOTNm+8ElAzljn2wLb82HP5iPDEw0IRR3UwJ1ZexNrZVPAA9Y
-# XmgQTfwLFbpHUj3ODigHnkfZWUP4EYhsZ3W5sSd4n8ruGk91FHoG6Jb8UQI4c8vP
-# 0v7UKWunXbdJ09C12/UhgcqAbp0gtVXqe2+7LeliHtNzypnRc1RPoO7YzD7bSFA5
-# udd9V73C31Q6p5gWa7FAyqa7jLYlFJT6WbO88daHbKPXrFO9EY01hLfwQvjrQ5Ik
-# /fm3OOOml8DKNc3sNtyBdU3Uj6Pr5b/xqa6CM8cUbVxhtM8afx7fRG+41TUzUQfK
-# 1NdBQ+2Bmb3KhoVAEsjxA0s+7BvaDsZ0iCKy5Op3GFFVXsmZpmGm+xWtFgUsvv/1
-# 1rS+k2V21AHoTeAsRRxj0Vzgphw+nzl+EJBQVuOlAKQVdGOdI4CzP3CXruaoFudh
-# GfcTl27+M69lF2c/OvDp/W6Li2vdXyBuME2XLonCIs2cDgR73fnk3gyuVjVfsqE5
-# 0UcQfUIZvbnHYIpyI5azt6mLaKp+tVOeUrBxrqkEJ9gT
+# MjYwNjAzMjEwODMwWjA/BgkqhkiG9w0BCQQxMgQwWXOk2h6hDNRq3mNO/hRYnt/b
+# TZ1btQ4jDcfvCMUgdUc7adChNjpppKfAso0qXn/HMA0GCSqGSIb3DQEBAQUABIIC
+# AIFwMwne1Kw2eSyVKBJ/WFjTFolYjzVJJb8PlfS5sLoFean8lMRNwUvU35ia6bXd
+# AUP9q11AK+2Jy2drRh05TQfutcO5OMWTUCnVJoZymnru5YxvknbQJLIqSjvh0Dfg
+# IsRa8u6I47P6T0DKkA5mZwDLmFuPNLYfq9oav0+doaa/hZnA1lxpXWdas6Yvazp+
+# jeCLWfVkSCKDJeD47kqngi4QbTaOYXNATJuGXXcp5uW3oGQbAUuamXG97jF9a1my
+# Eem608GCL9SLiujU+tN7BIjSY+pJ2SwKZxRJjGMfXqkdPNp7vy9dgL6cHzVdiEQT
+# xRb/x/+clq/5yrJ1VfHVvYyyCGAbWGvD/nJlYcwiLbPsNzfKEMq9br2Pmfkw/GGa
+# hOFYUnytpQOc8f/7H4YaZK1Kw2MWe2H1pCLiKNI3EGzrJySU9X43XFSnNp6LkRbd
+# wtH1VTxEUz0LacrR1q+PV+gWUXngFHaabeDcWW6gPIe17Ky4BqAa7+noU6MQBOp1
+# 3VNR1ojZmDd9E5Y5aH4q32Uk8WvFGTP9vgHF9BNyrzyVO902rcLBSx+eT52P5F53
+# XCbhRFSJ2OCnRJPE03CxJZd5KBNvT5DnP9MZw8VPllb5MLyAGGYEZsC87X76EMhn
+# OXhVKaKoAInc2RzKOyfN1xNm1E6gifN2lwOmf2G/Cppz
 # SIG # End signature block
