@@ -8,7 +8,15 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
+<<<<<<<< HEAD:tests/Unit/AWS/Remove-CCExpiredAWSProfiles.Tests.ps1
+<<<<<<<< HEAD:tests/Unit/AWS/Remove-CCExpiredAWSProfile.Tests.ps1
 Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
+========
+Describe 'Remove-CCExpiredAWSProfiles' -Tag 'Unit' {
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Remove-CCExpiredAWSProfiles.Tests.ps1
+========
+Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/AWS/Remove-CCExpiredAWSProfile.Tests.ps1
 
     Context 'Expired profile (ExpiredToken error)' {
 
@@ -29,7 +37,15 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
+<<<<<<<< HEAD:tests/Unit/AWS/Remove-CCExpiredAWSProfiles.Tests.ps1
+<<<<<<<< HEAD:tests/Unit/AWS/Remove-CCExpiredAWSProfile.Tests.ps1
             Remove-CCExpiredAWSProfile
+========
+            Remove-CCExpiredAWSProfiles
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Remove-CCExpiredAWSProfiles.Tests.ps1
+========
+            Remove-CCExpiredAWSProfile
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/AWS/Remove-CCExpiredAWSProfile.Tests.ps1
 
             # Assert (Req 3.5)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 1 -Exactly
@@ -55,7 +71,15 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
+<<<<<<<< HEAD:tests/Unit/AWS/Remove-CCExpiredAWSProfiles.Tests.ps1
+<<<<<<<< HEAD:tests/Unit/AWS/Remove-CCExpiredAWSProfile.Tests.ps1
             Remove-CCExpiredAWSProfile
+========
+            Remove-CCExpiredAWSProfiles
+>>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):tests/Unit/AWS/Remove-CCExpiredAWSProfiles.Tests.ps1
+========
+            Remove-CCExpiredAWSProfile
+>>>>>>>> 58fc8f6 (refactor: rename functions to use singular nouns):tests/Unit/AWS/Remove-CCExpiredAWSProfile.Tests.ps1
 
             # Assert (Req 3.13)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 0 -Exactly
