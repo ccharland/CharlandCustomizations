@@ -21,7 +21,6 @@ in the TemplateProcessing.psm1 module.
 
 # ================================================================================================
 # Get-CCEC2SGInUse Function
-# Get-CCEC2SGInUse Function
 # ================================================================================================
 
 <#
@@ -147,7 +146,7 @@ function Get-CCEC2SGInUse {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -176,33 +175,229 @@ function Get-CCEC2SGInUse {
         }
 
         Write-Progress -Activity 'Get Resource List:' -Status 'Instances'
-        $InstancesMaster = Get-EC2Instance @awsParams
+        try {
+            $InstancesMaster = Get-EC2Instance @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-EC2Instance: Command not found, skipping"
+            $InstancesMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-EC2Instance: Insufficient permissions, skipping"
+                $InstancesMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'NetworkInterfaces'
-        $NetworkInterfaceMaster = Get-EC2NetworkInterface @awsParams
+        try {
+            $NetworkInterfaceMaster = Get-EC2NetworkInterface @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-EC2NetworkInterface: Command not found, skipping"
+            $NetworkInterfaceMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-EC2NetworkInterface: Insufficient permissions, skipping"
+                $NetworkInterfaceMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'LoadBalancer'
-        $LoadBalancerMaster = Get-ELB2LoadBalancer @awsParams
+        try {
+            $LoadBalancerMaster = Get-ELB2LoadBalancer @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-ELB2LoadBalancer: Command not found, skipping"
+            $LoadBalancerMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-ELB2LoadBalancer: Insufficient permissions, skipping"
+                $LoadBalancerMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'EndPoints'
-        $EndPointsMaster = Get-EC2VPCEndpoint @awsParams
+        try {
+            $EndPointsMaster = Get-EC2VPCEndpoint @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-EC2VPCEndpoint: Command not found, skipping"
+            $EndPointsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-EC2VPCEndpoint: Insufficient permissions, skipping"
+                $EndPointsMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'Databases'
-        $DatabasesMaster = Get-RDSDBInstance @awsParams
+        try {
+            $DatabasesMaster = Get-RDSDBInstance @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-RDSDBInstance: Command not found, skipping"
+            $DatabasesMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-RDSDBInstance: Insufficient permissions, skipping"
+                $DatabasesMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'ClientEndpoints'
-        $VPNCLientEndpointMaster = Get-EC2ClientVpnEndpoint @awsParams
+        try {
+            $VPNCLientEndpointMaster = Get-EC2ClientVpnEndpoint @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-EC2ClientVpnEndpoint: Command not found, skipping"
+            $VPNCLientEndpointMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-EC2ClientVpnEndpoint: Insufficient permissions, skipping"
+                $VPNCLientEndpointMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'Lambda'
-        $LambdaFunctionsMaster = Get-LMFunctionList @awsParams
+        try {
+            $LambdaFunctionsMaster = Get-LMFunctionList @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-LMFunctionList: Command not found, skipping"
+            $LambdaFunctionsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-LMFunctionList: Insufficient permissions, skipping"
+                $LambdaFunctionsMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'ElasticCache'
-        $ElastiCacheClustersMaster = Get-ECCacheCluster @awsParams
+        try {
+            $ElastiCacheClustersMaster = Get-ECCacheCluster @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-ECCacheCluster: Command not found, skipping"
+            $ElastiCacheClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-ECCacheCluster: Insufficient permissions, skipping"
+                $ElastiCacheClustersMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'MSK'
-        $MSKClustersMaster = Get-MSKClusterList @awsParams
+        try {
+            $MSKClustersMaster = Get-MSKClusterList @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-MSKClusterList: Command not found, skipping"
+            $MSKClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-MSKClusterList: Insufficient permissions, skipping"
+                $MSKClustersMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'Neptune'
-        $NeptuneClustersMaster = Get-NPTDBCluster @awsParams
+        try {
+            $NeptuneClustersMaster = Get-NPTDBCluster @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-NPTDBCluster: Command not found, skipping"
+            $NeptuneClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-NPTDBCluster: Insufficient permissions, skipping"
+                $NeptuneClustersMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'MQBroker'
-        $MQBrokersMaster = Get-MQBrokerList @awsParams
+        try {
+            $MQBrokersMaster = Get-MQBrokerList @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-MQBrokerList: Command not found, skipping"
+            $MQBrokersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-MQBrokerList: Insufficient permissions, skipping"
+                $MQBrokersMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'FSX'
-        $FSxFileSystemsMaster = Get-FSXFileSystem @awsParams
+        try {
+            $FSxFileSystemsMaster = Get-FSXFileSystem @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-FSXFileSystem: Command not found, skipping"
+            $FSxFileSystemsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-FSXFileSystem: Insufficient permissions, skipping"
+                $FSxFileSystemsMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'Directory'
-        $DirectoriesMaster = Get-DSDirectory @awsParams
+        try {
+            $DirectoriesMaster = Get-DSDirectory @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-DSDirectory: Command not found, skipping"
+            $DirectoriesMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-DSDirectory: Insufficient permissions, skipping"
+                $DirectoriesMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'Workspace'
-        $WorkSpacesMaster = Get-WKSWorkspace @awsParams
+        try {
+            $WorkSpacesMaster = Get-WKSWorkspace @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-WKSWorkspace: Command not found, skipping"
+            $WorkSpacesMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-WKSWorkspace: Insufficient permissions, skipping"
+                $WorkSpacesMaster = @()
+            }
+            else { throw }
+        }
+
         Write-Progress -Activity 'Get Resource List:' -Status 'SageMaker'
 
         try {
@@ -210,6 +405,185 @@ function Get-CCEC2SGInUse {
         }
         catch {
             $SageMakerNotebookInstanceListMaster = $null
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'OpenSearch'
+        try {
+            $OpenSearchDomainsMaster = Get-OSDomainNameList @awsParams | ForEach-Object {
+                Get-OSDomainConfig -DomainName $_.DomainName @awsParams
+            }
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-OSDomainNameList: Command not found, skipping"
+            $OpenSearchDomainsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-OSDomainNameList: Insufficient permissions, skipping"
+                $OpenSearchDomainsMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'Redshift'
+        try {
+            $RedshiftClustersMaster = Get-RSCluster @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-RSCluster: Command not found, skipping"
+            $RedshiftClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-RSCluster: Insufficient permissions, skipping"
+                $RedshiftClustersMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'EMR'
+        try {
+            $EMRClustersMaster = Get-EMRClusterList @awsParams | Where-Object {
+                $_.Status.State -notin @('TERMINATED', 'TERMINATED_WITH_ERRORS')
+            }
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-EMRClusterList: Command not found, skipping"
+            $EMRClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-EMRClusterList: Insufficient permissions, skipping"
+                $EMRClustersMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'DocumentDB'
+        try {
+            $DocumentDBClustersMaster = Get-DOCDBCluster @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-DOCDBCluster: Command not found, skipping"
+            $DocumentDBClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-DOCDBCluster: Insufficient permissions, skipping"
+                $DocumentDBClustersMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'ECS'
+        try {
+            $ECSServicesMaster = @()
+            $clusterArns = Get-ECSClusterList @awsParams
+            foreach ($clusterArn in $clusterArns) {
+                $serviceArns = Get-ECSClusterService -Cluster $clusterArn @awsParams
+                if ($serviceArns) {
+                    $ECSServicesMaster += Get-ECSService -Cluster $clusterArn -Service $serviceArns @awsParams
+                }
+            }
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-ECSClusterList: Command not found, skipping"
+            $ECSServicesMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-ECSClusterList: Insufficient permissions, skipping"
+                $ECSServicesMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'EFS'
+        try {
+            $EFSMountTargetsMaster = @()
+            $fileSystems = Get-EFSFileSystem @awsParams
+            foreach ($fs in $fileSystems) {
+                $EFSMountTargetsMaster += Get-EFSMountTarget -FileSystemId $fs.FileSystemId @awsParams
+            }
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-EFSFileSystem: Command not found, skipping"
+            $EFSMountTargetsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-EFSFileSystem: Insufficient permissions, skipping"
+                $EFSMountTargetsMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'CodeBuild'
+        try {
+            $CodeBuildProjectsMaster = @()
+            $projectNames = Get-CBProjectList @awsParams
+            if ($projectNames) {
+                $CodeBuildProjectsMaster = Get-CBBatchProject -Name $projectNames @awsParams
+            }
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-CBProjectList: Command not found, skipping"
+            $CodeBuildProjectsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-CBProjectList: Insufficient permissions, skipping"
+                $CodeBuildProjectsMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'DAX'
+        try {
+            $DAXClustersMaster = Get-DAXCluster @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-DAXCluster: Command not found, skipping"
+            $DAXClustersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-DAXCluster: Insufficient permissions, skipping"
+                $DAXClustersMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'TransferFamily'
+        try {
+            $TransferServersMaster = Get-TFRServerList @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-TFRServerList: Command not found, skipping"
+            $TransferServersMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-TFRServerList: Insufficient permissions, skipping"
+                $TransferServersMaster = @()
+            }
+            else { throw }
+        }
+
+        Write-Progress -Activity 'Get Resource List:' -Status 'Glue'
+        try {
+            $GlueConnectionsMaster = Get-GLUEConnectionList @awsParams
+        }
+        catch [System.Management.Automation.CommandNotFoundException] {
+            Write-Warning "Get-GLUEConnectionList: Command not found, skipping"
+            $GlueConnectionsMaster = @()
+        }
+        catch {
+            if ($_.Exception.Message -match 'AccessDenied|UnauthorizedAccess|not authorized') {
+                Write-Warning "Get-GLUEConnectionList: Insufficient permissions, skipping"
+                $GlueConnectionsMaster = @()
+            }
+            else { throw }
         }
 
         # Initialize an array to store results
@@ -321,6 +695,76 @@ function Get-CCEC2SGInUse {
             }
             $UsedByCount += $SageMakerNotebooks.Count
 
+            # Get associated OpenSearch domains
+            $OpenSearchDomains = $OpenSearchDomainsMaster | Where-Object {
+                $_.VPCOptions.SecurityGroupIds -contains $SG
+            }
+            $UsedByCount += $OpenSearchDomains.Count
+
+            # Get associated Redshift clusters
+            $RedshiftClusters = $RedshiftClustersMaster | Where-Object {
+                $_.VpcSecurityGroups.VpcSecurityGroupId -contains $SG
+            }
+            $UsedByCount += $RedshiftClusters.Count
+
+            # Get associated EMR clusters
+            $EMRClusters = @()
+            foreach ($emrCluster in $EMRClustersMaster) {
+                try {
+                    $emrDetail = Get-EMRCluster -ClusterId $emrCluster.Id @awsParams
+                    if ($emrDetail.Ec2InstanceAttributes.EmrManagedMasterSecurityGroup -eq $SG -or
+                        $emrDetail.Ec2InstanceAttributes.EmrManagedSlaveSecurityGroup -eq $SG -or
+                        $emrDetail.Ec2InstanceAttributes.AdditionalMasterSecurityGroups -contains $SG -or
+                        $emrDetail.Ec2InstanceAttributes.AdditionalSlaveSecurityGroups -contains $SG) {
+                        $EMRClusters += $emrCluster
+                    }
+                }
+                catch { }
+            }
+            $UsedByCount += $EMRClusters.Count
+
+            # Get associated DocumentDB clusters
+            $DocumentDBClusters = $DocumentDBClustersMaster | Where-Object {
+                $_.VpcSecurityGroups.VpcSecurityGroupId -contains $SG
+            }
+            $UsedByCount += $DocumentDBClusters.Count
+
+            # Get associated ECS services (awsvpc mode)
+            $ECSServices = $ECSServicesMaster | Where-Object {
+                $_.NetworkConfiguration.AwsvpcConfiguration.SecurityGroups -contains $SG
+            }
+            $UsedByCount += $ECSServices.Count
+
+            # Get associated EFS mount targets
+            $EFSMountTargets = $EFSMountTargetsMaster | Where-Object {
+                $_.SecurityGroups -contains $SG
+            }
+            $UsedByCount += $EFSMountTargets.Count
+
+            # Get associated CodeBuild projects
+            $CodeBuildProjects = $CodeBuildProjectsMaster | Where-Object {
+                $_.VpcConfig.SecurityGroupIds -contains $SG
+            }
+            $UsedByCount += $CodeBuildProjects.Count
+
+            # Get associated DAX clusters
+            $DAXClusters = $DAXClustersMaster | Where-Object {
+                $_.SecurityGroups.SecurityGroupIdentifier -contains $SG
+            }
+            $UsedByCount += $DAXClusters.Count
+
+            # Get associated Transfer Family servers
+            $TransferServers = $TransferServersMaster | Where-Object {
+                $_.StructuredLogDestinations -contains $SG -or $_.SecurityGroupIds -contains $SG
+            }
+            $UsedByCount += $TransferServers.Count
+
+            # Get associated Glue connections
+            $GlueConnections = $GlueConnectionsMaster | Where-Object {
+                $_.PhysicalConnectionRequirements.SecurityGroupIdList -contains $SG
+            }
+            $UsedByCount += $GlueConnections.Count
+
             # Add results to the array
             $Results += [PSCustomObject]@{
                 PSTypeName                    = 'AWS.EC2.SecurityGroupUsage'
@@ -347,6 +791,12 @@ function Get-CCEC2SGInUse {
                 AssociatedDirectories         = $Directories.DirectoryId -join ', '
                 AssociatedWorkSpaces          = $WorkSpaces.WorkspaceId -join ', '
                 AssociatedSageMakerNotebooks  = $SageMakerNotebooks.NotebookInstanceName -join ', '
+                AssociatedECSServices         = $ECSServices.ServiceName -join ', '
+                AssociatedEFSMountTargets     = $EFSMountTargets.MountTargetId -join ', '
+                AssociatedCodeBuildProjects   = $CodeBuildProjects.Name -join ', '
+                AssociatedDAXClusters         = $DAXClusters.ClusterName -join ', '
+                AssociatedTransferServers     = $TransferServers.ServerId -join ', '
+                AssociatedGlueConnections     = $GlueConnections.Name -join ', '
             }
         }
     }
@@ -417,7 +867,7 @@ function Out-CCAWSSupportingInfo {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -519,7 +969,7 @@ function Out-CCAWSNetworkingComponent {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -699,7 +1149,7 @@ function Get-CCGlobalAuditReportItem {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -826,7 +1276,7 @@ function Get-CCEC2KeyTagNameStatus {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -959,7 +1409,7 @@ function Get-CCEC2SnapshotReport {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -1053,7 +1503,7 @@ function Get-CCEC2VolumeReport {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -1210,7 +1660,7 @@ function Find-CCOpenSecurityGroup {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -1380,7 +1830,7 @@ function Find-CCEC2DBSG {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -1537,7 +1987,7 @@ function Get-CCEC2Count {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,

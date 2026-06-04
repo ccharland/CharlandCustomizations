@@ -36,6 +36,22 @@ Describe 'Get-CCEC2SGInUse' -Tag 'Unit' {
         Mock Get-WKSWorkspace { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-SMNotebookInstanceList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-SMNotebookInstance { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-OSDomainNameList { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-OSDomainConfig { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-RSCluster { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EMRClusterList { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EMRCluster { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-DOCDBCluster { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ECSClusterList { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ECSClusterService { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ECSService { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EFSFileSystem { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EFSMountTarget { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-CBProjectList { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-CBBatchProject { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-DAXCluster { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-TFRServerList { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-GLUEConnectionList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
@@ -384,7 +400,7 @@ Describe 'Start-CCEC2RetryLoop' -Tag 'Unit' {
 
     It 'Throws after exhausting all retries' {
         { Start-CCEC2RetryLoop -ScriptBlock { throw 'Persistent failure' } -MaxRetries 2 -DelaySeconds 0 -Confirm:$false } |
-            Should -Throw '*All 2 attempts failed*'
+        Should -Throw '*All 2 attempts failed*'
     }
 }
 
