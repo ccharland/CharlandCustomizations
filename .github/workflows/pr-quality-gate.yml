@@ -22,9 +22,11 @@ jobs:
           Install-AWSToolsModule -Name @(
             'AWS.Tools.Common',
             'AWS.Tools.AutoScaling',
+            'AWS.Tools.CertificateManager',
             'AWS.Tools.CloudFormation',
             'AWS.Tools.CloudFront',
             'AWS.Tools.CloudWatch',
+            'AWS.Tools.DirectoryService',
             'AWS.Tools.DirectoryServiceData',
             'AWS.Tools.EC2',
             'AWS.Tools.ECS',
