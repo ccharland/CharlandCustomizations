@@ -1,0 +1,96 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  pester-tests:
+    name: Pester Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install AWS.Tools modules
+        shell: pwsh
+        run: |
+          Install-Module -Name AWS.Tools.Installer -Scope CurrentUser -Force
+          Install-AWSToolsModule -Name @(
+            'AWS.Tools.Common',
+            'AWS.Tools.AutoScaling',
+            'AWS.Tools.CloudFormation',
+            'AWS.Tools.CloudFront',
+            'AWS.Tools.CloudWatch',
+            'AWS.Tools.EC2',
+            'AWS.Tools.ECS',
+            'AWS.Tools.EKS',
+            'AWS.Tools.ElastiCache',
+            'AWS.Tools.ElasticFileSystem',
+            'AWS.Tools.ElasticLoadBalancing',
+            'AWS.Tools.ElasticLoadBalancingV2',
+            'AWS.Tools.FSx',
+            'AWS.Tools.IdentityManagement',
+            'AWS.Tools.Kafka',
+            'AWS.Tools.Lambda',
+            'AWS.Tools.MQ',
+            'AWS.Tools.Neptune',
+            'AWS.Tools.RDS',
+            'AWS.Tools.S3',
+            'AWS.Tools.SecretsManager',
+            'AWS.Tools.SecurityToken',
+            'AWS.Tools.SimpleSystemsManagement',
+            'AWS.Tools.SSO',
+            'AWS.Tools.SSOOIDC'
+          ) -Scope CurrentUser -Force -CleanUp
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Output.Verbosity = 'Detailed'
+          $config.Filter.ExcludeTag = @('Windows')
+          Invoke-Pester -Configuration $config
+
+  code-quality:
+    name: PSScriptAnalyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Run static analysis
+        shell: pwsh
+        run: ./Scripts/Test-CodeQuality.ps1
+
+  help-validation:
+    name: Comment-Based Help
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install AWS.Tools.Common
+        shell: pwsh
+        run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force
+
+      - name: Run help compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-HelpCompliance.ps1
+
+  manifest-validation:
+    name: Manifest Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run manifest compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-ManifestCompliance.ps1

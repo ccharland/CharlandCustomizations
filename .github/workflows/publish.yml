@@ -7,6 +7,9 @@ on:
     paths:
       - 'src/CharlandCustomizations/**'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
