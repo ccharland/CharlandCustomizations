@@ -27,6 +27,7 @@ Scripts will be analyzed using PSScriptAnalyzer.
 - Avoid trailing whitespace on lines
 - One function per `.ps1` file in `Public/` or `Private/`
 - File name must match the function name (e.g., `Get-Something.ps1` contains `function Get-Something`)
+- When modifying a signed file, delete the `# SIG # Begin signature block` through `# SIG # End signature block` section. The signature will be invalid after edits and must be re-applied by the build/signing process.
 
 ## Version Management
 
