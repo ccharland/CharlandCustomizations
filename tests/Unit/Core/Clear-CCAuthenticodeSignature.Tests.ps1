@@ -16,3 +16,87 @@ Describe 'Clear-CCAuthenticodeSignature' -Tag 'Unit' {
 function Get-Something {
     Write-Output 'hello'
 }
+
+# SIG # Begin signature block
+MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
+BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
+"@
+            Set-Content -Path "TestDrive:\signed-script.ps1" -Value $scriptContent -NoNewline
+
+            # Act
+            Clear-CCAuthenticodeSignature -Path "TestDrive:\signed-script.ps1"
+
+            # Assert
+            $result = Get-Content -Path "TestDrive:\signed-script.ps1" -Raw
+            $expected = @"
+function Get-Something {
+    Write-Output 'hello'
+}
+"@
+            $result | Should -Be $expected.TrimEnd()
+        }
+    }
+
+    Context 'No signature block present' {
+
+        It 'File without signature block remains unchanged' {
+            # Arrange
+            $scriptContent = @"
+function Get-Something {
+    Write-Output 'hello'
+}
+"@
+            Set-Content -Path "TestDrive:\unsigned-script.ps1" -Value $scriptContent -NoNewline
+
+            # Act
+            Clear-CCAuthenticodeSignature -Path "TestDrive:\unsigned-script.ps1"
+
+            # Assert
+            $result = Get-Content -Path "TestDrive:\unsigned-script.ps1" -Raw
+            $result | Should -BeExactly $scriptContent
+        }
+    }
+
+    Context 'Error handling' {
+
+        It 'Non-existent file path writes non-terminating error containing the path' {
+            # Arrange
+            $badPath = "TestDrive:\nonexistent-file.ps1"
+
+            # Act & Assert
+            $err = $null
+            Clear-CCAuthenticodeSignature -Path $badPath -ErrorVariable err -ErrorAction SilentlyContinue
+            $err | Should -Not -BeNullOrEmpty
+            $err[0].Exception.Message | Should -BeLike "*$badPath*"
+        }
+    }
+
+    Context 'Property: content preservation' {
+        # Feature: pester-test-coverage, Property 1: content preservation
+        # **Validates: Requirements 2.3, 8.4**
+        It 'Preserves content before signature block for 100 random inputs' {
+            foreach ($i in 1..100) {
+                # Generate random content (10-200 chars)
+                $randomContent = -join ((65..90) + (97..122) | Get-Random -Count (Get-Random -Minimum 10 -Maximum 200) | ForEach-Object { [char]$_ })
+                $signature = "`n# SIG # Begin signature block`nMIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzAN"
+                $fileContent = "$randomContent$signature"
+
+                Set-Content "TestDrive:\proptest$i.ps1" -Value $fileContent -NoNewline
+                Clear-CCAuthenticodeSignature -Path "TestDrive:\proptest$i.ps1"
+                $result = Get-Content "TestDrive:\proptest$i.ps1" -Raw
+                $result | Should -Be $randomContent.TrimEnd()
+            }
+        }
+
+        It 'Leaves file unchanged when no signature block present for 100 random inputs' {
+            foreach ($i in 1..100) {
+                $randomContent = -join ((65..90) + (97..122) | Get-Random -Count (Get-Random -Minimum 10 -Maximum 200) | ForEach-Object { [char]$_ })
+
+                Set-Content "TestDrive:\noprop$i.ps1" -Value $randomContent -NoNewline
+                Clear-CCAuthenticodeSignature -Path "TestDrive:\noprop$i.ps1"
+                $result = Get-Content "TestDrive:\noprop$i.ps1" -Raw
+                $result | Should -BeExactly $randomContent
+            }
+        }
+    }
+}
