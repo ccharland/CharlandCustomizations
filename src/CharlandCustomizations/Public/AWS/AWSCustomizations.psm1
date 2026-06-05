@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     AWS PowerShell Customizations and scripts.
 #>
@@ -97,7 +97,7 @@ Stack4    UPDATE_COMPLETE ALambdaFunction   Resource skipped during UpdateRollba
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -215,7 +215,7 @@ function Set-CCAWSProfileWithMFA {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -461,7 +461,7 @@ Stackname or list of stackNames to start
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -594,7 +594,7 @@ function Get-CCAWSAccountListOfDriftedResource {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -725,7 +725,7 @@ us-east-2          0        1        1           2           0   True
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,
@@ -952,7 +952,7 @@ function Update-CCSSOCredentialList {
     [string]$SessionToken,
 
     [Parameter()]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter()]
     [string]$ProfileLocation,

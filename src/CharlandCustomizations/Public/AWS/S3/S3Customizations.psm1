@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     S3 helper functions for AWS account maintenance.
 #>
@@ -83,7 +83,7 @@ function Clear-CCS3Bucket {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,

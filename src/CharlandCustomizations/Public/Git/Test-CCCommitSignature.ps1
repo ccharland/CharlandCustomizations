@@ -1,8 +1,5 @@
-<<<<<<<< HEAD:src/CharlandCustomizations/Public/Git/Test-CCCommitSignature.ps1
 function Test-CCCommitSignature {
-========
-function Test-CCCommitSignatures {
->>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):src/CharlandCustomizations/Public/Git/Test-CCCommitSignatures.ps1
+
     <#
     .SYNOPSIS
         Tests that commits are signed (GPG or SSH)
@@ -21,21 +18,6 @@ function Test-CCCommitSignatures {
         Branch to check (default: current branch)
         
     .EXAMPLE
-<<<<<<<< HEAD:src/CharlandCustomizations/Public/Git/Test-CCCommitSignature.ps1
-        Test-CCCommitSignature
-        Checks the last commit
-        
-    .EXAMPLE
-        Test-CCCommitSignature -Count 10
-        Checks the last 10 commits
-        
-    .EXAMPLE
-        Test-CCCommitSignature -Range "HEAD~5..HEAD"
-        Checks specific commit range
-        
-    .EXAMPLE
-        Test-CCCommitSignature -Branch main
-========
         Test-CCCommitSignatures
         Checks the last commit
         
@@ -49,7 +31,6 @@ function Test-CCCommitSignatures {
         
     .EXAMPLE
         Test-CCCommitSignatures -Branch main
->>>>>>>> e6f2a92 (refactored/removed DefaultCommandPrefix from manifest):src/CharlandCustomizations/Public/Git/Test-CCCommitSignatures.ps1
         Checks commits on main branch
     #>
     [CmdletBinding()]

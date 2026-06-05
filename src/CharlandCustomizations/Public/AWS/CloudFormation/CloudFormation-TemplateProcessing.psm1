@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 CloudFormation Template Processing PowerShell Module
 
@@ -87,7 +87,7 @@ function New-CCCFNStackFromDirectory {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -294,7 +294,7 @@ function Test-CCCFNStackFromDirectory {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -408,7 +408,7 @@ function Out-CCCFNStackInfo {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -601,7 +601,7 @@ function Update-CCCFNStackFromDirectory {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -902,7 +902,7 @@ function New-CCCFNStackDirectory {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -1024,7 +1024,7 @@ function Edit-CCCFTTEbsVolume {
         [string]$SessionToken,
 
         [Parameter()]
-        $Credential,
+        [SecureString] $Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
