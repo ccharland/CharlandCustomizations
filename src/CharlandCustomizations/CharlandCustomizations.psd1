@@ -131,7 +131,7 @@ FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccount
             ReleaseNotes = 'Initial public release - module structure and steering files.'
 
             # Prerelease string of this module
-            Prerelease   = 'gatepush'
+            Prerelease   = 'beta'
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false
