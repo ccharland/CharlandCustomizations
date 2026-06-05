@@ -4,6 +4,30 @@
 #>
 BeforeAll {
     $script:SUTPath = "$PSScriptRoot/../../../Scripts/Test-SignatureCompliance.ps1"
+
+    # Wrapper function that executes the script content in the current scope
+    # so Pester mocks are visible, and converts 'exit'/'throw' to returns.
+    function Invoke-TestSignatureCompliance {
+        [CmdletBinding()]
+        param(
+            [string[]]$Path,
+            [string[]]$IncludeExtension
+        )
+        $scriptContent = Get-Content $script:SUTPath -Raw
+        # Replace $PSScriptRoot so default Path resolves correctly
+        $scriptDir = Split-Path $script:SUTPath -Parent
+        $scriptContent = $scriptContent -replace '\$PSScriptRoot', "'$scriptDir'"
+        $scriptContent = $scriptContent -replace '\bexit\s+(\d+)', 'return'
+        $scriptContent = $scriptContent -replace '\bexit\b', 'return'
+        # Remove signature block so it doesn't interfere
+        $scriptContent = $scriptContent -replace '(?s)# SIG # Begin signature block.*# SIG # End signature block', ''
+
+        $sb = [scriptblock]::Create($scriptContent)
+        $invokeParams = @{}
+        if ($Path) { $invokeParams['Path'] = $Path }
+        if ($IncludeExtension) { $invokeParams['IncludeExtension'] = $IncludeExtension }
+        & $sb @invokeParams
+    }
 }
 
 Describe 'Test-SignatureCompliance' -Tag 'Unit' {
@@ -20,7 +44,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
                 [PSCustomObject]@{ FullName = '/fake/repo/Scripts/c.psd1'; Extension = '.psd1' }
             )
         }
-        Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'Valid' } }
+        Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'Valid'; TimeStamperCertificate = [PSCustomObject]@{ Subject = 'CN=Fake' } } }
         Mock Write-Host {}
         Mock Write-Error {}
     }
@@ -29,7 +53,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
 
         It 'Validates all default extension files recursively' {
             # Act
-            & $script:SUTPath
+            Invoke-TestSignatureCompliance
 
             # Assert
             Should -Invoke Get-ChildItem -Times 2 -Exactly -ParameterFilter {
@@ -48,7 +72,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
             }
 
             # Act
-            & $script:SUTPath -IncludeExtension '.ps1'
+            Invoke-TestSignatureCompliance -IncludeExtension '.ps1'
 
             # Assert
             Should -Invoke Get-AuthenticodeSignature -Times 2 -Exactly
@@ -62,7 +86,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
             Mock Test-Path { $false }
 
             # Act & Assert
-            { & $script:SUTPath } | Should -Throw '*Validation path does not exist*'
+            { Invoke-TestSignatureCompliance } | Should -Throw '*Validation path does not exist*'
         }
 
         It 'Throws when no matching files are found' {
@@ -70,7 +94,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
             Mock Get-ChildItem { @() }
 
             # Act & Assert
-            { & $script:SUTPath } | Should -Throw '*No files were found to validate*'
+            { Invoke-TestSignatureCompliance } | Should -Throw '*No files were found to validate*'
         }
 
         It 'Throws when any file has an invalid signature' {
@@ -78,7 +102,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
             Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'NotSigned' } }
 
             # Act & Assert
-            { & $script:SUTPath } | Should -Throw '*invalid Authenticode signatures*'
+            { Invoke-TestSignatureCompliance } | Should -Throw '*invalid Authenticode signatures*'
         }
     }
 }
