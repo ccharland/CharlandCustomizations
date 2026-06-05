@@ -193,6 +193,7 @@ function Set-CCAWSProfileWithMFA {
 
     Retrieves MFA session credentials for a specific region.
 #>
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'This function returns temporary credentials and sets AWS profile context only as an AWS.Tools prerequisite.')]
   [CmdletBinding()]
   param (
     [Parameter(Mandatory)]
@@ -358,7 +359,7 @@ function Remove-CCExpiredAWSProfile {
     Remove-CCExpiredAWSProfile
     Scans all profiles with a credential file location and removes any with expired tokens.
   #>
-  [CmdletBinding()]
+  [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
   param()
 
   Get-AWSCredential -ListProfileDetail | Where-Object ProfileLocation | ForEach-Object {
@@ -370,7 +371,9 @@ function Remove-CCExpiredAWSProfile {
     catch {
       if ($_.Exception.Message -match 'ExpiredToken') {
         Write-Verbose "Removing expired profile: $($profileItem.ProfileName)"
-        Remove-AWSCredentialProfile -ProfileName $profileItem.ProfileName
+        if ($PSCmdlet.ShouldProcess("AWS profile '$($profileItem.ProfileName)'", 'Remove expired credential profile')) {
+          Remove-AWSCredentialProfile -ProfileName $profileItem.ProfileName
+        }
       }
       else {
         Write-Verbose "Profile '$($profileItem.ProfileName)' failed with non-expired error: $_"
@@ -439,6 +442,7 @@ Stackname or list of stackNames to start
 .PARAMETER EndpointUrl
     Custom AWS service endpoint URL. Optional.
 #>
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'This orchestrator intentionally starts drift detection operations across stacks.')]
   [CmdletBinding()]
   param (
     [Parameter(valueFromPipeline = $true, ValueFromRemainingArguments)]

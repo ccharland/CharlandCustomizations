@@ -39,6 +39,7 @@ function Set-CCFileSignature {
     Set-CCFileSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
     Signs a file using an explicitly specified timestamp server.
 #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'This helper performs code-signing operations by design and is intentionally explicit.')]
   [CmdletBinding()]
   param (
     [Parameter()]

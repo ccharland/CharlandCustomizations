@@ -719,7 +719,9 @@ function Get-CCEC2SGInUse {
                         $EMRClusters += $emrCluster
                     }
                 }
-                catch { }
+                catch {
+                    Write-Verbose "Get-EMRCluster ($($emrCluster.Id)): $_"
+                }
             }
             $UsedByCount += $EMRClusters.Count
 
