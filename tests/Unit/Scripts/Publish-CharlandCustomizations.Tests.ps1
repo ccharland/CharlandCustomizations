@@ -8,6 +8,9 @@ BeforeAll {
     if (-not (Get-Command Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue)) {
         function global:Test-CCAuthenticodeSignatures { param($Path, $IncludeExtension) }
     }
+    if (-not (Get-Command Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        function global:Test-CCAuthenticodeSignature { param($Path, $IncludeExtension) }
+    }
     # Stub Publish-Module if not available
     if (-not (Get-Command Publish-Module -ErrorAction SilentlyContinue)) {
         function global:Publish-Module { param($Path, $Repository, $NuGetApiKey) }
@@ -96,6 +99,7 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
         Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-Secret' }
         Mock Test-CCAuthenticodeSignatures { @() }
+        Mock Test-CCAuthenticodeSignature { @() }
         Mock Publish-Module {}
         Mock Publish-PSResource {}
         Mock Read-Host { return 'fake-api-key' }
@@ -215,6 +219,21 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
                 Should -Throw '*disallowed file*'
         }
+
+        It 'Uses singular signature command as fallback when plural command is unavailable' {
+            # Arrange
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignatures' }
+            Mock Get-Command { return @{ Name = 'Test-CCAuthenticodeSignature' } } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignature' }
+
+            # Act
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Test-CCAuthenticodeSignatures -Times 0 -Exactly
+            Should -Invoke Test-CCAuthenticodeSignature -Times 1 -Exactly -ParameterFilter {
+                $Path -eq '/fake/module/path'
+            }
+        }
     }
 
     Context 'Legacy PowerShellGet publishing' {
@@ -273,6 +292,7 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -WhatIfMode
 
             # Assert
+            Should -Invoke Test-CCAuthenticodeSignatures -Times 1 -Exactly
             Should -Invoke Publish-PSResource -Times 0 -Exactly
             Should -Invoke Publish-Module -Times 0 -Exactly
         }

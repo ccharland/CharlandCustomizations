@@ -40,7 +40,12 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:CCIsWindows = $IsWindows
+    $script:CCIsWindows = if ($PSVersionTable.PSVersion.Major -lt 6) {
+        [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+    }
+    else {
+        [bool]$IsWindows
+    }
 }
 
 if (-not $script:CCIsWindows) {
@@ -82,14 +87,15 @@ if ($Repository -ieq 'PSGallery') {
     }
 }
 
+$allowedExtensions = @('.ps1', '.psm1', '.psd1')
 $allModuleFiles = @(Get-ChildItem -Path $resolvedPath -Recurse -File)
-$nonPowerShellFiles = @($allModuleFiles | Where-Object { $_.Extension -notin '.ps1', '.psm1', '.psd1' })
+$nonPowerShellFiles = @($allModuleFiles | Where-Object { $_.Extension -notin $allowedExtensions })
 if ($nonPowerShellFiles.Count -gt 0) {
     $disallowedFiles = ($nonPowerShellFiles | Select-Object -ExpandProperty FullName) -join ', '
     throw "Publishing requires the module directory to contain only .ps1, .psm1, and .psd1 files. Found disallowed file(s): $disallowedFiles"
 }
 
-$filesToValidate = @($allModuleFiles | Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' })
+$filesToValidate = @($allModuleFiles | Where-Object { $_.Extension -in $allowedExtensions })
 if (-not $filesToValidate) {
     throw "No PowerShell module files were found under $resolvedPath"
 }
@@ -103,13 +109,11 @@ if (-not $signatureValidationCommand) {
     throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
 }
 
-if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Validate signatures using $($signatureValidationCommand.Name)")) {
-    $invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension @('.ps1', '.psm1', '.psd1'))
-    if ($invalidSignatures.Count -gt 0) {
-        Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
-        $invalidSignatures | Format-Table -AutoSize
-        throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
-    }
+$invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension $allowedExtensions)
+if ($invalidSignatures.Count -gt 0) {
+    Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
+    $invalidSignatures | Format-Table -AutoSize
+    throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
 }
 
 if (-not $ApiKey) {
