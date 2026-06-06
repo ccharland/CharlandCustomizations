@@ -81,7 +81,7 @@ function Get-CCDeprecatedLMFunctionList {
         [string]$SessionToken,
 
         [Parameter()]
-        [SecureString] $Credential,
+        [object]$Credential,
 
         [Parameter()]
         [string]$ProfileLocation,
@@ -129,4 +129,3 @@ function Get-CCDeprecatedLMFunctionList {
         }
     }
 }
-
