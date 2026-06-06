@@ -120,26 +120,34 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
         It 'Writes error when no ProfileName specified and no default profile found' {
             Mock Get-AWSCredential { @() } -ParameterFilter { $ListProfileDetail -eq $true }
 
-            # Ensure no stored credentials variable
+            # Temporarily clear StoredAWSCredentials at all accessible scopes
             $originalStored = $null
-            if (Test-Path variable:StoredAWSCredentials) {
+            $hadVariable = Test-Path variable:StoredAWSCredentials
+            if ($hadVariable) {
                 $originalStored = $StoredAWSCredentials
-                Remove-Variable StoredAWSCredentials -Scope Script -ErrorAction SilentlyContinue
             }
+            # Clear from global scope where AWS.Tools sets it
+            Set-Variable -Name StoredAWSCredentials -Value $null -Scope Global -Force -ErrorAction SilentlyContinue
 
             $sb = { [PSCustomObject]@{ Name = 'test' } }
 
-            Invoke-CCScriptMultiAccountRegion -Region 'us-east-1' `
-                -ScriptBlock $sb `
-                -ErrorVariable capturedErrors `
-                -ErrorAction SilentlyContinue 2>&1 | Out-Null
+            try {
+                Invoke-CCScriptMultiAccountRegion -Region 'us-east-1' `
+                    -ScriptBlock $sb `
+                    -ErrorVariable capturedErrors `
+                    -ErrorAction SilentlyContinue 2>&1 | Out-Null
 
-            $errorMessages = $capturedErrors | Out-String
-            $errorMessages | Should -BeLike '*No ProfileName specified*'
-
-            # Restore if needed
-            if ($null -ne $originalStored) {
-                Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Script
+                $errorMessages = $capturedErrors | Out-String
+                $errorMessages | Should -BeLike '*No ProfileName specified*'
+            }
+            finally {
+                # Restore original value
+                if ($hadVariable) {
+                    Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Global -Force -ErrorAction SilentlyContinue
+                }
+                else {
+                    Remove-Variable StoredAWSCredentials -Scope Global -ErrorAction SilentlyContinue
+                }
             }
         }
     }

@@ -46,6 +46,9 @@ Describe 'Install-CCGitHook' -Tag 'Unit' {
 
         # Mock chmod for cross-platform compatibility
         Mock chmod {}
+
+        # Mock gpg to prevent smartcard/certificate dialogs during signing verification
+        Mock gpg { return 'mocked' }
     }
 
     Context 'Source hook copied to destination' {
