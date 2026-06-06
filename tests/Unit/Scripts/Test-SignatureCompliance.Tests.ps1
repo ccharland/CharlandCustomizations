@@ -97,12 +97,16 @@ Describe 'Test-SignatureCompliance' -Tag 'Unit' {
             { Invoke-TestSignatureCompliance } | Should -Throw '*No files were found to validate*'
         }
 
-        It 'Throws when any file has an invalid signature' {
+        It 'Emits invalid signature objects when any file has an invalid signature' {
             # Arrange
             Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'NotSigned' } }
 
-            # Act & Assert
-            { Invoke-TestSignatureCompliance } | Should -Throw '*invalid Authenticode signatures*'
+            # Act
+            $result = Invoke-TestSignatureCompliance
+
+            # Assert - should output objects with Status and Path
+            $result | Should -Not -BeNullOrEmpty
+            $result.Status | Should -Contain 'NotSigned'
         }
     }
 }
