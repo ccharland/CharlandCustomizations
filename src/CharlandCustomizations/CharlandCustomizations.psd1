@@ -69,6 +69,7 @@ PowerShellVersion = '7.2'
 NestedModules = @('Public/AWS/AWSCustomizations.psm1', 
                'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1', 
                'Public/AWS/S3/S3Customizations.psm1', 
+               'Public/AWS/Lambda/Lambda-Customizations.psm1', 
                'Public/AWS/Audit/Audit-AWSAccount.psm1', 
                'Public/Git/GitCustomizations.psm1')
 
@@ -89,7 +90,8 @@ FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccount
                'Out-CCAWSNetworkingComponent', 'Get-CCIAMAuditList', 
                'Get-CCGlobalAuditReportItem', 'Get-CCEC2KeyTagNameStatus', 
                'Get-CCEC2SnapshotReport', 'Get-CCEC2VolumeReport', 
-               'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup', 
+               'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup',
+               'Get-CCDeprecatedLMFunctionList', 
                'Test-CCCommitSignature', 'Install-CCGitHook', 'Test-CCAuthenticodeSignature'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
