@@ -75,7 +75,16 @@ jobs:
           $config.Run.Exit = $true
           $config.Output.Verbosity = 'Detailed'
           $config.Filter.ExcludeTag = @('Windows')
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputPath = './testResults.xml'
           Invoke-Pester -Configuration $config
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./testResults.xml
 
   code-quality:
     name: PSScriptAnalyzer

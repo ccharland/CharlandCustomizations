@@ -97,7 +97,7 @@ These commands can delete resources, modify credentials, publish artifacts, writ
 - `Remove-CCExpiredAWSProfile`
 - `Use-CCAssumedRole`
 - `Invoke-CCScriptMultiAccountRegion`
-- `Set-CCFileSignature`
+- `Set-CCAuthenticodeSignature`
 - `Clear-CCAuthenticodeSignature`
 - `Install-CCGitHook`
 - `Scripts/Build-Module.ps1`
@@ -170,7 +170,7 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 | --- | --- | --- | --- | --- | --- |
 | `Install-CCProfilesFromSource` | Function | P3 | Pending | Pending | Local profile copy behavior |
 | `Invoke-CCScriptMultiAccountRegion` | Function | P1 | Pending | Pending | Multi-account execution contract |
-| `Set-CCFileSignature` | Function | P1 | Pending | Pending | Signing side effects |
+| `Set-CCAuthenticodeSignature` | Function | P1 | Pending | Pending | Signing side effects |
 | `Update-CCPowershell7` | Function | P3 | Pending | Pending | External install/update behavior |
 | `Clear-CCAuthenticodeSignature` | Function | P1 | Pending | Pending | File mutation |
 | `Find-CCCFNStackErrors` | Function | P2 | Pending | Pending | AWS mocks |
@@ -345,7 +345,7 @@ Start with the release blockers:
 
 1. Add help tests for all exported functions and `Scripts/*.ps1`.
 2. Add unit tests for `Clear-CCS3Bucket`.
-3. Add unit tests for `Set-CCFileSignature` and `Clear-CCAuthenticodeSignature`.
+3. Add unit tests for `Set-CCAuthenticodeSignature` and `Clear-CCAuthenticodeSignature`.
 4. Add unit tests for `Invoke-CCScriptMultiAccountRegion`.
 5. Add unit tests for `New-CCCFNStackFromDirectory` and `Update-CCCFNStackFromDirectory`.
 6. Add script-level tests for `Scripts/Build-Module.ps1` and `Scripts/Publish-CharlandCustomizations.ps1`.

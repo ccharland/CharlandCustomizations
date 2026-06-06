@@ -1,3 +1,19 @@
+<#
+.SYNOPSIS
+    Script wrapper for Clear-CCAuthenticodeSignature.
+
+.DESCRIPTION
+    Standalone entry point used during module build to clear Authenticode
+    signatures without importing the full module. When dot-sourced or imported
+    as part of the module, the inner function is loaded into the session instead.
+#>
+[CmdletBinding()]
+param(
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Alias('FullName')]
+    [string[]]$Path
+)
+
 function Clear-CCAuthenticodeSignature {
 <#
 .SYNOPSIS
@@ -62,11 +78,15 @@ function Clear-CCAuthenticodeSignature {
     }
 }
 
+if ($MyInvocation.InvocationName -ne '.') {
+    Clear-CCAuthenticodeSignature @PSBoundParameters
+}
+
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB7pj+HAJea+PEz
-# nId7heH95X7kmx4/XSRpA5rhzFFBLKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBLyXz/XArH/DAD
+# s0i+WDVoSGBAWbZXSqYztqQvJ6hTlaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -268,33 +288,33 @@ function Clear-CCAuthenticodeSignature {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIE/HLUH6qq1wJ1UWRXLVSHfp/rQ4HXCdkuZDkc3bNNt0MA0GCSqG
-# SIb3DQEBAQUABIICABb6uHYtIwfpdlL6xep9lFIKB6+5Gb8bDY/OvGlN7KnvABCm
-# IM5w3llgN14kqP4eD7bfy2fZJT7fHRIBbRzGWk0Bop4i6sGL1070tllkSpv8lpPa
-# AP5iXitvsaAm5bVuT+iTnWZLFACJOwRFXMFP3M0sALbmC+XBpdaUT+TJ41DY/j/A
-# SZnwrkkKb3AiWI/mTKT/Li/kjnyOEJdfiaBoqTGFp5nhJ1Fq2dmW6kWjwi1EmAjm
-# pH5H6udb09KZOR2wEGQ3zSleZccnvhjZ04eK8AZmL07h1f8jy+n0XDxOBxA/3Dqv
-# 8m2vDQv1n1BD9Z8+OggEftFKR+cIGg/9tDd8o9B93ohKlsqxPLYzRLZNQisbI4y1
-# PTsTqbRWvzmPsCER4TsIdCqgmk2UZdPrcirtvQoV+JDROGW65io0R69IpI3c2pXR
-# n3A8i9LaGF/gz0FCQdxZof5NMRw/eCc0n05tq52C3kL2BX+0FHGibjgWQQLIT5TV
-# MhbAjibwYQoozeLtXBWgqW+JZQTZXGQk+q+2eW0Dn2evRdja5iGjpFpRrAyxgjPL
-# aeQX2SYP5AFrmhms6EF5Rcf4EHpIuxy4cGD2rQyzS0Wx8eqN4X6Ir4JmgKDkm5Cz
-# MKs/DhtVye+ds5TYhwLNn8gsdcwIufFvNvkE1NV9ZTtZj0dYM62zur7E2x0UoYID
+# hvcNAQkEMSIEIJLdiYth3m/IK9MLNbIiRS4CLo028pPdH/4It9OhzioKMA0GCSqG
+# SIb3DQEBAQUABIICAHCuVI0fDCRFzjoe8uI32mmscx/hlR9XTeqJTNb3s8Z73uRI
+# GFP7IAtsNNazr0w0/gAD6j8Wox/65gBkBv4Mj3Y1RZoKuD82XDZclgNygNC/jcN/
+# xJ6xSvQHw2PZDRSkhVGV61YetpOHsTrebPp0nFvWEQeicgGt1yiyjCksJbgpvlro
+# eBDmkmdCnFNKIzDSaHJBcDFzJ8U5uI7PCDayK+T8+5nWSQ4thmQT69483W43SwW+
+# dEkTtp3fMy70TVS1OUgz5PTPQHcf77srPQUwjypSUBDLOksSsjixlGGdtZYF88WH
+# hhc4SQdzfZe4mQ8pFKimXrvjgbMSLZkmQ615w5vVlkI/uGMshAvakWH0i6ozE5yz
+# cX/cjbp9y9hJkQ630/djhYLxcqKUAyRjh2Eu3aSw/WorJRRCe3uK/NlCHsb1RW+f
+# zkMHBdYPYDX0vPqh9DGN5zhJYtmlxzz0baj0C+yBGwqP9EGVx7CtUDZ5mWMIeqg6
+# XHkj4pJmyJGlJLDUoJZjH0ahUisnDcafXUgUn+2wHu0QJ4JwPNudrNRG3osT3HxK
+# kmpHYCchWdDy1Jwwdi4LgJ7y0xvl0j/nxcGhv1KyLhjc2uoe9T6xUwnh6HuHi5G7
+# LVIs+IPiVPxbgA69jvXmDbSWyu/E+rJP5ho5bA0cNporNtbc6BjMQsF9SX7GoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MDIwNjI5WjA/BgkqhkiG9w0BCQQxMgQwOtQDn7znSIeL3u+BXRXM
-# V7urdtAWDOMIlL92qBb9GcZfdJuTLKnAcVwxFiBbrRhGMA0GCSqGSIb3DQEBAQUA
-# BIICAJu/MWnAdh+wwMNEP+0cDr0plqLlvmt8OClhWanA9Cz6JnN5iO8XjM2xf667
-# 9uErTeM6HgHCxXlTiU0h1jn1QbEUQuTf/EowUXLDWk9XblcGgoHFV50uZMV9r5zu
-# 1SbPkwSaDau1If/96O1q5eVeev3Id6HxqCOO1XENbihnnpWif3HpxErrETdcyZgf
-# y+5+eF2UpamUG17fLn8e6xcr5r5LHWjC8O6cjVAXLC4XfFEH2SDkoW7z0OSlJFSn
-# G142OYvGiJrisaD1uYhnKtBVwFfrDF6HEUA5QmzBbpXf8kOPiShbt1hgEvDypBJt
-# Anc8c+pS0tYSd0zgNpk63VNovV0TDe0LbZG+tXfCK1ZUuW9JwHxBI62gVOvRoYnz
-# rkw5pknJTiveHiT2UOfmaIuCDXH/IjQTqoei2gbmvZDKf+Ra0T5ufnRqyLUbX+D8
-# NO+BjAoH+uWpXDDUVpFhRi5iZ21HHGDklpgWeyPAmgmG9rvrZ10B3pZdVi9oMKbN
-# ty21qFBnF/iQd6Kf46e3ZjUyzJOw5iTMVZbbzJ50ucSuZAhBYHIX0yED4jyyLzrA
-# uNwp/1tQ201synSf0OCM3/wPODYxvfxxy+xPZXAXcJoZPHLiAH+mNeIneEig8K6E
-# NfjLfM2bVgteZclxKXunUF6spca1dMmnmXUpCVo+vS7E/W+d
+# DxcNMjYwNjA2MjEwNDM3WjA/BgkqhkiG9w0BCQQxMgQw75Q+ZZKiFVfK+Zc4pq97
+# g8Gc+OkOIvu7xCwpDgE0ZJPhSzwdSrCavQ9qfpb/4XC0MA0GCSqGSIb3DQEBAQUA
+# BIICAFmpvh4hv2Nd2B2NmRGY7FunLtWJJJHM6tjp9FnPzMil01eayM5zKwlOvbSH
+# hFEn3VYslun3iJoHq/ha7SCT01HpaoBYvhKANifKNuWLB+vLQs9Tnp9yk5Oi71o8
+# bh3Za4g7K4w8cFogNHuraFZbq1yj30x/5IcKCXTSSFLL0I6GUNpc3Q4EFdqTmJZ8
+# h+Pb2grL+5wiHiOaxp9goIJmzJcq67XJ3Sw+aWXGRdtZ1cd8TjKn/oAs474Oye4d
+# KvaCbzgp8anIr0TiZhwFIfO+ZbxvFSgYk2ISWmqidGnQ+a05bzkRphhqdYpoQVLE
+# O7d48S9PAqI2zFlB6S/AN5D1NPFSfKa29xJl9jViDnvsMHgPycDNVrgvIEZLVhCq
+# cjm8x47ADzV6YocmzSAy1V0KIqT0vTlDhb78z/1Xs6QZ6ySqlxz0uzSrjqAksSiT
+# hOsfevsZrl/62IgF+s3LNnRMFRdLzyEbLIM4CL/IkNR2DRGq1L6nlavpxZFxMPHr
+# q08k+0VZkwVLwvavhe1iNv0Jx1pV9BdRUQjUUqpfz1VE+dpQiGtp/lgO8YDfBATR
+# pn2STZ8CHfKfgc2ucF8XtlMQOoqbjBB6fIXKMqj8+Satt46Qm6QNzJGYDbt2fr1Y
+# ggkymWWEu1EW7xQt4f7Syx55ZjdqkZ4vDBNsXhia8uU9u3Ti
 # SIG # End signature block

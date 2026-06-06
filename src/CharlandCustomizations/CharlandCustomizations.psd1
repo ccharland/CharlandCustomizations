@@ -74,7 +74,7 @@ NestedModules = @('Public/AWS/AWSCustomizations.psm1',
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccountRegion', 
-               'Set-CCFileSignature', 'Update-CCPowershell7', 
+               'Set-CCAuthenticodeSignature', 'Update-CCPowershell7', 
                'Clear-CCAuthenticodeSignature', 'Find-CCCFNStackError', 
                'Set-CCAWSProfileWithMFA', 'Get-CCAWSMFASession', 
                'Start-CCMultiStackDriftDetection', 
@@ -90,7 +90,7 @@ FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccount
                'Get-CCGlobalAuditReportItem', 'Get-CCEC2KeyTagNameStatus', 
                'Get-CCEC2SnapshotReport', 'Get-CCEC2VolumeReport', 
                'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup', 
-               'Test-CCCommitSignature', 'Install-CCGitHook'
+               'Test-CCCommitSignature', 'Install-CCGitHook', 'Test-CCAuthenticodeSignature'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -99,7 +99,7 @@ CmdletsToExport = @()
 # VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = 'Set-CCFileSignature', 'Test-CCAuthenticodeSignatures'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -152,11 +152,13 @@ PrivateData = @{
 }
 
 
+
+
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDDKaqFYiwHZnRJ
-# VGnG2fM3hyiBdqkcBDBV8UhJULikFaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCf64fDuN3r13Ir
+# aDqjNeKGDrWJeav0K+7tZ++ELuwZsaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -358,33 +360,33 @@ PrivateData = @{
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIKlt5mqeCOEbZtfMV7eAzQYEi9bAUSvCMh/NLguHi2NLMA0GCSqG
-# SIb3DQEBAQUABIICALEfeB7ehVbM/sLB3Rn7VaAr7CnEoX6PsIYsKU+OrUU7ztId
-# UzwynqGgllZ+XNiR5WGQMshqwkPWoUMX/uXVv+Octcf+4FC/jdMLTMA2HGRjLojx
-# B51MToJ4VmAtugnUx0AriB8tpHczRcRYwXfkX0OIXoOhNjX8QczEnGWwNiC8VYZS
-# fWTlDuDrg6NXutet0PRorIRpOaZBS18bzDw69GqC3knm1C+l129GemGtfgC8H7Hd
-# URF6i0Gf9Zfqw/bz2mX13QcXtJBryVKS7G8JxR3dymNrd/PGjDZMgomO0dhUNt5R
-# I+djsHMeYwkivqCQ+zQ7Viody+tSK8PpIv+p8TckgPFV6WNuK64RvXnqXldNY5+6
-# 2s2cBMHczmzUhDAvsEL4qThsi9bpXICbKXverxs3nVaJwuA7uIJY/PLN8uMzQdVe
-# EMPwbxSIEkFlA7mK2KkjY6AS3shAO5pycuUlef6Hy9jrKhscQhE0CKedrVIpB8Oy
-# Z6MbWyrwU5I8kbALZ0bcrLrHNX532/w03hehRXlyU4993rjjIWmU04ZW5LBMbrky
-# JF+XVxKArlcRozsbCPpnYa3BLOeJAo2l/m7VfM3PNG9FBavqM1iVfJ1FTCkm5y9H
-# JWRCiT5tYdpK7g4L+vKEcn8l4m0wsBaugH71lBz9LLYBYR5qOOp/XagCLYopoYID
+# hvcNAQkEMSIEIFWjQ8To1akVTBVLBEVI4TX9tbICUR1sw9vaR3oWMy55MA0GCSqG
+# SIb3DQEBAQUABIICAC76XfQ07FXADjeHT0hVB030H9Dodhzj2r/0bSIVS9707Fkz
+# 5XD0YBio12eI8x44nW5DKjUYZ7fKUbxfGLH6OCdsrG8FjvbhbGmAHuX0RtLppB4x
+# mDBMowG0bLzhJHQ5sAiSaeM086TbV9Z3D3wtkHbjCt9UOXUfpyEzoid5hCXgdXeK
+# 9E6LxN/N3yeodE2SMWxr6zRSRkoqotvOqSGak08IRPaHidxiroNKl7Sbiye/a7vT
+# LzqrWQ81ROhNZYTCEPDkB5LQmUbdvb5ZEG4TyaCFoPUPy14AY3R5Q7sE9v0RBXtv
+# fNIS08O8UP3mSTrv0i6hCyGvczth1xRLi4DmESddb2ttoJ0RyLfb70ctGZi3z8Th
+# G5x5SRkKAdWy2rysMFH41my6fifveypOHCTIHt7FC8mOdj5OSwriKxL3rzGrP1l9
+# gDtTcQUUX39itcyxAgEni1ochULbd2cF1zGhroUyDz1RIRerKQWb+7CBNMq0ybD+
+# vhy4xTe9OiiNIrd/Q4MNy0rIuiWztTwBXhdtm7FDp1CgdbAA9BtDX/qmoXixd7lW
+# rP7YeRRr8+fLgIllK+b6Q758uLzq2VUgE2Ou+fpO8m5Rfq/VrxRjy7QrHv8VmkUN
+# +pkTzkdWeP+8kJ+RlD8cUjgh5sNTyfih1ofNKwjkZKp7wibzrJhCHzci6MILoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MjAwNDM4WjA/BgkqhkiG9w0BCQQxMgQwWWtzYneqDw0yPeE9Htfk
-# yLQvYZQ4kWq0sqpHB2FOYp+9VM2sO1S7XGPFcCDQenDFMA0GCSqGSIb3DQEBAQUA
-# BIICAMr8PUizi4gcW08v+q6BDAk+QwiZw0YOyBbeLKjR+Qee7aLHo1gl0ML+touJ
-# O+nHR6ij201oQQSqDI+muSjdtl5QcTbn966Id3vYGkAikerVZTBu5uXFxMmBq7oj
-# a9kld22QsMs/gMklLW1SmyFKl1NfMHG8fndjk+hFKbZrgPGpAovFP89f+OBICyNP
-# 9MgxYYU9pSmIoTokMXRmfllMdO90z/Mmb4CnzoTIMTICvN3C5WMnxobXMqQ/QyAd
-# SmXQ5AJiVUfSiEIH7jeKKC8tGq4AF7GyfhD6HBzaBOcJBZN9ygrKsXIJExp5YH6f
-# zZ32phQkAE2oQnzPN6ztNDcPPM/Y0RXo5pI9kccIDlh61afZtzvYAbWsfMI1yqes
-# dHgXvBCejyigkHUoQ2bZLes7Be0CMAxulMxjPqWmUoaG8Fkg5CuOBhfAOt/HwlcV
-# 3iI0i+9AGuM5XdRxr51Feda5S3TNiV2YqW3wrPG2zHe7OqPwY/wymBCdLOYsTwg6
-# 2IetjsCndkT/mR6iIxB2vzjXs6moOVLvhet0XSB5OIftf9OKHlrBuhWw6nlxHxR0
-# Usel7OnpAoJCSP+B0p/VLsQNpnizJp6y0myz/2uTMPxg8/bmz1YmgMl75rHEH+n5
-# UecaH1atM66/d+Q+xEXr6Rt+zdeiBRT0jTjzj6aQ7Sxe3BL9
+# DxcNMjYwNjA2MjAzNjQ0WjA/BgkqhkiG9w0BCQQxMgQwbvHdJAzU8XpEkRrkEN5r
+# RnJ/jOPSIT5CjQ6xkX+VHLZ2h+J88V/814E4pXLUBzqJMA0GCSqGSIb3DQEBAQUA
+# BIICADJYNWpZ/jUFhNgV49psnpOemUe8g/WKKYeVaubYCFSCHKw39awCF68ZqmE6
+# coCtOgCdky4UTNtaGf6bEf6A3FLDad4KaXNYprXmSDBySdSIMA4zUblEG3pp7n1r
+# d1s1/rO4uXgCAPh1gD5h67xqTtVeGGDex4O1nZ33KI9xb5b76p4acPxqGk8I7Ke3
+# bZuN2iT9hXxxuQ2gndIrauxXu1EjtHY8OEmLH9z+znZ/iFS+W1bXdU3BTg3cip2g
+# l2RxfGFAmK4ohVW2DfoX8JGjwiPeyhzZTEvwytyV0BQibJ72qoaDqsTpLdvr5NgH
+# Xp50YlEZI8qAxGhW3vmCSXyIKemspgmncAvlE4WliBfdR9b9KneGROa3OCOmPMBx
+# yt6SR20fofmrXWNRJob5JcYpHWU3+rB7vzCy5V6klvuPF3FcDtqZkmjbPwZ8mZkE
+# PP+E+bP2YzPqdb/8bm7CYaZOeqnzYxPabJ+vEsOesTxSy1j5iBVHe1C1fAoHARQa
+# mJdgC0ecm0tgvATg5OyNSr8uhdUTi/fxMR59IAlzV+nZtoBlVYzCidHyNM4IDdzS
+# bZfSFxBX7hrYQIGzU+Wk6Q8rE8iez9VlBJE3BdVX79zyshBVsr8ISqczb/QUcdBh
+# QjMg6lUPN6tbF3WRRLCB9WeNDTOo2S7IDGtBGBSlybQ/V0NZ
 # SIG # End signature block

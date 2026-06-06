@@ -1,41 +1,158 @@
 <#
 .SYNOPSIS
-    Wrapper script for Test-CCAuthenticodeSignature.
+    Script wrapper for Set-CCAuthenticodeSignature.
+
 .DESCRIPTION
-    Loads Test-CCAuthenticodeSignature from module source when needed and invokes it.
-.PARAMETER Path
-    One or more root paths to scan recursively.
-.PARAMETER IncludeExtension
-    File extensions to validate. Defaults to .ps1, .psm1, .psd1.
+    Standalone entry point used during module build to apply Authenticode
+    signatures without importing the full module. When dot-sourced or imported
+    as part of the module, the inner function is loaded into the session instead.
 #>
 [CmdletBinding()]
 param(
     [Parameter()]
-    [string[]]$Path,
+    $MyCert,
 
     [Parameter()]
-    [ValidateSet('.ps1', '.psm1', '.psd1')]
-    [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
+    [string]$TimeStampServer = '',
+
+    [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
+    [Alias('FullName')]
+    [string[]]$Path
 )
 
-$publicFunctionPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Test-CCAuthenticodeSignature.ps1'
-
-if (-not (Get-Command Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
-    . $publicFunctionPath
+if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:CCIsWindows = $IsWindows
 }
 
-$result = Test-CCAuthenticodeSignature @PSBoundParameters
+function Set-CCAuthenticodeSignature {
+    <#
+.SYNOPSIS
+    Sets Authenticode signature on PowerShell files.
 
-if ($null -ne $result -and @($result).Count -gt 0) {
-    $result | Write-Output
-    exit 1
+.DESCRIPTION
+    Signs files using a code signing certificate from the CurrentUser certificate store.
+    Automatically selects the valid certificate with the longest time before expiration
+    and determines the appropriate timestamp server based on the certificate issuer
+    (Digicert or Sectigo).
+
+.PARAMETER MyCert
+    Code signing certificate to use. If not specified, automatically selects the valid
+    codesign certificate with the longest time before expiration from the CurrentUser store.
+
+.PARAMETER TimeStampServer
+    URL of the timestamp server. If not specified, automatically determined based on the
+    certificate issuer (Digicert or Sectigo).
+
+.PARAMETER Path
+    Path(s) to the file(s) to sign. Accepts pipeline input and the FullName property
+    from Get-ChildItem output.
+
+.INPUTS
+    System.String[] - File paths to sign (via pipeline or parameter).
+
+.OUTPUTS
+    System.Management.Automation.Signature - The signature result for each file.
+
+.EXAMPLE
+    Set-CCAuthenticodeSignature -Path .\MyScript.ps1
+    Signs a single file using the auto-detected certificate.
+
+.EXAMPLE
+    Get-ChildItem .\Modules\*.psm1 | Set-CCAuthenticodeSignature
+    Signs all .psm1 files in the Modules directory via pipeline.
+
+.EXAMPLE
+    Set-CCAuthenticodeSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
+    Signs a file using an explicitly specified timestamp server.
+#>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'This helper performs code-signing operations by design and is intentionally explicit.')]
+    [CmdletBinding()]
+    param (
+        [Parameter()]
+        $MyCert,
+
+        [Parameter()]
+        [string]$TimeStampServer = '',
+
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
+        [Alias('FullName')]
+        [string[]]$Path
+    )
+
+    begin {
+        if (-not $script:CCIsWindows) {
+            throw 'Set-CCAuthenticodeSignature is only supported on Windows systems.'
+        }
+
+        if ($null -eq $MyCert) {
+            try {
+                $MyCert = Get-ChildItem cert:\currentuser\my -CodesigningCert |
+                    Where-Object { ($_.NotAfter -gt (Get-Date)) -and ($_.HasPrivateKey -eq $true) } |
+                    Sort-Object -Descending NotAfter |
+                    Select-Object -First 1
+            }
+            catch {
+                $MyCert = $null
+            }
+        }
+
+        if ($null -eq $MyCert) {
+            throw 'No valid codesign certificate found'
+        }
+
+        Write-Verbose $($MyCert.Issuer)
+
+        if ($TimeStampServer -eq '') {
+            if ($MyCert.Issuer.StartsWith('CN=Digicert')) {
+                Write-Verbose 'Digicert cert found'
+                $TimeStampServer = 'http://timestamp.digicert.com'
+            }
+            elseif ($MyCert.Issuer.StartsWith('CN=Sect')) {
+                Write-Verbose 'Sectigo cert found'
+                $TimeStampServer = 'http://timestamp.sectigo.com'
+            }
+            else {
+                Write-Verbose "Issuer: $($MyCert.Issuer)"
+                Write-Verbose "Digicert? $($MyCert.Issuer.StartsWith('CN=Digicert'))"
+                Write-Verbose "Sectigo? $($MyCert.Issuer.StartsWith('CN=Sect'))"
+                throw 'No Timestamp server could be set, aborting.'
+            }
+        }
+        else {
+            Write-Verbose "Timestamp server entered $($TimeStampServer)"
+        }
+
+        Write-Verbose "Mycert: $($MyCert)"
+        Write-Verbose "Timestamp server: $($TimeStampServer)"
+    }
+
+    process {
+        foreach ($file in $Path) {
+            Write-Verbose "Signing: $file"
+            try {
+                Set-AuthenticodeSignature -FilePath $file -TimestampServer $TimeStampServer -Certificate $MyCert
+            }
+            catch {
+                Write-Error "Error signing '$file': $($_.Exception.Message)"
+            }
+            finally {
+                Write-Verbose 'Signature attempt finished'
+            }
+        }
+    }
+}
+
+Set-Alias -Name Set-CCFileSignature -Value Set-CCAuthenticodeSignature -Scope Script
+
+if ($MyInvocation.InvocationName -ne '.') {
+    Set-CCAuthenticodeSignature @PSBoundParameters
 }
 
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCCsePkSJigcMQs
-# rdwVqtRAi7Wi8FsauNq8oYgs6r6llqCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDJ+YLwUxlR97e2
+# WJvC5ioC1K9U7xbSeSoLo9+FjEJZbKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -237,33 +354,33 @@ if ($null -ne $result -and @($result).Count -gt 0) {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIE59w/TPW5s2Rucy1WoMZkpj8ysCK1EYNlPHytjZ0Yp0MA0GCSqG
-# SIb3DQEBAQUABIICADVjC8v8Hjve+aceMVcAtd+JOaQVF0e7O3esBUysuwb1D7kc
-# OEQl+NKqkh7neWAqLhLBx96Py2dmkxF1AkQsEfW3weflC+V3OdyGMnJhzDEXDhFx
-# 55KTOOompZif5IUDuGDPWIi6x66jSEGVbJYiZ7Ca6OAoslg3cPoCf0rcHq1Yks5/
-# 76ATV2VXtLb4h/b2uB43alAoCLzwWEbnSCg++dIMzPJ0dC61Cyg32OHknjp2sFFu
-# 6OV/UDoWtxUc6ylXyDNU6ROy0xh9mnq/3K4zpEknNw9AHEq87u5mpL46IJxKGaWG
-# mMA5MdbS1MJDewNCDBgFm+EM/rH/HzJWtXXuAxuNosdeowNm3Z8JZfLpLNls4UxM
-# GpRZGdDfQdmm5/AkM8oty47pgVHOsFhZzsj90sWmtWINVs1/RNXQ2J90SBvhYIsk
-# QQjtMEbafE2wAjlQZe9YsWUmZ+uqttPoYUdpIIdlbj8ijinbtNaNn7hu/+jNXKJo
-# HBMSVMJKmELzwsR7UeNwxjnZAjMYbD3d4Fl/rOGM1OMen8PlA8Br+51CLOaqTcTZ
-# NxkQc0bFDGxklqK1i1NolUPa2jTV6oiCz1m0oHBELlydlIrS0lwPBcS3zPzyFHuT
-# zl8PtbUn+u28iR2ANbyy2fjqSBLSTR9ltPmt03JRNIv2AsgjHDxtQ7GMJlzsoYID
+# hvcNAQkEMSIEIKL/6qCr4l7pKp7t3uWmaTKsmReE0Kkbqs/oY8XmK2xSMA0GCSqG
+# SIb3DQEBAQUABIICAKu0s4lmgTKOUmmujcsABHGVPzbVm5hLMZJYLv+0xf8Ld/l8
+# PN/TZE3y2sTGVU+G5McWc+hN0IwrZ0iDaCtg0nuvnmTGuYvGVGjw630e9cQEyWeU
+# ly2C9wfQkkxWieDTOYNu9UFr4ur3n3kEt/Kp/s5cDyhVGfigfGatqMvdW3UGxIef
+# ik1YMbD0DBYa/HaCahk47sDpTrdXqVID/iOgAT+cxATM9UP08lZkhcVnspFTwaD1
+# SRyeyE7jdYlVNSzHhDK1sn3vwtjHlcZI4e6bReJc5T9Bsz+STClmyMhqRGdXSkA8
+# Valv1ZUOYF91m4Wc17nkCKm+TlcIO/+AkbLn3Pxd8V5c/FhqYpSt8mJg6PmDLvWu
+# TScG583F1L14GLI+G/1f38m5NPYMTRC8mn8gIuJbqUImLXF3NWJz7puBRZUXMMKk
+# vp7siIPyKOmpL83szq9UWQqIjYGlJdY8Hx3G5+kMnWcluZcWalzbZqJMSp1Ge7n8
+# FIf1UraMtA2P+txXQ8BtppLb6JNuoQNYQ/JLvl1M4rGYQdXkJ/ZHtMNdr4ZGHJrG
+# fDp2TYa3SWzH6/D2in3R9uuGk17ESEBN03tkEbXhbocJeF0bWoST0SrNwBQLr+7l
+# FbXayJf9pqupUY7jva3nMXgZkG1GkVZ8Mcl3mC1bbs+EJq7Kh17k+2Id1Z9RoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MjAzNjQwWjA/BgkqhkiG9w0BCQQxMgQwpra3LuJ9qZPOE/Ccbt+k
-# fCzPAZCte8PbeMHogwEve5cFpvVONQC0fFOmQZPBlgAgMA0GCSqGSIb3DQEBAQUA
-# BIICAG4R8TUQ5mbw6j1yGjuIPtyjt2505EwiCGrjYK/SHZEjfup3fGfH1Gz48n8p
-# bhwmHSJwlG83Jrga2PW+k9CexMdnitLe+s/gZYMMR1wzY2lO7cT0/3UjSw59uwxL
-# zTA/6k1c5emhfcqnX+MBwqbFFnoT2hGHxowQ0XCNTVxchkxLxY9mbtw23B0aWccC
-# bV/Pd6+mipwVmd4xr663OYWPx60783toeVYH1H48mEMC4Tb8lyqeDpAzo6nRfDM2
-# F6/US9BxJddpykF6STnN73ueL9KOe0msgSgmhqjv/w+7rhqsYUTLoCG6HpclCOzp
-# O6K2BRd9mbqe/YYjo0rFlsX4ifbmc2Eoa39vyHURXEk+sN4LjbEvVh/9vZ5dOvqc
-# 3NckJy5MUu3Vzm/92UnbBhmQZpZ1LiB0L8AoCXMQcC6xSySkt0S02dZ1QeuCa31l
-# nwvV+5b48UwbWhGRuwGZaizveevR5KdVrXuyXdoNeT5lV2ZO5+txZ5CSMfiijgl9
-# mWC973kFYvjfNW3C3i9OD0WSa7ziSHcpAaXuT0Q8A7n8mV4xN/TYNxRFJk7i5rtv
-# dhOPFr8zE5DyBBbqFbYTgLD2oq7Y0USyeQsIDcFKnm7lGv7qbIojWYAOQUNSCfup
-# VMk67dnPDeQ0uivXPzmC9lx2n06Tvc1asNZkV1XjI7oEMlyG
+# DxcNMjYwNjA2MjEwNDQxWjA/BgkqhkiG9w0BCQQxMgQw09ckDRfy9vxg0LHf95TJ
+# Pnn5spt5XZeW6jZaft9IbmG54gbZtwlr0QMGZlrx9YnIMA0GCSqGSIb3DQEBAQUA
+# BIICAK/rAEbiAq0QLRfV3TKUoXeED3quNU20scjKDAOXpVYQnYmxEnviqI753ktG
+# 9GVwkUAL47yoybm4/gvjkA+QdurbXTe9NRr2HkZX/qNRVokvVL6rhfU+JQbdJgPE
+# wjNQ47KWkBUNy4m0GNCBksK3TQHM0HaZGwGbGRSrFMtJZs8b0BKocV9PRkIlZuxO
+# kRoNnRc1o9DIgPj70KDcRuPKsiKs+/Y4QJ9Xr4l7PBJb5gks8IDcEmpPKlP6SxcT
+# ahZ/8LNey10i6YqzCtylMtsGms7IYDpNngb5wUzZ7gfedP+iDvBukvb5GYTVVBwM
+# Vd+kKYlndYIgkcxBewnihzVY7u0h6QxG8ygVhvAA5tiWSiQQPeAYVp9tQ7eeCWyp
+# 8phXLa16F5x5vDh8FJ4op7/x9ZzCQYydhdgj72w09NEC9ehyBK1Bl7bUiWiLd+qK
+# lSoO8xlhvse2oTOqalPHEoPTYXJPjZ9S/pxDwi8Sp3H3MpdgMExmqdyA8Xk+y8ez
+# uF545jLhceMe6qwgb/S1OImfqnD0fL49endPuwyfT4jpUWcpEF5qEnKaYrgANL9J
+# wCAICqOiBqER1KglwK+dwCasCQVt4C0JB5Y8rZjU5J65C/cHXAkuDg+Pgc9xgwWS
+# MeXVeVS6xusShblCop1RFJt1oNAz+7I+9Oqm0AUuenU7SS6V
 # SIG # End signature block
