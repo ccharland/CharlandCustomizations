@@ -4,6 +4,8 @@
 #>
 Write-Verbose "Loading Lambda-Customizations.psm1"
 
+. "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
+
 function Get-CCDeprecatedLMFunctionList {
     <#
     .SYNOPSIS
@@ -91,8 +93,10 @@ function Get-CCDeprecatedLMFunctionList {
     )
 
     process {
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+
         $listParams = @{}
-        foreach ($paramName in @('Marker', 'MaxItem', 'NoAutoIteration', 'Region', 'ProfileName', 'AccessKey', 'SecretKey', 'SessionToken', 'Credential', 'ProfileLocation', 'EndpointUrl')) {
+        foreach ($paramName in @('Marker', 'MaxItem', 'NoAutoIteration')) {
             if ($PSBoundParameters.ContainsKey($paramName)) {
                 $listParams[$paramName] = $PSBoundParameters[$paramName]
             }
@@ -111,21 +115,28 @@ function Get-CCDeprecatedLMFunctionList {
             'nodejs10.x'    = [datetime]'2021-07-30'
             'nodejs12.x'    = [datetime]'2023-03-31'
             'nodejs14.x'    = [datetime]'2023-11-27'
+            'nodejs16.x'    = [datetime]'2024-06-12'
             'python2.7'     = [datetime]'2021-07-15'
             'python3.6'     = [datetime]'2022-08-29'
             'python3.7'     = [datetime]'2023-12-04'
+            'python3.8'     = [datetime]'2024-10-14'
             'ruby2.5'       = [datetime]'2021-07-30'
             'ruby2.7'       = [datetime]'2023-12-07'
         }
 
-        @(Get-LMFunctionList @listParams) | Where-Object {
+        $runtimeList = @(
+            $deprecatedRuntimeDates.GetEnumerator() |
+            Where-Object { $_.Value -le $Date } |
+            ForEach-Object { $_.Key }
+        )
+
+        @(Get-LMFunctionList @listParams @awsParams) | Where-Object {
             $runtime = [string]$_.Runtime
             if ([string]::IsNullOrWhiteSpace($runtime)) {
                 return $false
             }
 
-            $runtimeKey = $runtime.ToLowerInvariant()
-            $deprecatedRuntimeDates.ContainsKey($runtimeKey) -and $deprecatedRuntimeDates[$runtimeKey] -le $Date
+            $runtime.ToLowerInvariant() -in $runtimeList
         }
     }
 }

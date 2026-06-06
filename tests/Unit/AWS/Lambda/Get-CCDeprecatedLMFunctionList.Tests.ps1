@@ -31,20 +31,22 @@ Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
         Mock Get-LMFunctionList {
             @(
                 [PSCustomObject]@{ FunctionName = 'old-node'; Runtime = 'nodejs12.x' }
+                [PSCustomObject]@{ FunctionName = 'future-node'; Runtime = 'nodejs16.x' }
                 [PSCustomObject]@{ FunctionName = 'new-node'; Runtime = 'nodejs20.x' }
                 [PSCustomObject]@{ FunctionName = 'old-python'; Runtime = 'python3.7' }
             )
         } -ModuleName 'Lambda-Customizations'
 
-        $result = Get-CCDeprecatedLMFunctionList -Date ([datetime]'2024-01-01')
+        $result = Get-CCDeprecatedLMFunctionList -Date ([datetime]'2025-01-01')
 
-        $result.FunctionName | Should -Be @('old-node', 'old-python')
+        $result.FunctionName | Should -Be @('old-node', 'future-node', 'old-python')
     }
 
     It 'Honors the -Date comparison and excludes runtimes not yet deprecated on that date' {
         Mock Get-LMFunctionList {
             @(
                 [PSCustomObject]@{ FunctionName = 'old-node'; Runtime = 'nodejs12.x' }
+                [PSCustomObject]@{ FunctionName = 'future-node'; Runtime = 'nodejs16.x' }
                 [PSCustomObject]@{ FunctionName = 'very-old'; Runtime = 'nodejs10.x' }
             )
         } -ModuleName 'Lambda-Customizations'
@@ -55,9 +57,22 @@ Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
     }
 
     It 'Passes Get-LMFunctionList-compatible input parameters through to the AWS cmdlet' {
+        Mock New-AWSParamSplat {
+            @{
+                Region      = $BoundParameters.Region
+                ProfileName = $BoundParameters.ProfileName
+            }
+        } -ModuleName 'Lambda-Customizations'
         Mock Get-LMFunctionList { @() } -ModuleName 'Lambda-Customizations'
 
         Get-CCDeprecatedLMFunctionList -Date ([datetime]'2024-01-01') -Region 'us-east-1' -ProfileName 'dev' -Marker 'm1' -MaxItem 25 -NoAutoIteration
+
+        Assert-MockCalled New-AWSParamSplat -ModuleName 'Lambda-Customizations' -Exactly 1 -Scope It -ParameterFilter {
+            $BoundParameters.ContainsKey('Region') -and
+            $BoundParameters.ContainsKey('ProfileName') -and
+            $BoundParameters.ContainsKey('Marker') -and
+            $BoundParameters.ContainsKey('MaxItem')
+        }
 
         Assert-MockCalled Get-LMFunctionList -ModuleName 'Lambda-Customizations' -Exactly 1 -Scope It -ParameterFilter {
             $Region -eq 'us-east-1' -and
@@ -68,4 +83,3 @@ Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
         }
     }
 }
-
