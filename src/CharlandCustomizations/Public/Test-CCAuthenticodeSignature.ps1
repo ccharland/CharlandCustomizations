@@ -12,7 +12,7 @@ if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyCont
     $script:CCIsWindows = $IsWindows
 }
 
-function Test-CCAuthenticodeSignatures {
+function Test-CCAuthenticodeSignature {
     <#
 .SYNOPSIS
     Validates Authenticode signatures for release-critical PowerShell files.
@@ -44,7 +44,7 @@ function Test-CCAuthenticodeSignatures {
     )
 
     if (-not $script:CCIsWindows) {
-        throw 'Test-CCAuthenticodeSignatures is only supported on Windows systems.'
+        throw 'Test-CCAuthenticodeSignature is only supported on Windows systems.'
     }
 
     if (-not $Path -or $Path.Count -eq 0) {
@@ -124,5 +124,5 @@ function Test-CCAuthenticodeSignatures {
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
-    Test-CCAuthenticodeSignatures @PSBoundParameters
+    Test-CCAuthenticodeSignature @PSBoundParameters
 }

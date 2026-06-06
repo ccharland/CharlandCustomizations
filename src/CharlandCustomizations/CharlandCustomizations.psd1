@@ -90,7 +90,7 @@ FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccount
                'Get-CCGlobalAuditReportItem', 'Get-CCEC2KeyTagNameStatus', 
                'Get-CCEC2SnapshotReport', 'Get-CCEC2VolumeReport', 
                'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup', 
-               'Test-CCCommitSignature', 'Install-CCGitHook', 'Test-CCAuthenticodeSignatures'
+               'Test-CCCommitSignature', 'Install-CCGitHook', 'Test-CCAuthenticodeSignature'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -99,7 +99,7 @@ CmdletsToExport = @()
 # VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'Set-CCFileSignature'
+AliasesToExport = 'Set-CCFileSignature', 'Test-CCAuthenticodeSignatures'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

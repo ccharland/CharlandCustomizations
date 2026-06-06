@@ -17,7 +17,7 @@ BeforeAll {
 
     # Wrapper function that executes the script content in the current scope
     # so Pester mocks are visible, and converts 'exit'/'throw' to returns.
-    function Invoke-TestCCAuthenticodeSignatures {
+    function Invoke-TestCCAuthenticodeSignature {
         [CmdletBinding()]
         param(
             [string[]]$Path,
@@ -26,11 +26,11 @@ BeforeAll {
         $invokeParams = @{}
         if ($Path) { $invokeParams['Path'] = $Path }
         if ($IncludeExtension) { $invokeParams['IncludeExtension'] = $IncludeExtension }
-        Test-CCAuthenticodeSignatures @invokeParams
+        Test-CCAuthenticodeSignature @invokeParams
     }
 }
 
-Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
+Describe 'Test-CCAuthenticodeSignature' -Tag 'Unit' {
 
     BeforeEach {
         Mock Test-Path { $true }
@@ -53,7 +53,7 @@ Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
 
         It 'Validates all default extension files recursively' {
             # Act
-            Invoke-TestCCAuthenticodeSignatures
+            Invoke-TestCCAuthenticodeSignature
 
             # Assert
             Should -Invoke Get-ChildItem -Times 2 -Exactly -ParameterFilter {
@@ -72,7 +72,7 @@ Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
             }
 
             # Act
-            Invoke-TestCCAuthenticodeSignatures -IncludeExtension '.ps1'
+            Invoke-TestCCAuthenticodeSignature -IncludeExtension '.ps1'
 
             # Assert
             Should -Invoke Get-AuthenticodeSignature -Times 2 -Exactly
@@ -82,7 +82,7 @@ Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
     Context 'Validation failures' {
         It 'Throws when not running on Windows' {
             $script:CCIsWindows = $false
-            { Invoke-TestCCAuthenticodeSignatures } | Should -Throw '*only supported on Windows systems*'
+            { Invoke-TestCCAuthenticodeSignature } | Should -Throw '*only supported on Windows systems*'
             $script:CCIsWindows = $true
         }
 
@@ -91,7 +91,7 @@ Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
             Mock Test-Path { $false }
 
             # Act & Assert
-            { Invoke-TestCCAuthenticodeSignatures } | Should -Throw '*Validation path does not exist*'
+            { Invoke-TestCCAuthenticodeSignature } | Should -Throw '*Validation path does not exist*'
         }
 
         It 'Throws when no matching files are found' {
@@ -99,7 +99,7 @@ Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
             Mock Get-ChildItem { @() }
 
             # Act & Assert
-            { Invoke-TestCCAuthenticodeSignatures } | Should -Throw '*No files were found to validate*'
+            { Invoke-TestCCAuthenticodeSignature } | Should -Throw '*No files were found to validate*'
         }
 
         It 'Emits invalid signature objects when any file has an invalid signature' {
@@ -107,7 +107,7 @@ Describe 'Test-CCAuthenticodeSignatures' -Tag 'Unit' {
             Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'NotSigned' } }
 
             # Act
-            $result = Invoke-TestCCAuthenticodeSignatures
+            $result = Invoke-TestCCAuthenticodeSignature
 
             # Assert - should output objects with Status and Path
             $result | Should -Not -BeNullOrEmpty
