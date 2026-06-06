@@ -106,6 +106,46 @@ Notes:
 - Ensures `docs/CHANGELOG.md` contains a section for the current version
 - Prints version-aware git commands for commit and tag (for example, `Release v0.3.3` and `v0.3.3`)
 
+### Publish to PowerShell Repository
+
+Use the publish script after a successful build so publish validation runs against the signed build output.
+
+```powershell
+# Read current manifest version
+$version = (Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1).Version.ToString()
+
+# Publish path should target the signed build output, not src/
+$publishPath = "./build/CharlandCustomizations/$version"
+
+# Dry run first
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery -WhatIf
+
+# Actual publish
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery
+```
+
+Notes:
+- The publish script validates Authenticode signatures by default.
+- `-SkipSignatureValidation` can bypass this gate, but should not be used for release publishing.
+- API key can come from `PSGALLERY_API_KEY`, `Get-Secret PSGalleryApiKey`, or prompt input.
+- PSGallery publishing is only allowed when:
+   - Current branch is `main`
+   - `HEAD` has immutable release tag `ModuleVersion[-Prerelease]` from `CharlandCustomizations.psd1` (for example, `0.2.0-beta1` or `0.2.0`)
+
+### Source Signature Compliance Gate
+
+Validate source and release scripts before packaging/publishing:
+
+```powershell
+./Scripts/Test-SignatureCompliance.ps1
+```
+
+Default gate scope:
+- `Scripts/`
+- `src/CharlandCustomizations/`
+
+The gate validates `.ps1`, `.psm1`, and `.psd1` files and fails if any signature status is not `Valid`.
+
 ## Build Process Steps
 
 1. **Validate Source**
@@ -176,14 +216,35 @@ Import-Module ./src/CharlandCustomizations/CharlandCustomizations.psd1 -Force
 # 2. Build and test (optionally bump version as part of build)
 ./Scripts/Build-Module.ps1 -Clean -BumpVersion Patch -Install
 
-# 3. Verify
+# 3. Validate source signatures (Scripts + src)
+./Scripts/Test-SignatureCompliance.ps1
+
+# 4. Commit release changes on main
+git checkout main
+git add src/CharlandCustomizations/CharlandCustomizations.psd1 docs/CHANGELOG.md
+git commit -m "Release v0.3.0"
+
+# 5. Create immutable release tag from manifest version/prerelease
+$manifest = Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1
+$releaseTag = $manifest.Version.ToString()
+if ($manifest.PrivateData.PSData.Prerelease) {
+   $releaseTag = "$releaseTag-$($manifest.PrivateData.PSData.Prerelease)"
+}
+git tag $releaseTag
+
+# 6. Determine version and publish from signed build output
+$version = (Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1).Version.ToString()
+$publishPath = "./build/CharlandCustomizations/$version"
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery -WhatIf
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery
+
+# 7. Verify
 Get-Module CharlandCustomizations
 Get-Command -Module CharlandCustomizations
 
-# 4. Commit
-git add src/CharlandCustomizations/CharlandCustomizations.psd1 docs/CHANGELOG.md
-git commit -m "Release v0.3.0"
-git tag v0.3.0
+# 8. Push branch and tags
+git push
+git push --tags
 ```
 
 ### Distribution

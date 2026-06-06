@@ -46,23 +46,41 @@ Do not commit the API key to this repository, a module manifest, a script, or a 
 Use the helper script:
 
 ```powershell
-./Scripts/Publish-CharlandCustomizations.ps1
+$version = (Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1).Version.ToString()
+$publishPath = "./build/CharlandCustomizations/$version"
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery -WhatIf
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery
 ```
 
 The script publishes with `Publish-PSResource` when available and falls back to `Publish-Module` for older sessions.
+
+PSGallery publish guardrails:
+
+- Current branch must be `main`
+- `HEAD` must have immutable release tag `ModuleVersion[-Prerelease]` from `CharlandCustomizations.psd1` (for example, `0.2.0-beta1` or `0.2.0`)
+- Publish path should target signed build output in `build/CharlandCustomizations/<version>/`
+
+Source signature compliance gate:
+
+- Run `./Scripts/Test-SignatureCompliance.ps1` before package or publish
+- Gate scope defaults to `Scripts/` and `src/CharlandCustomizations/`
 
 ### Environment Variable Example
 
 ```powershell
 $env:PSGALLERY_API_KEY = 'paste-key-here'
-./Scripts/Publish-CharlandCustomizations.ps1
+$version = (Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1).Version.ToString()
+$publishPath = "./build/CharlandCustomizations/$version"
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery
 ```
 
 ### SecretManagement Example
 
 ```powershell
 Set-Secret -Name PSGalleryApiKey -Secret 'paste-key-here'
-./Scripts/Publish-CharlandCustomizations.ps1
+$version = (Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1).Version.ToString()
+$publishPath = "./build/CharlandCustomizations/$version"
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery
 ```
 
 ## Creating Distribution Packages
@@ -149,6 +167,7 @@ Get-ChildItem temp/0.3.0/ -Include *.ps1,*.psm1,*.psd1 -Recurse | ForEach-Object
 ```powershell
 # Update version in manifest
 # Update CHANGELOG.md
+git checkout main
 git add src/CharlandCustomizations/CharlandCustomizations.psd1 docs/CHANGELOG.md
 git commit -m "Prepare release v0.3.0"
 ```
@@ -156,6 +175,10 @@ git commit -m "Prepare release v0.3.0"
 ### 2. Create Package
 
 ```powershell
+# Validate source signatures before packaging
+./Scripts/Test-SignatureCompliance.ps1
+
+# Build signed release artifacts
 ./Scripts/Build-Module.ps1 -Clean -Package
 ```
 
@@ -168,15 +191,29 @@ Get-FileHash build/packages/CharlandCustomizations-0.3.0.zip -Algorithm SHA256
 ### 4. Tag Release
 
 ```powershell
-git tag v0.3.0
+$manifest = Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1
+$releaseTag = $manifest.Version.ToString()
+if ($manifest.PrivateData.PSData.Prerelease) {
+   $releaseTag = "$releaseTag-$($manifest.PrivateData.PSData.Prerelease)"
+}
+git tag $releaseTag
 git push --tags
 ```
 
-### 5. Distribute
+### 5. Publish to PSGallery
+
+```powershell
+$version = (Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1).Version.ToString()
+$publishPath = "./build/CharlandCustomizations/$version"
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery -WhatIf
+./Scripts/Publish-CharlandCustomizations.ps1 -Path $publishPath -Repository PSGallery
+```
+
+### 6. Distribute
 
 Upload to:
 - GitHub Releases
-- PowerShell Gallery (via `./Scripts/Publish-CharlandCustomizations.ps1`)
+- PowerShell Gallery (published in Step 5)
 - Internal file share
 
 Include:

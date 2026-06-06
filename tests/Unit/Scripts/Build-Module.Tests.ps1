@@ -26,6 +26,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Import-PowerShellDataFile {
                 @{
                     ModuleVersion = '0.3.0'
+                    PrivateData   = @{ PSData = @{ Prerelease = 'beta1' } }
                     RootModule    = 'CharlandCustomizations.psm1'
                     NestedModules = @()
                     FileList      = @()
@@ -111,6 +112,28 @@ Describe 'Build-Module' -Tag 'Unit' {
             # Assert — Update-ModuleManifest called with the explicit version
             Should -Invoke Update-ModuleManifest -Times 1 -Exactly -ParameterFilter {
                 $ModuleVersion -eq [version]'1.0.0'
+            }
+        }
+
+        It 'Calls Update-ModuleManifest with -Prerelease when explicitly specified' {
+            # Act
+            & $script:BuildModulePath -Prerelease 'rc1' -SkipSigning -SkipAnalysis
+
+            # Assert
+            Should -Invoke Update-ModuleManifest -Times 1 -Exactly -ParameterFilter {
+                $ModuleVersion -eq [version]'0.3.0' -and
+                $Prerelease -eq 'rc1'
+            }
+        }
+
+        It 'Calls Update-ModuleManifest without prerelease when -ClearPrerelease is specified' {
+            # Act
+            & $script:BuildModulePath -ClearPrerelease -SkipSigning -SkipAnalysis
+
+            # Assert
+            Should -Invoke Update-ModuleManifest -Times 1 -Exactly -ParameterFilter {
+                $ModuleVersion -eq [version]'0.3.0' -and
+                -not $PSBoundParameters.ContainsKey('Prerelease')
             }
         }
     }

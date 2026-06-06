@@ -12,3 +12,14 @@ tests/coverage/
 Thumbs.db
 
 temp/
+.vscode/settings.json
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+*.egg
+.venv/
+venv/
+.pytest_cache/

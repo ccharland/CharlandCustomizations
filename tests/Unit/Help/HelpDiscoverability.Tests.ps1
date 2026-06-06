@@ -8,10 +8,9 @@ $manifest = Import-PowerShellDataFile "$PSScriptRoot/../../../src/CharlandCustom
 $exportedFunctions = $manifest.FunctionsToExport
 
 BeforeAll {
-    # Import the manifest data to get FunctionsToExport list and command prefix
+    # Import the manifest data to get FunctionsToExport list
     $script:manifest = Import-PowerShellDataFile "$PSScriptRoot/../../../src/CharlandCustomizations/CharlandCustomizations.psd1"
     $script:exportedFunctions = $script:manifest.FunctionsToExport
-    $script:commandPrefix = $script:manifest.DefaultCommandPrefix
 
     # Import the module itself so Get-Help can resolve function help
     Get-Module CharlandCustomizations -All | Remove-Module -Force -ErrorAction SilentlyContinue
@@ -24,14 +23,8 @@ Describe 'Help Discoverability' -Tag 'Help' {
 
     Context '<_>' -ForEach $exportedFunctions {
         BeforeAll {
-            # Resolve the actual command name with the module's DefaultCommandPrefix
-            # The prefix is inserted between the verb and noun (e.g., Clear-AuthenticodeSignature -> Clear-CCAuthenticodeSignature)
-            $parts = $_ -split '-', 2
-            $script:commandName = if ($parts.Count -eq 2 -and $script:commandPrefix) {
-                '{0}-{1}{2}' -f $parts[0], $script:commandPrefix, $parts[1]
-            } else {
-                $_
-            }
+            # Function names in FunctionsToExport already include the CC prefix
+            $script:commandName = $_
         }
 
         It 'has a non-empty Synopsis that is not auto-generated' {

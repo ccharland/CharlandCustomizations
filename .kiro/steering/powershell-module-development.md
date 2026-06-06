@@ -19,6 +19,10 @@ src/CharlandCustomizations/
 
 The `.psm1` loader automatically dot-sources all `.ps1` files in `Public/` and `Private/`, then exports public functions by file basename.
 
+## Woring with signed modules:
+
+If you modify any signed files, clear the signature before editing and saving. I'll resign it when necessary. 
+
 ## Code Standards
 
 Scripts will be analyzed using PSScriptAnalyzer.

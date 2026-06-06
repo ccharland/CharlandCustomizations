@@ -7,6 +7,7 @@
     PowerShellGet for older environments.
 .PARAMETER Path
     Path to the module folder that contains CharlandCustomizations.psd1.
+    Default is '..\src\CharlandCustomizations' relative to the script location.
 .PARAMETER Repository
     Target repository name. Defaults to PSGallery.
 .PARAMETER ApiKey
@@ -16,6 +17,8 @@
     SecretManagement secret name to read when ApiKey is not passed.
 .PARAMETER SkipRepositoryTrust
     Skip setting the target repository to trusted before publishing.
+.PARAMETER SkipSignatureValidation
+    Skip verifying Authenticode signatures before publishing.
 .PARAMETER UseLegacyPowerShellGet
     Force Publish-Module instead of Publish-PSResource.
 .EXAMPLE
@@ -23,14 +26,17 @@
     ./Scripts/Publish-CharlandCustomizations.ps1
 .EXAMPLE
     ./Scripts/Publish-CharlandCustomizations.ps1 -Repository PSGallery -SecretName PSGalleryApiKey
+.EXAMPLE
+    ./Scripts/Publish-CharlandCustomizations.ps1 -SkipSignatureValidation
 #>
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [string]$Path = (Join-Path $PSScriptRoot '..\src\CharlandCustomizations'),
     [string]$Repository = 'PSGallery',
     [string]$ApiKey,
     [string]$SecretName = 'PSGalleryApiKey',
     [switch]$SkipRepositoryTrust,
+    [switch]$SkipSignatureValidation,
     [switch]$UseLegacyPowerShellGet
 )
 
@@ -40,6 +46,61 @@ $manifestPath = Join-Path $resolvedPath 'CharlandCustomizations.psd1'
 
 if (-not (Test-Path -Path $manifestPath)) {
     throw "Module manifest not found at $manifestPath"
+}
+
+if ($Repository -ieq 'PSGallery') {
+    $manifestData = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
+    $expectedReleaseTag = $manifestData.Version.ToString()
+    $prerelease = $manifestData.PrivateData.PSData.Prerelease
+    if ($prerelease) {
+        $expectedReleaseTag = "$expectedReleaseTag-$prerelease"
+    }
+
+    if (-not (Get-Command -Name git -ErrorAction SilentlyContinue)) {
+        throw "Publishing to PSGallery requires git to verify release branch/tag. Expected tag: '$expectedReleaseTag'."
+    }
+
+    $repoRoot = (& git -C $resolvedPath rev-parse --show-toplevel 2>$null | Select-Object -First 1)
+    if (-not $repoRoot) {
+        throw 'Publishing to PSGallery requires running inside a git repository.'
+    }
+
+    $currentBranch = (& git -C $repoRoot branch --show-current 2>$null | Select-Object -First 1)
+    if ($currentBranch -ne 'main') {
+        throw "Publishing to PSGallery is only allowed from branch 'main'. Current branch: '$currentBranch'."
+    }
+
+    $headTags = @(& git -C $repoRoot tag --points-at HEAD 2>$null)
+    if ($expectedReleaseTag -notin $headTags) {
+        throw "Publishing to PSGallery requires immutable release tag '$expectedReleaseTag' on HEAD (ModuleVersion[-Prerelease])."
+    }
+}
+
+if (-not $SkipSignatureValidation) {
+    $filesToValidate = Get-ChildItem -Path $resolvedPath -Recurse -File |
+        Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' }
+
+    if (-not $filesToValidate) {
+        throw "No PowerShell module files were found under $resolvedPath"
+    }
+
+    $invalidSignatures = @()
+
+    foreach ($file in $filesToValidate) {
+        $signature = Get-AuthenticodeSignature -FilePath $file.FullName
+        if ($signature.Status -ne 'Valid') {
+            $invalidSignatures += [PSCustomObject]@{
+                File   = $file.FullName
+                Status = $signature.Status
+            }
+        }
+    }
+
+    if ($invalidSignatures.Count -gt 0) {
+        Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
+        $invalidSignatures | Format-Table -AutoSize
+        throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
+    }
 }
 
 if (-not $ApiKey) {
@@ -72,11 +133,15 @@ if ($publishWithPSResourceGet) {
     if (-not $SkipRepositoryTrust -and (Get-Command -Name Get-PSResourceRepository -ErrorAction SilentlyContinue)) {
         $registeredRepository = Get-PSResourceRepository -Name $Repository -ErrorAction SilentlyContinue
         if ($registeredRepository -and -not $registeredRepository.Trusted) {
-            Set-PSResourceRepository -Name $Repository -Trusted | Out-Null
+            if ($PSCmdlet.ShouldProcess("PSResource repository '$Repository'", 'Set as trusted')) {
+                Set-PSResourceRepository -Name $Repository -Trusted | Out-Null
+            }
         }
     }
 
-    Publish-PSResource -Path $resolvedPath -Repository $Repository -ApiKey $ApiKey
+    if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Repository' using Publish-PSResource")) {
+        Publish-PSResource -Path $resolvedPath -Repository $Repository -ApiKey $ApiKey
+    }
     return
 }
 
@@ -84,13 +149,14 @@ if (-not (Get-Command -Name Publish-Module -ErrorAction SilentlyContinue)) {
     throw 'Neither Publish-PSResource nor Publish-Module is available in this PowerShell session.'
 }
 
-Publish-Module -Path $resolvedPath -Repository $Repository -NuGetApiKey $ApiKey
-
+if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Repository' using Publish-Module")) {
+    Publish-Module -Path $resolvedPath -Repository $Repository -NuGetApiKey $ApiKey
+}
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDqdjzQmwdNqdV+
-# F8WfEdO9CoRsiCknn/v7iZ6NTTlx2aCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDyPxUQeX450QKl
+# 1Fj3iALH6r5gFdG5Ese5p61t//X0BaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -292,33 +358,33 @@ Publish-Module -Path $resolvedPath -Repository $Repository -NuGetApiKey $ApiKey
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIOX5DnsqC3WQ+ZAcol9t48ZBEQsDyOVbZMr7E1NDyczhMA0GCSqG
-# SIb3DQEBAQUABIICACNQlS0JMut5p7yc/bFC9KRFDM8h4BeV/8dsHb+SRvWlY6nO
-# ICt63A9nJUvK7Ie0XX7k/7AUS5iEVR8LvFKlDouXKaK5lOf/hP80xQ8F7ybCvATw
-# BZBTdUyoOfyXPiw3aOy7ZM7O78VCDbDtXijeD4P0zSp2V1GmPXH/S9UcIMSN0Sgt
-# K47ZJRIn0KYgx4dDDJHW6JAt93lRef9LDb/xpSS6lQCwKGsPNJiIQkjMh3+3+QLJ
-# UusZ0dgbSY/bfB6o3PIPX03TZcDUQRJFVPqOXYGV2KAvHmRsFg6z4Rk7wMcVZlfC
-# fbEVK4nLuglnhi6gZw8A3SpQN0GAzzDRPx62A4sXCFWP/VADvTe9T8pfWRsFFc1A
-# KBYxhBcj/8hkg3lAmOfrSG4sR+ZvxfsI2q1HxcTojR7MidIsT9rw+RrDO4n9xmbL
-# o4GEJFViBumejqm3jiM7f39Pkt1nqPe7h3waPWbtq8EGBx2A4WPgOBCEQ48v285H
-# jUt6/nM7d8mk0Ihk6m1PBiDaNDOjrqmbPT6nsfmuCM7xWqNRjg+S1lYqmmc6zkvJ
-# UIGYoBuQvL4lfUXnzWTFfTYKM/eMURHETrVdaP6UlyfF/XDulZvehHOa3s3NH+x5
-# UXp7OTXcWlKdVDkFNlljvhLK7KKidQl7SYY2bMYv5CcJA8HyVTFMNqIKKDUnoYID
+# hvcNAQkEMSIEIEv+U5cFqffXxu9TNugnF1q69bzDnYMPiRb0DavurwWwMA0GCSqG
+# SIb3DQEBAQUABIICABTrptEyi5c2wApn0pUEXBqlfeGDaJ4z1CbS7fSubVWcXT64
+# OL2OW4dfZmU30z/RLrsBYpABugbtL1MuMPUdPQPJyVF1MUbs664z7pRcpDs3GY3S
+# N/JEnGoqvcfjup8nl7xvN1OoD7DKTM7dTQiItwrM0LspmIhrJTdch0us1Z4x9VaD
+# LPYP7uv0Jv3HAdxNxyfR6ImRXzt0Ej0/jYt5felLIS+krNHb5X5JKznsMA7W/GOX
+# Js36VqbOtsZrzGvi+S+LJKQJoBWbl8fs8u2KtIhGFNJuLrLvnVAvJbtga9Eb7Kmb
+# gSKb2lhfFha2iFkOZpJ7zqVBh1HREzzjLgtsgZenx30gjECPJPFIkTB7XskH3WeF
+# 1BSamomWjaQh+RaF3A39Fp5FlOvJFoRt3Bl468WlYer/3trupT07CwKOtiqo2wVD
+# 8aIKpmlLSthc8Y58j9NoZW/zQSvmjHK9dW6LZGtwAaSbq7O4yY9bXwd7c//fj7Qu
+# 8Sca2aS0UvdTjkJ+p0wonKG7zD59XJQnLgNUwAU+PdKkYNC1p81oXSBk23AYjUXY
+# bVKRRAT2KNfJUoOr6LPoWFXdguTPiSuwTO/fGSjhDJHKtCWZBZF9uRHOZ8LSNtxD
+# hCTZ+qBjBJxh3Iv1LJjWoQIQADKFPkLOTUKbV/8pC35nqp3U9mQFBnm1owu0oYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNTI1MTM1NjIxWjA/BgkqhkiG9w0BCQQxMgQwDR86BRy13f4QcYzc4KLI
-# 1vi93/Fb3xU5y2aZfpkzdwKyoRAc09EaFXXumzW5cF08MA0GCSqGSIb3DQEBAQUA
-# BIICACy6qzj7oS8DkeOoWwpaKc25YXgkjJ5Z3ZojYdfF0IQ7HNaZNfxpBuc08yEp
-# sSMdlAe0MCUFXoCsv8x5jPTdvuyPbjeLTznTfa3TP5dOV6zTZsqyVZrFMvl+Teg8
-# Yix52DDTaN6cI/IOudO78GaoEhDNPOtqhCbZnrgZpx1VuiQYijSL/cVJdOY10HW2
-# Z0RpUnLBPSl6tSI74GQr2omMswKh/RsYAiTQqiXxdISAzKfPNCeDzkgflm8hDEvd
-# vHUp02jN7Q9WcJ9l0FyVQpiLTLLVc5BvlnD839tys998JCZEzP70qciOjGL4j8a6
-# sFguskvuSubf7Vb4VzIXkXCeVSbVybTYBJzBgpBtKAo8+YWO5huA3T+Ag5W21PHf
-# Y82+Vdnhl+F5ksDMwSG8oI10R1aatqHLpsGXv0ynpnxNvrUKNM/gwww69FJU7s43
-# 6Ys1dKNr42SuFgpBYouXK6iIsqgUT8rv10PJ9THB2R+/Tm29SLWlP77uXDox46+g
-# ZxPWLTCj4hmxBtnQFznBzqI/L1mYV+FrwKvWlYWzM4JCtlbCA7MXXEGFDYfDiwq6
-# 46zpJNutCsKATxKaI+EXujzuCckgYnr5NnsKqA10xn+bVUw+d3qJSwKnqmFaswSP
-# hAGhEpohy87a9sWiATsYQ9hRGsn29pH8A9Rs51g0Nic+JfRG
+# DxcNMjYwNjA2MDAzNjU2WjA/BgkqhkiG9w0BCQQxMgQwK61wUiNwoL1w6n1DxZSO
+# SU+0q77SuspscdzrSm35e8jyIbUt1mqws5rD3NJzIg82MA0GCSqGSIb3DQEBAQUA
+# BIICAMZ0Jb9nSxOBE1NfvtxJTq7ZidkGQU/2cFe3L5vCdHi4dB3EgB+t1myrmrCx
+# pCskhNRsMbdPiCY39JNYnYQ5jFg9gi2KPpjawLRtfBfhMuTCaacWHVA7ChMGbovN
+# 5vxODR8CXB3RNIvdt8LfieBmpESkemL6lhG3D1SYftba7/9/fvOyRSeo/Of8YMV7
+# GiPJ6mfH69MfX8y9XOLiV4AJhN+U8+GWaMnQvT763Bor6HcqP8Z1iQdKlBBOLrAH
+# uSPmVBcaiHSptd+KvQofRYDRmm1TWMQhB6YHV13jZEclByMmz3ah+BHGjY2sRFsm
+# Zrr77RfJtgRAOmfcf/qjuhNb+bVSnITsnE8IOBnfLfy7JvMI/Lq/otahCiog4s2O
+# iuGaVR34KcUPwxdYRtNqbf8paF0Xjs1l2MN3uKvbAI7F4WZmy4NdHn3i8njlBV0q
+# +So1qZ7/u9SaFJ7ggVVG3kv11adwJUEgyIhb9SP/y+eHv8VKqgk1PpsYLBL5hq5A
+# VFNE2GaRKatLkEyYhCuwGbDqhHoZUW2KDrv0F7r4b7X10IPJ6u8pSNsJJkhRgXj/
+# Eif8RNrZS5y9DpivWYkQRMoEq0m3Zct9EiF8A6/RVbNqvZvTyiXKfeXWhkbU0Gb6
+# mri5BIMDaGwg6cgFbNiw59Nt4yWvdHfR14LwpRgwu8KU9Mq1
 # SIG # End signature block

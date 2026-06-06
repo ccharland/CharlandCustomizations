@@ -46,11 +46,11 @@ Import-Module CharlandCustomizations
 
 ## Command Prefix
 
-This module uses `DefaultCommandPrefix = 'CC'`. Exported commands have a `CC` prefix:
+All exported functions in this module have a `CC` prefix hardcoded into the noun portion of their names. This makes command names explicit and discoverable in source code:
 
 ```powershell
-# Function names get CC inserted after the verb
-Find-CCCFNStackErrors
+# Function names have CC inserted after the verb
+Find-CCCFNStackError
 Get-CCEC2SGInUse
 Clear-CCS3Bucket
 ```
@@ -65,7 +65,7 @@ Get-Module CharlandCustomizations
 Get-Command -Module CharlandCustomizations
 
 # Test a function
-Get-Help Find-CCCFNStackErrors -Full
+Get-Help Find-CCCFNStackError -Full
 ```
 
 ## Auto-Load on Startup

@@ -21,6 +21,10 @@
     Set the module version in the manifest before building (for example: 0.3.3)
 .PARAMETER BumpVersion
     Increment the module version in the manifest before building (Major, Minor, or Patch)
+.PARAMETER Prerelease
+    Set the module prerelease label in the manifest (for example: beta1, rc1)
+.PARAMETER ClearPrerelease
+    Remove the module prerelease label from the manifest.
 .PARAMETER PrepareRelease
     Ensure changelog contains an entry for the current version and print release commit/tag commands
 .EXAMPLE
@@ -44,6 +48,9 @@
 .EXAMPLE
     ./Build-Module.ps1 -BumpVersion Patch -PrepareRelease
     Increments patch version and prepares changelog/release commands
+.EXAMPLE
+    ./Build-Module.ps1 -Prerelease beta1 -PrepareRelease
+    Sets prerelease label to beta1 and prepares changelog/release commands
 #>
 [CmdletBinding()]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
@@ -58,6 +65,8 @@ param(
     [version]$Version,
     [ValidateSet('Major', 'Minor', 'Patch')]
     [string]$BumpVersion,
+    [string]$Prerelease,
+    [switch]$ClearPrerelease,
     [switch]$PrepareRelease
 )
 
@@ -101,10 +110,21 @@ if ($PSBoundParameters.ContainsKey('Version') -and $PSBoundParameters.ContainsKe
     throw "Specify either -Version or -BumpVersion, not both."
 }
 
+if ($PSBoundParameters.ContainsKey('Prerelease') -and $ClearPrerelease) {
+    throw "Specify either -Prerelease or -ClearPrerelease, not both."
+}
+
 # Optionally update the module version in the manifest before build.
-if ($PSBoundParameters.ContainsKey('Version') -or $PSBoundParameters.ContainsKey('BumpVersion')) {
+if ($PSBoundParameters.ContainsKey('Version') -or
+    $PSBoundParameters.ContainsKey('BumpVersion') -or
+    $PSBoundParameters.ContainsKey('Prerelease') -or
+    $ClearPrerelease) {
+
     $manifestData = Import-PowerShellDataFile -Path $ManifestPath
     $currentVersion = [version]$manifestData.ModuleVersion
+    $currentPrerelease = $manifestData.PrivateData.PSData.Prerelease
+    $targetVersion = $currentVersion
+    $targetPrerelease = $currentPrerelease
 
     if ($PSBoundParameters.ContainsKey('Version')) {
         $targetVersion = $Version
@@ -119,7 +139,26 @@ if ($PSBoundParameters.ContainsKey('Version') -or $PSBoundParameters.ContainsKey
         Write-Output "Bumping module version ($BumpVersion): $currentVersion -> $targetVersion"
     }
 
-    Update-ModuleManifest -Path $ManifestPath -ModuleVersion $targetVersion -ErrorAction Stop
+    if ($PSBoundParameters.ContainsKey('Prerelease')) {
+        $targetPrerelease = $Prerelease
+        Write-Output "Setting prerelease label: '$currentPrerelease' -> '$targetPrerelease'"
+    }
+    elseif ($ClearPrerelease) {
+        $targetPrerelease = $null
+        Write-Output "Clearing prerelease label: '$currentPrerelease' -> ''"
+    }
+
+    $updateManifestParams = @{
+        Path          = $ManifestPath
+        ModuleVersion = $targetVersion
+        ErrorAction   = 'Stop'
+    }
+
+    if ($targetPrerelease) {
+        $updateManifestParams.Prerelease = $targetPrerelease
+    }
+
+    Update-ModuleManifest @updateManifestParams
 }
 
 if (-not $InstallOnly) {
@@ -142,7 +181,7 @@ if (-not $InstallOnly) {
                 Write-Host "Run './Test-CodeQuality.ps1' for detailed analysis" -ForegroundColor Yellow
                 exit 1
             }
-            
+
             $warnings = $analysisResults | Where-Object Severity -eq 'Warning'
             if ($warnings) {
                 Write-Warning "Found $($warnings.Count) warning(s) - consider fixing before release"
@@ -165,12 +204,22 @@ else {
 Write-Host "Reading module manifest..." -ForegroundColor Yellow
 $manifest = Test-ModuleManifest -Path $ManifestPath -ErrorAction Stop
 $version = $manifest.Version.ToString()
+$manifestData = Import-PowerShellDataFile -Path $ManifestPath
+$prerelease = $manifestData.PrivateData.PSData.Prerelease
+$releaseTag = $version
+if ($prerelease) {
+    $releaseTag = "$version-$prerelease"
+}
+$artifactVersion = $releaseTag
 Write-Output "  Version: $version"
+if ($prerelease) {
+    Write-Output "  Prerelease: $prerelease"
+}
 Write-Output "  GUID: $($manifest.Guid)"
 
 if (-not $InstallOnly) {
     # Create versioned build directory
-    $BuildPath = Join-Path $BuildRoot "$ModuleName\$version"
+    $BuildPath = Join-Path $BuildRoot "$ModuleName\$artifactVersion"
     Write-Output "Creating build directory: $BuildPath"
     if (Test-Path $BuildPath) {
         Remove-Item $BuildPath -Recurse -Force
@@ -221,8 +270,8 @@ if (-not $InstallOnly) {
         exit 1
     }
     else {
-        $totalChecked = @($manifestData.RootModule).Count + 
-        @($manifestData.NestedModules).Count + 
+        $totalChecked = @($manifestData.RootModule).Count +
+        @($manifestData.NestedModules).Count +
         @($manifestData.FileList).Count
         Write-Host "  All $totalChecked manifest-declared files present in build output" -ForegroundColor Green
     }
@@ -250,13 +299,18 @@ if (-not $InstallOnly -and -not $SkipSigning) {
         Write-Output "  Found certificate: $($cert.Subject)"
         Write-Output "Signing built module files..."
 
+        # Load Set-CCFileSignature if not already available
+        if (-not (Get-Command Set-CCFileSignature -ErrorAction SilentlyContinue)) {
+            . (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Set-CCFileSignature.ps1')
+        }
+
         $filesToSign = Get-ChildItem -Path $BuildPath -Include *.ps1, *.psm1, *.psd1 -Recurse
         $signedCount = 0
         $failedCount = 0
 
         foreach ($file in $filesToSign) {
             try {
-                $result = Set-AuthenticodeSignature -FilePath $file.FullName -Certificate $cert -TimestampServer "http://timestamp.sectigo.com"
+                $result = Set-CCFileSignature -MyCert $cert -Path $file.FullName
                 if ($result.Status -eq 'Valid') {
                     Write-Output "  Signed: $($file.Name)"
                     $signedCount++
@@ -328,7 +382,7 @@ if (-not $InstallOnly -and $Package) {
     }
 
     # Create zip file
-    $zipName = "$ModuleName-$version.zip"
+    $zipName = "$ModuleName-$artifactVersion.zip"
     $zipPath = Join-Path $packageDir $zipName
 
     if (Test-Path $zipPath) {
@@ -348,9 +402,9 @@ if (-not $InstallOnly -and $Package) {
     Write-Output "  Hash file: $hashFile"
 
     # Create README for package
-    $readmePath = Join-Path $packageDir "README-$version.txt"
+    $readmePath = Join-Path $packageDir "README-$artifactVersion.txt"
     $readmeContent = @"
-$ModuleName v$version
+$ModuleName v$artifactVersion
 Distribution Package
 
 Created: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
@@ -392,7 +446,7 @@ if ($performInstall) {
     }
 
     $installBasePath = Join-Path $userModulePath $ModuleName
-    $installPath = Join-Path $installBasePath $version
+    $installPath = Join-Path $installBasePath $artifactVersion
 
     # Remove old versions if they exist
     if (Test-Path $installBasePath) {
@@ -436,13 +490,13 @@ if ($PrepareRelease) {
 ## [$version] - $(Get-Date -Format 'yyyy-MM-dd')
 
 ### Added
-- 
+-
 
 ### Changed
-- 
+-
 
 ### Fixed
-- 
+-
 
 "@
             $firstReleaseMatch = [regex]::Match($changelogContent, "(?m)^## \[")
@@ -477,7 +531,7 @@ else {
 }
 
 if ($Package) {
-    Write-Output "Distribution package: build/packages/$ModuleName-$version.zip"
+    Write-Output "Distribution package: build/packages/$ModuleName-$artifactVersion.zip"
 }
 
 if (-not $performInstall) {
@@ -490,19 +544,18 @@ if (-not $InstallOnly) {
     Write-Output "To clean and rebuild, run: ./Build-Module.ps1 -Clean"
 }
 
-Write-Output "`nRelease commands (for v$version):"
+Write-Output "`nRelease commands (for $releaseTag):"
 Write-Output "  git add src/$ModuleName/$ModuleName.psd1 docs/CHANGELOG.md"
-Write-Output "  git commit -m \"Release v$version\""
-Write-Output "  git tag v$version"
+Write-Output "  git commit -m \"Release $releaseTag\""
+Write-Output "  git tag $releaseTag"
 if (-not $PrepareRelease) {
     Write-Output "Optional: add changelog entry automatically with ./Build-Module.ps1 -PrepareRelease"
 }
-
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBwKPYUL8836gJW
-# DkkIh+8R4iO78rQHtKzB0J+3KZtAgaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCATDPAitivYtctK
+# C3nAxsttR0jeYzBbTnDwcY3/gGqaZKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -704,33 +757,33 @@ if (-not $PrepareRelease) {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIAzQwUgoEvnlK2ZfFOMk7N7Z8TEvW1fWGq1Jyix78406MA0GCSqG
-# SIb3DQEBAQUABIICAJhfmK1psTfR+eofJ2o2/in2QBnyYkXCnqC2xRN7jE3OJgVc
-# qKZNUs3ZbB3dDff41K7SMBfcUkyDLcPoM/Cw8kDbMCvMkfPyRXjc867JV3bwLCSc
-# D9QfI77ZukolJoCXVTLXhS52OV9KItv9UnJH67h2o0nQjrCkPIACiiTAC+8LZpcV
-# yNxfyG5WSiril1uQr/Hv7EM4MagOIhb9dGF2WTwGw1521HvCU/MGYnDLVoKPUNk0
-# xBM3CEEBJn+SpxUO3vqVYzUYOirwn6x5v/WMZan1QK8SAH7iK1ZyMBzeb/HNqemK
-# FUSEhNoOMCAxkJAAgLMvlqiA1y3BR9rhdLhPs43yHKTfN+Qx9J7x07ZlFOkEI/wf
-# tw1j6vF/PHxZfWhPUIYi7xV4wO+FClntEgSL123LBGls68KZuGbdet7smNSf7qPe
-# 0pEIMN4FxQZI+6iU5gYfnSQpR31cxioRPqEqgIHCA42OHpEny9p9ZKRERWLYhCxA
-# sEpa3ctEDQuYFRChbHiFhpDOujP83YrBV5yYAb2RFbKO00hecV8W6DUDmjc7p0qQ
-# 0RuXffYPb5Q/BtpzGNxmQLBTwK5MB5eNZOvzCKuKJ136vrKytRuF6yte3zg+9uTH
-# dhee7ywHIH55fDZ/I6T9tZ7rVoF/11Ew8OkW+hKdnqawcN7eQG9uVToYUGR5oYID
+# hvcNAQkEMSIEIAOF0Tvn9N8Pt4xCYQ79e272yqzrHkkKNayQ8RqbcR09MA0GCSqG
+# SIb3DQEBAQUABIICAEvpKMK5kHn1QxGKrX0knQ81i0FjA+ee7BQS8hmQZm3Oxuqq
+# WdYfIR0grWtRuI3u0qg8GvRz4ilGa3RhyymMh+njPqsVJenkxGpPDrmGPB3z//b+
+# xAaQHLP7VA28oMQzSOq6me0YvCJWZjLB0tufR1ivhxrU3OkP7ja6au8Nm6LEkbyi
+# 200NOWW1XDu1LIcaeheOcfEwdIXr+IInnwZ2WM6mUh1f/PpZWwN+gfARiDh3RWjh
+# TWEFFxWKuGS3CQCdwx2aggQGBYGf/tHtDMAGko+M13AA8K76iChuNGxGreZwARYw
+# M5Jy2D0F/ow2nIIsM6igAGKRfD/jLBq0cW09l45v46Hr/rC9HiR/OPJGY+eaeDLg
+# vABMhfZuHpXFSIOhq8xy1gNckhNEBNSWLMyWtus42f1LSbTqeoNrYtz1ZR3akc9j
+# XupUNTMwd2bLckugoavURTJ9KdOeK31InXuOpHhGL6fCWHLi/y2HVoSQtammbcYb
+# yezqLDGV+JpGfdMLIUDxMjScHILC5WSEFZzN0JvYXoye22KMY5aYQ5mkD28OkKmJ
+# sfSbnH2T7wN59BAt1lv7C86+l1oSplT5cYgWyMl8LQtBWjCoiJ+iTnXfQ7rlX/nA
+# m/1VvokM9yvNw+OoBbrdjHXQB/AtRn2MZoxH+3raLvpINCN+EOgPTem5YRSxoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNTI1MTM1NjE1WjA/BgkqhkiG9w0BCQQxMgQwSGyuZibbQ/7C47NUIMO7
-# lyk3Me6J3XV2ses9iH9EtDL/AfK5N8pbTSiLC2ILbF09MA0GCSqGSIb3DQEBAQUA
-# BIICAFB5cStAB58LgfZyRAYhJK/YB4w/SvmKAhkpQuOg+Su4eZ87Mmoz8EXhXjv1
-# 7Kbk5bwONyQCQpGcO0hPTNs7wYzIL1p6CiKN/uHqrC+roSlBe7F+U81EI4p6s/uX
-# HdY+mQckWLNw9qU+E9hDcgsgG6pnQMaQpobVWL8cASAgjeHhmrJDVky0UB7/2e58
-# RsURIlYQwdjxesIq1PibMDFC89Dvyc4oYdhmAN5tII6a/zlVd9aHygAWMjFSkfRJ
-# FKPa6N7vS+v5vgI7K83eELKCrcEzqRcNsgF9nzSJ1iS2T7Rl16em2jGJi2P3NwuW
-# VnKcFL+ngxiNMSveQHzcuWUW30vHOg0PmDJphTIC5qPBuwFAxgEEdHM+BSpNCof5
-# W7OaKS/+ICQY4OugLpxd7F6IBw9nYoT/ouGZ5uG1i6pSvvObaZchpFyM4kacoAJ8
-# TFXxDE8RW9UTnnPzhwOenYv3/BATIIHj8U8FUM6JBsl1sfwZ/KcO2W8k2wFhJOmd
-# HZ/6uUPBMETcvSTzOuC2fMTMTGuUPBgBaGRyj3tLo6Gfgqb7TWbBWt5JRQf8b27Q
-# iF3yg8EizEMOhc0dqlCBFpuApzf4WMOuKQ988YxlOI2HOIQ27pX1fWYTqBTh7wkT
-# NqeJq9pVL1kqWzN4ydTzYiSiqWpdIEjjj5jWUGtM/PbuZDzG
+# DxcNMjYwNjA2MDAzNjUxWjA/BgkqhkiG9w0BCQQxMgQwsXy90pm8DKSPN/zpOg8Y
+# AAQlaW47rqlrwBYa7HdjhV2aHr6cBstrDQIbvSwtMZAQMA0GCSqGSIb3DQEBAQUA
+# BIICAMcKx6m+CxDcdTDUX1PZ7whjHewDwXM1Lqz0RkyMvWJaOCztQ9zHnuMM2Sz1
+# Tl3hhMB5/Z95hD6RddOYLTHv6/AVl2XjmklRYGnqcpJwEMSUK0iHU6g7IdqmEpy8
+# oa4b2FN6kbv7U5KxmBIhW+37PPEWjGpiZ62YOBsoLgbtSK72UAdikvJzeQHret03
+# pagKmkp8H4n5+18MEM8tYp/IUgwT+nHPYeMZ7xNWME6UrMuPz00sjURungkiDgLV
+# dtA3oguqDvParUzdXKrnOhph8LcqnGJVPAjdxR6/GmqCJTAKaEeJYlu7kl24XIg4
+# xxC2Z3u3WRSFr05yRZ4Ajf+ppGrZHwE+usZRA5ZG0jtFz8YJFKzTDHtP0lPyYMB/
+# Q4juNmzPNpMqErhRFwEGpIKaNHA83m6VWvzf6sBch2SdK9mPSsr214bbDbiAVb4B
+# i4CSKVXrUeikE/TdxaQktDfAVGXdBZrTkHzS0fDkcE/eKnvdVwKHpI2vkbPoJfEI
+# ciHtL+YZ7CG/EGjYHhWjzVNmV+frUkIl0glrKwYUCKEPsLNtoad6kT8WB+BNmrhn
+# uc5U/+b3INzR69TSf1Di6R7Ima4aErePIMzN1vlz2dSvKui8zaB9NzqUfRpthl9L
+# 8K45SZCL9wFDALRg2tQNrwtEHxYJxLjL66CLBYiU5RcxBr9Z
 # SIG # End signature block
