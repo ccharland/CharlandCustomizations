@@ -4,6 +4,9 @@
 .DESCRIPTION
     Imports the CharlandCustomizations module and checks every exported function for a
     valid .SYNOPSIS. Also validates all .ps1 scripts under the Scripts directory.
+    Additionally, scans Public/*.ps1 files for dual-level help compliance: each file
+    must have both a script-level help block (wrapper) and a function-level help block
+    inside any defined functions.
     Functions missing help or returning the default (function name as synopsis) are
     flagged as failures.
 .PARAMETER ModulePath
@@ -12,7 +15,7 @@
     Path to the Scripts directory. Defaults to Scripts.
 .EXAMPLE
     ./Scripts/Test-HelpCompliance.ps1
-    Validates help for all exported functions and scripts.
+    Validates help for all exported functions, scripts, and public files.
 .EXAMPLE
     ./Scripts/Test-HelpCompliance.ps1 -ModulePath ./src/CharlandCustomizations/CharlandCustomizations.psd1
     Validates help using an explicit module path.
@@ -142,6 +145,55 @@ foreach ($script in $scripts) {
     }
 }
 
+# Validate Public/*.ps1 files have both script-level and function-level help
+$publicPath = Join-Path (Split-Path $ModulePath -Parent) 'Public'
+$publicScripts = @()
+if (Test-Path -Path $publicPath) {
+    $publicScripts = @(Get-ChildItem -Path $publicPath -Filter '*.ps1' -Recurse |
+        Where-Object { $_.Name -ne '.gitkeep' })
+}
+
+foreach ($pubScript in $publicScripts) {
+    Write-Verbose "Checking dual-level help: $($pubScript.Name)"
+
+    # Check script-level help via Get-Help on the file path
+    $scriptHelp = Get-Help $pubScript.FullName -ErrorAction SilentlyContinue
+
+    if (-not $scriptHelp -or [string]::IsNullOrWhiteSpace($scriptHelp.Synopsis) -or
+        $scriptHelp.Synopsis -eq $pubScript.FullName -or
+        $scriptHelp.Synopsis -eq $pubScript.Name) {
+        $failures += [PSCustomObject]@{
+            Name  = $pubScript.Name
+            Type  = 'PublicScript'
+            Issue = 'Missing script-level .SYNOPSIS (file wrapper help)'
+        }
+    }
+
+    # Check function-level help by parsing for a function definition and its help block
+    $content = Get-Content -Path $pubScript.FullName -Raw
+    # Match function definitions (handles "function Verb-Noun" pattern)
+    $functionMatches = [regex]::Matches($content, '(?m)^\s*function\s+([\w-]+)')
+
+    if ($functionMatches.Count -eq 0) {
+        Write-Verbose "  No function definition found in $($pubScript.Name), skipping function-level check."
+    }
+    else {
+        foreach ($funcMatch in $functionMatches) {
+            $funcName = $funcMatch.Groups[1].Value
+            # Look for a comment-based help block (.SYNOPSIS) after the function declaration
+            $funcIndex = $funcMatch.Index
+            $afterFunc = $content.Substring($funcIndex)
+            if ($afterFunc -notmatch '(?s)\.\s*SYNOPSIS') {
+                $failures += [PSCustomObject]@{
+                    Name  = "$($pubScript.Name) -> $funcName"
+                    Type  = 'PublicFunction'
+                    Issue = 'Missing function-level .SYNOPSIS'
+                }
+            }
+        }
+    }
+}
+
 if ($failures.Count -gt 0) {
     Write-Host "Help compliance failed. $($failures.Count) issue(s) found:" -ForegroundColor Red
     $failures | Format-Table Type, Name, Issue -AutoSize | Out-Host
@@ -149,14 +201,15 @@ if ($failures.Count -gt 0) {
     throw 'One or more functions or scripts are missing required comment-based help.'
 }
 
-Write-Host "Help compliance passed. Validated $($manifest.FunctionsToExport.Count) function(s) and $($scripts.Count) script(s)." -ForegroundColor Green
+$publicCount = $publicScripts.Count
+Write-Host "Help compliance passed. Validated $($manifest.FunctionsToExport.Count) function(s), $($scripts.Count) script(s), and $publicCount public file(s) for dual-level help." -ForegroundColor Green
 
 
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAOpOFJdMJkVnmY
-# 3YhsF/S7O+as1oBVYpTvDTRaIITspKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA6yYK9fWoxhsrZ
+# Ebi+BcWEBJbLf+MVAJ4xuKOOP1arXKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -358,33 +411,33 @@ Write-Host "Help compliance passed. Validated $($manifest.FunctionsToExport.Coun
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIOaTO1ot0S+PTQtbEMktDoT8XBvtLZcIaASTRPE+xgYtMA0GCSqG
-# SIb3DQEBAQUABIICAJi9tpbaPk/vHf7LYurhjekBSXkbKXi6MJ5jbkYAHLrbw/7C
-# 81lB+Pz8TY8LkkUohxelHVzyEVGfg0B3RzVTnlYhMlV/zhlDzjFptx/kQDBiNGC1
-# 0PS9j9QVgKUuE7CoVHfkFEmYNJeUuy3Oxc+NcJfufOBl9e97LlNm7Dc/4LP40e7P
-# EaH7eVtkqbSlCIRLCsOrsTuMLZNPTN2jYeBno5uu90cIA9hmj08EtF7vCbCuWWs7
-# Tuvzk2ceD3AY1oocx6ucXPToyAN+ajEY8yiSZTLeDtTn/uXAzu3tzS7hMqg9YoPO
-# N3VM+mtU46C1g1cbrlwS7e+XlnTzqk32Qx3A5PEXG8GF37V0Fzo7txsYlKH6VDhV
-# Cc+86BhSgwrDBMsVTvD4BskMr3FzwF82RJEeCVhbesN9XD6AMor52oazjrAXZZ8I
-# q8cxMrbQlxheB2Z/otztEV2j786OIbq6jbRPYSbWin5crjXUo4ud9GBb3PDzh5Qs
-# veMzYUkTgznSOi+RB6F02n35i5qOF96PNIo1kDvdRNJHJWoxejIisxLBWkFuAHIZ
-# LDQrDJIKTJDnXqzkdZ73sRyD6jpglpUoxo1O6SBQUWFVIxnaQlF0XOWOsou4htK9
-# baVwe0OzAI3sDXwWtPlImkyeISTb8K/zWyz46j5+udd/GJdLPF4TWnOQ68O/oYID
+# hvcNAQkEMSIEIAA/oUiEUNIPkad/3FmsdHM4bliTjsTyF4/fpoYzbdNwMA0GCSqG
+# SIb3DQEBAQUABIICAH+dyJv2+g7f28XD+cKFKHninRSrTt1yh1/VGt5g4y8wUMu5
+# UAom6T7tW8LrlWeWkBwXux52qJQI5edPn21R9KMSWQVmN6OcZdcfvd64vRRXSFPs
+# dpUTnya/DOXR86McwyuiJiqIYUqdGs3LVuz1brNOSVMsF5/Z5jXKeeDuOGZ0pi+c
+# EzJmjadkE9h434k2VVhTqSdcDz0QM5MfliXErvl2IA8TXaJAgZG9LXOZS+FZXfyE
+# QwM1hKjItt+PYwqDtbMhnnqPzovwIkN9o+VON+i98NeO407/aKgoBXL05eBY7xFI
+# 9YzADsC3XdVpHr3XszhOyp55B0RPehQ4FQ529v7PlqlueMuMbd0QARPZ1+5pAWys
+# U6G3nhj20jrGh1TS4dJcBu8yopPMiJxgH7b8gsFCa8Y0C/c0GY1S0ssM689l/ANj
+# qq2JPsl/U1QsM9dP7+dCqhdxzoGSqshvc06SjqsRVwe94wPV7wvk48hr3c223l0K
+# lRDNM4t9+Ps1XQ6IhfIk35wAB6fax4fnQTHQtD5XlyRbFo8ICkcaLb53frimG7pz
+# gUg6r1twi2XFf3DqRoztTTugdfrs5/Wv+yrnRnaukpl/D04jU3F91yHqaL+4//NM
+# Z33h6Ecf1ZUvL/9cnmOGSYUkCY+uiKjHw6VAPMU/EDJAsV0+gfaoqgiVBDECoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MDAzNzA5WjA/BgkqhkiG9w0BCQQxMgQwfSDYKzU6rmekE/LW8zP5
-# XuojDjDRcXtdJJyXNw5Y/XaQXMqU2+dVYrP93667TNFbMA0GCSqGSIb3DQEBAQUA
-# BIICAHpH9bgatWqArVzAYKFd60bv0kF7j3K6qVc1jxaYlDinwjJF7GgEMbloXiyA
-# MJuWDGFIWS+msWvgmoBqBVaw+LFRuBh5NvpYTl+51QEJ6P8X73TahMTF4FetPNi6
-# 41SI1z2Dy0tjYXQaDqmb3fv1xEwDPu2TTM09+xEpBDBKlWpWh2mII5rdpeLb4tc0
-# XEW1iWWBQ41rj16KjQZ+J1ekAybFEB0HQH95h4Ke/vte1/cB5ta1sB8MFyx/Kwms
-# 5r5YRIjpNqBCskm3TbQKEe7RvFixEsq84QOdfwB7SeaMHgWNimfaWnUbOc+9wUuU
-# hjzdH2UKM4ICE32TdDsEUMqbo0OKqIbKS3QZ+KoobJyvE1U3QVal+WFZdbU1Us67
-# /HF6Ixo3OGg/LsczEw0eC6IWZ7bg7gnfozccUsh1zUb1cbybfSRXjJ+KG7yPepM3
-# LlzOtWmv5DG6i1bdVyJOJIdG4jzD8/KAcTcuD2+n5DqF9+nR00hQ9GsKsNhXty4o
-# 6iQ1snZ5TG/et5O7bAiXsddzro/hooT/dUci44J1d+1vztXgAG8/mKH+QW7gWPrZ
-# zUSLG7/hAyqupcZTTWWwHGBChLP0MDnednxtsQFIoq5DIgFl+Z8xqU3xK+32H5hl
-# 75ZqZPNh8OwS6IvmC775arRDjuIrQcsCgjAg+FSEyOl3Ko9f
+# DxcNMjYwNjA2MjEwNDMzWjA/BgkqhkiG9w0BCQQxMgQwrW1jqMRESNN9c5cNT/AI
+# OKzCCKg2OuRx2V2nJlM/mNAQFiavRjZoer04xByP/F1JMA0GCSqGSIb3DQEBAQUA
+# BIICAEovhjEFAmA/OhvDZfFPgq6GnsB3Hf4nByLvSNM7qCtN8viY3TL2APGcDxLu
+# 3p8ElrXWaxLODRsqpqVhqXR7vwx0YFTPFr4Mt5pMMO9L3HpBimHHuo3lYv50d4Bx
+# 3UhDgGPYkXHHB82Uv7ioOp6I+5nWhmT/+R3mC495OTI2q0cg9IaNaZiMnuVf5dgd
+# kfE8bsjT8qU6ieM7Ls8yMIFc9PhRn8k1U4isP0QB63BCrcuBo6w/wIF+awqBtMsb
+# 675pkPjjp7YFcD1rc2YpwtYFZ2TykOqM1iVr59L7sZx3p7Aeg2bBqsm0fN8bmw5Q
+# 2bkKc8ffC5bdPxYsGg+mQyFwHu6hQIfbxQm7fol6O1wr0yjGnIuKYEJFeVRCqD19
+# TYoX/IKnieejhmGzWI+3YA9xGKbgUjQB8V+/mGTaJwFMlT+xXVDKsax3SSRG8bEx
+# GVq8lMM9xM0PIIn7XdFac5/t5+BQXO2dHdqAFF4SewAK+WVMv1i2v920BSRoaobY
+# QTrUY16Xl1kDmej6SJjwQj7SYtq/ZFE7ZFg3xjyaT6sLgnDDiVwAtcYGg0pnpi6L
+# JAu0vFoLBCv9Z9HpZMxgTk8kefc1RZ0q6q1bmRkV6oD/yUPJIMrPOCNZXvtecJZK
+# Gfw4x+ARdGgitbgYoIXl3jYNMU3BCtsjqF++tfcGBG7SvvgU
 # SIG # End signature block
