@@ -5,9 +5,8 @@
 BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../../../Scripts/Publish-CharlandCustomizations.ps1"
 
-    # Stub Get-AuthenticodeSignature on Linux/macOS where it doesn't exist
-    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
-        function global:Get-AuthenticodeSignature { param($FilePath) }
+    if (-not (Get-Command Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue)) {
+        function global:Test-CCAuthenticodeSignatures { param($Path, $IncludeExtension) }
     }
     # Stub Publish-Module if not available
     if (-not (Get-Command Publish-Module -ErrorAction SilentlyContinue)) {
@@ -26,7 +25,6 @@ BeforeAll {
             [string]$ApiKey,
             [string]$SecretName,
             [switch]$SkipRepositoryTrust,
-            [switch]$SkipSignatureValidation,
             [switch]$UseLegacyPowerShellGet,
             [switch]$WhatIfMode
         )
@@ -44,7 +42,6 @@ BeforeAll {
         if ($ApiKey) { $invokeParams['ApiKey'] = $ApiKey }
         if ($SecretName) { $invokeParams['SecretName'] = $SecretName }
         if ($SkipRepositoryTrust) { $invokeParams['SkipRepositoryTrust'] = $true }
-        if ($SkipSignatureValidation) { $invokeParams['SkipSignatureValidation'] = $true }
         if ($UseLegacyPowerShellGet) { $invokeParams['UseLegacyPowerShellGet'] = $true }
         if ($WhatIfMode) { $invokeParams['WhatIf'] = $true }
         & $sb @invokeParams
@@ -54,6 +51,8 @@ BeforeAll {
 Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
     BeforeEach {
+        $script:CCIsWindows = $true
+
         # Mock Resolve-Path to return a string path that Join-Path can consume
         Mock Resolve-Path { '/fake/module/path' }
         Mock Test-Path { return $true }
@@ -90,11 +89,13 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
                 [PSCustomObject]@{ FullName = '/fake/module/path/Public/Example.ps1'; Extension = '.ps1' }
             )
         }
-        Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'Valid' } }
         Mock Get-Command { return @{ Name = 'git' } } -ParameterFilter { $Name -eq 'git' }
+        Mock Get-Command { return @{ Name = 'Test-CCAuthenticodeSignatures' } } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignatures' }
+        Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignature' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
         Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-Secret' }
+        Mock Test-CCAuthenticodeSignatures { @() }
         Mock Publish-Module {}
         Mock Publish-PSResource {}
         Mock Read-Host { return 'fake-api-key' }
@@ -172,24 +173,47 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
 
             # Assert
-            Should -Invoke Get-AuthenticodeSignature -Times 3 -Exactly
+            Should -Invoke Test-CCAuthenticodeSignatures -Times 1 -Exactly -ParameterFilter {
+                $Path -eq '/fake/module/path'
+            }
         }
 
-        It 'Skips signature validation when -SkipSignatureValidation is specified' {
-            # Act
-            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet -SkipSignatureValidation
+        It 'Throws when not running on Windows' {
+            # Arrange
+            $script:CCIsWindows = $false
 
-            # Assert
-            Should -Invoke Get-AuthenticodeSignature -Times 0 -Exactly
+            # Act & Assert
+            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
+                Should -Throw '*only supported on Windows systems*'
         }
 
         It 'Throws when a module file signature is invalid' {
             # Arrange
-            Mock Get-AuthenticodeSignature { [PSCustomObject]@{ Status = 'HashMismatch' } }
+            Mock Test-CCAuthenticodeSignatures {
+                [PSCustomObject]@{
+                    Path = '/fake/module/path/Public/Example.ps1'
+                    Status = 'HashMismatch'
+                }
+            }
 
             # Act & Assert
             { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
                 Should -Throw '*valid Authenticode signatures*'
+        }
+
+        It 'Throws when a non-PowerShell file exists in the module directory' {
+            # Arrange
+            Mock Get-ChildItem {
+                @(
+                    [PSCustomObject]@{ FullName = '/fake/module/path/CharlandCustomizations.psd1'; Extension = '.psd1' },
+                    [PSCustomObject]@{ FullName = '/fake/module/path/CharlandCustomizations.psm1'; Extension = '.psm1' },
+                    [PSCustomObject]@{ FullName = '/fake/module/path/.gitignore'; Extension = '.gitignore' }
+                )
+            }
+
+            # Act & Assert
+            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
+                Should -Throw '*disallowed file*'
         }
     }
 

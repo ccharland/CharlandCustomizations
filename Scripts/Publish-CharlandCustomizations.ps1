@@ -17,8 +17,6 @@
     SecretManagement secret name to read when ApiKey is not passed.
 .PARAMETER SkipRepositoryTrust
     Skip setting the target repository to trusted before publishing.
-.PARAMETER SkipSignatureValidation
-    Skip verifying Authenticode signatures before publishing.
 .PARAMETER UseLegacyPowerShellGet
     Force Publish-Module instead of Publish-PSResource.
 .EXAMPLE
@@ -27,7 +25,7 @@
 .EXAMPLE
     ./Scripts/Publish-CharlandCustomizations.ps1 -Repository PSGallery -SecretName PSGalleryApiKey
 .EXAMPLE
-    ./Scripts/Publish-CharlandCustomizations.ps1 -SkipSignatureValidation
+    ./Scripts/Publish-CharlandCustomizations.ps1 -WhatIf
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
@@ -36,11 +34,19 @@ param(
     [string]$ApiKey,
     [string]$SecretName = 'PSGalleryApiKey',
     [switch]$SkipRepositoryTrust,
-    [switch]$SkipSignatureValidation,
     [switch]$UseLegacyPowerShellGet
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:CCIsWindows = $IsWindows
+}
+
+if (-not $script:CCIsWindows) {
+    throw 'Publish-CharlandCustomizations is only supported on Windows systems.'
+}
+
 $resolvedPath = Resolve-Path -Path $Path
 $manifestPath = Join-Path $resolvedPath 'CharlandCustomizations.psd1'
 
@@ -76,26 +82,29 @@ if ($Repository -ieq 'PSGallery') {
     }
 }
 
-if (-not $SkipSignatureValidation) {
-    $filesToValidate = Get-ChildItem -Path $resolvedPath -Recurse -File |
-        Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' }
+$allModuleFiles = @(Get-ChildItem -Path $resolvedPath -Recurse -File)
+$nonPowerShellFiles = @($allModuleFiles | Where-Object { $_.Extension -notin '.ps1', '.psm1', '.psd1' })
+if ($nonPowerShellFiles.Count -gt 0) {
+    $disallowedFiles = ($nonPowerShellFiles | Select-Object -ExpandProperty FullName) -join ', '
+    throw "Publishing requires the module directory to contain only .ps1, .psm1, and .psd1 files. Found disallowed file(s): $disallowedFiles"
+}
 
-    if (-not $filesToValidate) {
-        throw "No PowerShell module files were found under $resolvedPath"
-    }
+$filesToValidate = @($allModuleFiles | Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' })
+if (-not $filesToValidate) {
+    throw "No PowerShell module files were found under $resolvedPath"
+}
 
-    $invalidSignatures = @()
+$signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue
+if (-not $signatureValidationCommand) {
+    $signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue
+}
 
-    foreach ($file in $filesToValidate) {
-        $signature = Get-AuthenticodeSignature -FilePath $file.FullName
-        if ($signature.Status -ne 'Valid') {
-            $invalidSignatures += [PSCustomObject]@{
-                File   = $file.FullName
-                Status = $signature.Status
-            }
-        }
-    }
+if (-not $signatureValidationCommand) {
+    throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
+}
 
+if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Validate signatures using $($signatureValidationCommand.Name)")) {
+    $invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension @('.ps1', '.psm1', '.psd1'))
     if ($invalidSignatures.Count -gt 0) {
         Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
         $invalidSignatures | Format-Table -AutoSize
