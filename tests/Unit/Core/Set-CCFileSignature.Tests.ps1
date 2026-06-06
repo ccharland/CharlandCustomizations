@@ -10,14 +10,15 @@ BeforeAll {
         param($FilePath, $TimestampServer, $Certificate)
     }
 
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CCFileSignature.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CCAuthenticodeSignature.ps1"
+    $script:CCIsWindows = $true
 }
 
 AfterAll {
     Remove-Item "function:global:Set-AuthenticodeSignature" -ErrorAction SilentlyContinue
 }
 
-Describe 'Set-CCFileSignature' -Tag 'Unit' {
+Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
 
     BeforeAll {
         # Mock Set-AuthenticodeSignature to prevent actual signing
@@ -31,7 +32,7 @@ Describe 'Set-CCFileSignature' -Tag 'Unit' {
         It 'Throws terminating error when no valid code-signing certificate is found' {
             # Arrange - pass $null as MyCert to simulate no certificate found
             # Act & Assert
-            { Set-CCFileSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
+            { Set-CCAuthenticodeSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
                 Should -Throw '*No valid codesign certificate found*'
         }
     }
@@ -49,7 +50,7 @@ Describe 'Set-CCFileSignature' -Tag 'Unit' {
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 
             # Act
-            Set-CCFileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+            Set-CCAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
 
             # Assert
             Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
@@ -71,12 +72,29 @@ Describe 'Set-CCFileSignature' -Tag 'Unit' {
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 
             # Act
-            Set-CCFileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+            Set-CCAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
 
             # Assert
             Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
                 $TimestampServer -eq 'http://timestamp.sectigo.com'
             }
+        }
+    }
+
+    Context 'Alias compatibility' {
+
+        It 'Alias Set-CCFileSignature resolves to Set-CCAuthenticodeSignature' {
+            (Get-Alias Set-CCFileSignature).Definition | Should -Be 'Set-CCAuthenticodeSignature'
+        }
+    }
+
+    Context 'Windows requirement' {
+
+        It 'Throws when not running on Windows' {
+            $script:CCIsWindows = $false
+            { Set-CCAuthenticodeSignature -MyCert ([PSCustomObject]@{ Issuer='CN=Digicert'; NotAfter=(Get-Date).AddYears(1); HasPrivateKey=$true }) -Path 'TestDrive:\script.ps1' } |
+                Should -Throw '*only supported on Windows systems*'
+            $script:CCIsWindows = $true
         }
     }
 
@@ -92,7 +110,7 @@ Describe 'Set-CCFileSignature' -Tag 'Unit' {
             }
 
             # Act & Assert
-            { Set-CCFileSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1' } |
+            { Set-CCAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1' } |
                 Should -Throw '*No Timestamp server could be set, aborting.*'
         }
     }

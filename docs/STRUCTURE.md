@@ -21,12 +21,14 @@ CharlandCustomizations/
 │           ├── Clear-CCAuthenticodeSignature.ps1
 │           ├── Install-CCProfilesFromSource.ps1
 │           ├── Invoke-CCScriptMultiAccountRegion.ps1
-│           ├── Set-CCFileSignature.ps1
+│           ├── Test-CCAuthenticodeSignatures.ps1
+│           ├── Set-CCAuthenticodeSignature.ps1
 │           ├── Update-CCPowershell7.ps1
 │           ├── Clear-CCAuthenticodeSignature.ps1
 │           ├── Install-CCProfilesFromSource.ps1
 │           ├── Invoke-CCScriptMultiAccountRegion.ps1
-│           ├── Set-CCFileSignature.ps1
+│           ├── Test-CCAuthenticodeSignatures.ps1
+│           ├── Set-CCAuthenticodeSignature.ps1
 │           ├── Update-CCPowershell7.ps1
 │           ├── AWS/
 │           │   ├── AWSCustomizations.psm1

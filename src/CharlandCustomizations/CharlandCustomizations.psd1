@@ -74,7 +74,7 @@ NestedModules = @('Public/AWS/AWSCustomizations.psm1',
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccountRegion', 
-               'Set-CCFileSignature', 'Update-CCPowershell7', 
+               'Set-CCAuthenticodeSignature', 'Update-CCPowershell7', 
                'Clear-CCAuthenticodeSignature', 'Find-CCCFNStackError', 
                'Set-CCAWSProfileWithMFA', 'Get-CCAWSMFASession', 
                'Start-CCMultiStackDriftDetection', 
@@ -90,7 +90,7 @@ FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccount
                'Get-CCGlobalAuditReportItem', 'Get-CCEC2KeyTagNameStatus', 
                'Get-CCEC2SnapshotReport', 'Get-CCEC2VolumeReport', 
                'Start-CCEC2RetryLoop', 'Find-CCOpenSecurityGroup', 
-               'Test-CCCommitSignature', 'Install-CCGitHook'
+               'Test-CCCommitSignature', 'Install-CCGitHook', 'Test-CCAuthenticodeSignatures'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -99,7 +99,7 @@ CmdletsToExport = @()
 # VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = 'Set-CCFileSignature'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

@@ -1,3 +1,10 @@
+[CmdletBinding()]
+param(
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Alias('FullName')]
+    [string[]]$Path
+)
+
 function Clear-CCAuthenticodeSignature {
 <#
 .SYNOPSIS
@@ -60,6 +67,10 @@ function Clear-CCAuthenticodeSignature {
             }
         }
     }
+}
+
+if ($MyInvocation.InvocationName -ne '.') {
+    Clear-CCAuthenticodeSignature @PSBoundParameters
 }
 
 # SIG # Begin signature block

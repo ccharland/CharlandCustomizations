@@ -299,9 +299,9 @@ if (-not $InstallOnly -and -not $SkipSigning) {
         Write-Output "  Found certificate: $($cert.Subject)"
         Write-Output "Signing built module files..."
 
-        # Load Set-CCFileSignature if not already available
-        if (-not (Get-Command Set-CCFileSignature -ErrorAction SilentlyContinue)) {
-            . (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Set-CCFileSignature.ps1')
+        # Load Set-CCAuthenticodeSignature if not already available
+        if (-not (Get-Command Set-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
+            . (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Set-CCAuthenticodeSignature.ps1')
         }
 
         $filesToSign = Get-ChildItem -Path $BuildPath -Include *.ps1, *.psm1, *.psd1 -Recurse
@@ -310,7 +310,7 @@ if (-not $InstallOnly -and -not $SkipSigning) {
 
         foreach ($file in $filesToSign) {
             try {
-                $result = Set-CCFileSignature -MyCert $cert -Path $file.FullName
+                $result = Set-CCAuthenticodeSignature -MyCert $cert -Path $file.FullName
                 if ($result.Status -eq 'Valid') {
                     Write-Output "  Signed: $($file.Name)"
                     $signedCount++
