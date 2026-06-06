@@ -18,7 +18,7 @@ param(
     [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
 )
 
-$publicFunctionPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Test-CCAuthenticodeSignatures.ps1'
+$publicFunctionPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Test-CCAuthenticodeSignature.ps1'
 
 if (-not (Get-Command Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue)) {
     . $publicFunctionPath
