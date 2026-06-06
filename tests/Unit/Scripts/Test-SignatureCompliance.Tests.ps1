@@ -5,6 +5,13 @@
 BeforeAll {
     $script:SUTPath = "$PSScriptRoot/../../../Scripts/Test-SignatureCompliance.ps1"
 
+    # Stub Get-AuthenticodeSignature on Linux/macOS where it doesn't exist
+    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        function global:Get-AuthenticodeSignature {
+            param($FilePath)
+        }
+    }
+
     # Wrapper function that executes the script content in the current scope
     # so Pester mocks are visible, and converts 'exit'/'throw' to returns.
     function Invoke-TestSignatureCompliance {
