@@ -127,7 +127,7 @@ function Set-CCAuthenticodeSignature {
                 Write-Error "Error signing '$file': $($_.Exception.Message)"
             }
             finally {
-                Write-Verbose 'Signature atempt finished'
+                Write-Verbose 'Signature attempt finished'
             }
         }
     }
