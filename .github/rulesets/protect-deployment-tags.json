@@ -1,0 +1,57 @@
+{
+  "id": 17578976,
+  "name": "Protect-Deployment Tags",
+  "target": "tag",
+  "source_type": "Repository",
+  "source": "ccharland/CharlandCustomizations",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "refs/tags/v[0-9]*.[0-9]*.[0-9]*"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_signatures"
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": false,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "Pester Tests",
+            "integration_id": 15368
+          },
+          {
+            "context": "PSScriptAnalyzer",
+            "integration_id": 15368
+          },
+          {
+            "context": "Comment-Based Help",
+            "integration_id": 15368
+          },
+          {
+            "context": "Manifest Compliance",
+            "integration_id": 15368
+          },
+          {
+            "context": "CodeQL",
+            "integration_id": 57789
+          }
+        ]
+      }
+    }
+  ],
+  "bypass_actors": []
+}
