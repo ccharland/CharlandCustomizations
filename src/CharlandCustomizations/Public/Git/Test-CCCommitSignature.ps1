@@ -1,34 +1,34 @@
-function Test-CCCommitSignature {
+﻿function Test-CCCommitSignature {
 
     <#
     .SYNOPSIS
         Tests that commits are signed (GPG or SSH)
-        
+
     .DESCRIPTION
         Checks git commits to ensure they are properly signed with GPG or SSH.
         Can check recent commits or a specific range.
-        
+
     .PARAMETER Count
         Number of recent commits to check (default: 1)
-        
+
     .PARAMETER Range
         Git commit range to check (e.g., "HEAD~5..HEAD", "main..feature")
-        
+
     .PARAMETER Branch
         Branch to check (default: current branch)
-        
+
     .EXAMPLE
         Test-CCCommitSignatures
         Checks the last commit
-        
+
     .EXAMPLE
         Test-CCCommitSignatures -Count 10
         Checks the last 10 commits
-        
+
     .EXAMPLE
         Test-CCCommitSignatures -Range "HEAD~5..HEAD"
         Checks specific commit range
-        
+
     .EXAMPLE
         Test-CCCommitSignatures -Branch main
         Checks commits on main branch
@@ -37,10 +37,10 @@ function Test-CCCommitSignature {
     param(
         [Parameter()]
         [int]$Count = 1,
-        
+
         [Parameter()]
         [string]$Range,
-        
+
         [Parameter()]
         [string]$Branch
     )
@@ -67,7 +67,7 @@ function Test-CCCommitSignature {
     $gpgFormat = git config --get gpg.format
 
     # Detect signing method
-    $signingMethod = if ($gpgFormat -eq 'ssh') { 'SSH' } 
+    $signingMethod = if ($gpgFormat -eq 'ssh') { 'SSH' }
                      elseif ($signingKey -like 'ssh-*') { 'SSH' }
                      else { 'GPG' }
 
@@ -134,9 +134,9 @@ function Test-CCCommitSignature {
             'N' { 'Not Signed'; $false } # No signature
             default { 'Unknown'; $false }
         }
-        
+
         $color = if ($status -eq 'Valid') { 'Green' } else { 'Red' }
-        
+
         [PSCustomObject]@{
             Commit = $commit.Hash
             Status = $status
@@ -176,7 +176,7 @@ function Test-CCCommitSignature {
         Write-Host "`nValidation FAILED: Not all commits are properly signed" -ForegroundColor Red
         Write-Host "All commits must be signed" -ForegroundColor Yellow
         Write-Host "`nTo fix:" -ForegroundColor Yellow
-        
+
         if ($signingMethod -eq 'SSH') {
             Write-Host "  1. Ensure SSH signing is configured:"
             Write-Host "     git config --global gpg.format ssh"

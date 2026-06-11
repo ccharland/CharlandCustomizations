@@ -102,9 +102,9 @@ function New-CCCFNStackFromDirectory {
         if ($null -eq $Region) {
             throw "No AWS region specified and no default region configured. Please specify -Region parameter or configure a default region."
         }
-        
+
         $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
-        
+
         $AccountID = (Get-STSCallerIdentity @awsParams).Account
         Write-Verbose "AccountId: $AccountId"
         Write-Verbose "Region: $Region"
@@ -121,7 +121,7 @@ function New-CCCFNStackFromDirectory {
             else {
                 throw "The specified StackName path does not exist: $StackName"
             }
-        } 
+        }
         else {
             $StackName = (Get-ChildItem -Path $Path -Directory).Name
             if ($StackName.Count -gt 1) {
@@ -148,9 +148,9 @@ function New-CCCFNStackFromDirectory {
                 Write-Error "Template file not found in stack directory: $StackPath"
                 continue
             }
-        
-            $TemplateS3Key = [CFNStackDirectoryInfo]::NewTemplateS3Key($name) 
-        
+
+            $TemplateS3Key = [CFNStackDirectoryInfo]::NewTemplateS3Key($name)
+
             Write-S3Object -BucketName $TemplateBucket -Key $TemplateS3Key -File ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)) @awsParams
 
             $TemplateS3Url = Get-S3PreSignedURL -BucketName $TemplateBucket -Key $TemplateS3Key @awsParams -Expires (Get-Date).AddHours(1)
@@ -162,27 +162,27 @@ function New-CCCFNStackFromDirectory {
             else {
                 $TemplateParameters = @()
             }
-        
+
             if (Test-Path -Path ([CFNStackDirectoryInfo]::GetTagsPath($StackPath))) {
-                $Tags = Get-Content -Path ([CFNStackDirectoryInfo]::GetTagsPath($StackPath)) -Raw | ConvertFrom-Json   
+                $Tags = Get-Content -Path ([CFNStackDirectoryInfo]::GetTagsPath($StackPath)) -Raw | ConvertFrom-Json
             }
             else {
                 $Tags = @()
             }
 
             if (Test-Path -Path ([CFNStackDirectoryInfo]::GetCapabilitiesPath($StackPath))) {
-                $TemplateCapabilities = Get-Content -Path ([CFNStackDirectoryInfo]::GetCapabilitiesPath($StackPath)) -Raw | ConvertFrom-Json   
+                $TemplateCapabilities = Get-Content -Path ([CFNStackDirectoryInfo]::GetCapabilitiesPath($StackPath)) -Raw | ConvertFrom-Json
             }
             else {
                 $TemplateCapabilities = @()
             }
-        
+
             $TemplateTest = Test-CFNTemplate -TemplateURL $TemplateS3Url @awsParams
-        
+
             if ($TemplateTest.Parameters.Count -ne $templateParameters.Count) {
                 throw "Template parameter counts do not match between template parameters and parameters.json for stack $Name"
             }
-        
+
             try {
                 if ($VerifyOnly) {
                     Write-Output "`n$('*'*80)"
@@ -199,7 +199,7 @@ function New-CCCFNStackFromDirectory {
                         -Capabilities $TemplateCapabilities `
                         @awsParams `
                         -Tags $Tags
-        
+
                     Write-Output "New-CFNStack invoked for stack $Name in region $Region"
                 }
                 else {
@@ -458,7 +458,7 @@ function Out-CCCFNStackInfo {
                 Write-Error "Unable to create $StackInfoPath"
                 throw $_
             }
-        
+
             # save template to file
             Write-Progress -Id $progressId -Activity $activity -Status "$statusPrefix (Exporting templates)" -PercentComplete 35
             Write-Verbose "Saving template to $StackInfoPath"
@@ -476,7 +476,7 @@ function Out-CCCFNStackInfo {
                 $TemplatePath = Join-Path -Path $StackInfoPath -ChildPath ([CFNStackDirectoryInfo]::ProcessedTemplateFile)
                 $Processed | Out-File -FilePath $TemplatePath
             }
-        
+
             Write-Progress -Id $progressId -Activity $activity -Status "$statusPrefix (Exporting stack metadata)" -PercentComplete 70
             $StackInfo = Get-CFNStack -StackName $name @awsParams
             # Save items necessary to deploy stacks.
@@ -522,7 +522,7 @@ function Out-CCCFNStackInfo {
 .PARAMETER Path
     The path to the directory containing the stack directories. Defaults to the current location. The StackName will be the name of the directory.
 
-.PARAMETER StackName 
+.PARAMETER StackName
     The name of the subfolder within the Path that contains the CloudFormation stack files. If not specified, it will create change sets for all directories in the specified path.
 
 .PARAMETER Region
@@ -623,7 +623,7 @@ function Update-CCCFNStackFromDirectory {
         Write-Verbose "AccountId: $AccountId"
         Write-Verbose "Region: $Region"
         Write-Verbose "Path: $Path"
-    
+
         $TemplateBucket = (Get-S3Bucket @awsParams | Where-Object BucketName -Like "cf-templates-*$Region").BucketName
         if (-not $TemplateBucket) {
             throw "No S3 bucket found for CloudFormation templates in region $Region. Please ensure you have the correct permissions and the bucket exists (cf-templates-<random>-$Region)."
@@ -644,7 +644,7 @@ function Update-CCCFNStackFromDirectory {
             else {
                 throw "The specified StackName path does not exist: $StackName"
             }
-        } 
+        }
         else {
             Write-Verbose 'No specific stack name provided, processing all directories'
             $StackName = (Get-ChildItem -Path $Path -Directory).Name
@@ -666,9 +666,9 @@ function Update-CCCFNStackFromDirectory {
     process {
         foreach ($Name in $StackName) {
             $StackPath = Join-Path -Path $Path -ChildPath $Name
-        
+
             Write-Verbose "Processing stack: $Name in path: $StackPath"
-        
+
             # Verify the stack exists before attempting to update
             try {
                 Get-CFNStack -StackName $Name @awsParams | Out-Null
@@ -678,7 +678,7 @@ function Update-CCCFNStackFromDirectory {
                 Write-Error "Stack $Name does not exist in region $Region. Skipping."
                 continue
             }
-        
+
             # Test for required template file
             if (-not (Test-Path -Path ([CFNStackDirectoryInfo]::GetTemplatePath($StackPath)))) {
                 Write-Error "Template file not found in stack directory: $StackPath"
@@ -712,7 +712,7 @@ function Update-CCCFNStackFromDirectory {
 
             # Load tags if they exist
             if (Test-Path -Path ([CFNStackDirectoryInfo]::GetTagsPath($StackPath))) {
-                $Tags = Get-Content -Path ([CFNStackDirectoryInfo]::GetTagsPath($StackPath)) -Raw | ConvertFrom-Json   
+                $Tags = Get-Content -Path ([CFNStackDirectoryInfo]::GetTagsPath($StackPath)) -Raw | ConvertFrom-Json
             }
             else {
                 $Tags = @()
@@ -720,7 +720,7 @@ function Update-CCCFNStackFromDirectory {
 
             # Test template
             $TemplateTest = Test-CFNTemplate -TemplateURL $TemplateS3Url @awsParams
-        
+
             if ($TemplateTest.Parameters.Count -ne $TemplateParameters.Count) {
                 Write-Warning "Template parameter counts do not match between template parameters and parameters.json for stack $Name. Template has $($TemplateTest.Parameters.Count) parameters, file has $($TemplateParameters.Count) parameters."
             }
@@ -748,7 +748,7 @@ function Update-CCCFNStackFromDirectory {
 
                 Write-Verbose "Creating change set for stack: $Name"
                 if ($PSCmdlet.ShouldProcess("$Name in $Region", 'Create CloudFormation change set')) {
-                
+
                     $ChangeSetParams = @{
                         StackName     = $Name
                         ChangeSetName = $GeneratedChangeSetName
@@ -767,10 +767,10 @@ function Update-CCCFNStackFromDirectory {
                     }
 
                     $ChangeSet = New-CFNChangeSet @ChangeSetParams
-                
+
                     Write-Output "Change set '$GeneratedChangeSetName' created for stack $Name in region $Region"
                     Write-Output "Change set ARN: $($ChangeSet.Id)"
-                
+
                     # Wait for change set to be created
                     Write-Verbose 'Waiting for change set to be created...'
                     do {
@@ -925,11 +925,11 @@ function New-CCCFNStackDirectory {
             else {
                 Write-Warning "Directory already exists: $TargetPath"
             }
-    
+
             $TemplateFile = [CFNStackDirectoryInfo]::GetTemplatePath($TargetPath)
             Set-Content -Path $TemplateFile -Value $TemplateBody
             Write-Output "Created template file: $TemplateFile"
-    
+
             # call Test-CCCFNStackFromDirectory to validate the template
             Test-CCCFNStackFromDirectory -StackName $StackName -RootPath $Path @awsParams
         }
@@ -946,7 +946,7 @@ Replaces EBS volume type with a newer EBS volume type in CloudFormation template
 
 .DESCRIPTION
 Workload stacks define volumes via a "mappings" table, this is designed to change a volume type such as "gp2" to "gp3", or "io1" to "io2"
-See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html 
+See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volume-types.html
 
 .PARAMETER StackName
 Stack to do update on
@@ -1047,14 +1047,14 @@ function Edit-CCCFTTEbsVolume {
         if ($TemplateBody -eq '') {
             $OrigTemplate = Get-CFNTemplate -StackName $StackName @awsParams
             $StackInfo = Get-CFNStack -StackName $StackName @awsParams
-    
+
             $Template = $OrigTemplate.replace($OldVolumeType, $NewVolumeType)
-    
+
             if ($Template -eq $OrigTemplate) {
                 Write-Output "No changes: $($OldVolumeType) not found in template"
                 return
             }
-    
+
             if ($NewTemplateFileName) {
                 Write-Output "Saving new template as: $($NewTemplateFileName)"
                 $Template | Out-File -FilePath $NewTemplateFileName -Encoding utf8
@@ -1075,7 +1075,7 @@ function Edit-CCCFTTEbsVolume {
         }
 
         if ($PSCmdlet.ShouldProcess("$StackName", "Create change set to change $OldVolumeType to $NewVolumeType")) {
-    
+
             # Wait for any existing change sets to complete or be deleted
             do {
                 $existingChangeSets = Get-CFNChangeSetList -StackName $StackName @awsParams | Where-Object { $_.Status -eq "CREATE_IN_PROGRESS" }
@@ -1086,15 +1086,15 @@ function Edit-CCCFTTEbsVolume {
             } while ($existingChangeSets)
 
             New-CFNChangeSet -StackName $StackName -ChangeSetName $ChangeName -TemplateBody $Template -Parameters $StackInfo.Parameters @awsParams | Out-Null
-    
+
             # Wait for change set to be created
             do {
                 $ChangeSetResponse = Get-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams
                 Start-Sleep -Seconds 5
             } while ($ChangeSetResponse.Status -eq "CREATE_IN_PROGRESS")
-    
+
             $ChangeSetResponse = Get-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams
-    
+
             if ($ChangeSetResponse.Status -eq "CREATE_COMPLETE") {
                 Write-Output "Change set created successfully!"
                 Write-Output "Changes to be made:"
@@ -1109,7 +1109,7 @@ function Edit-CCCFTTEbsVolume {
                     }
                     Write-Output ""
                 }
-        
+
                 $confirmation = Read-Host "Do you want to execute this change set? (y/n)"
                 if ($confirmation -eq 'y' -or $confirmation -eq 'Y') {
                     Start-CFNChangeSet -ChangeSetName $ChangeName -StackName $StackName @awsParams

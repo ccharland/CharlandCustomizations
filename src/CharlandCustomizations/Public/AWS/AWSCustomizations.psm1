@@ -254,24 +254,24 @@ function Set-CCAWSEnv {
 .DESCRIPTION
   Sets environment variables for Access key, secret key, token,
   default region based on the results of Get-AWSCredential and Get-DefaultAWSRegion.
-  
+
   This function modifies environment variables and supports -WhatIf and -Confirm.
-  
+
 .PARAMETER Force
   Skip confirmation prompts
-  
+
 .EXAMPLE
   PS> Set-CCAWSEnv
   Sets AWS environment variables from current credential
-  
+
 .EXAMPLE
   PS> Set-CCAWSEnv -WhatIf
   Shows what environment variables would be set without actually setting them
-  
+
 .EXAMPLE
   PS> Set-CCAWSEnv -Confirm:$false
   Sets environment variables without confirmation
-  
+
 .NOTES
   Requires an active AWS credential to be set via Set-AWSCredential
 #>
@@ -287,7 +287,7 @@ function Set-CCAWSEnv {
     Write-Error -Message "AWSCredential not set. Run Set-AWSCredential first." -Category InvalidOperation
     return
   }
-  
+
   if (-not $creds) {
     Write-Error -Message "AWSCredential not set. Run Set-AWSCredential first." -Category InvalidOperation
     return
@@ -304,42 +304,42 @@ function Set-CCAWSEnv {
 
   # Get region
   $region = (Get-DefaultAWSRegion).Region
-  
+
   # Prepare the changes
   $changes = @(
     "AWS_ACCESS_KEY_ID = $($creds.AccessKey.Substring(0, 4))..."
     "AWS_DEFAULT_REGION = $region"
     "AWS_SECRET_ACCESS_KEY = [REDACTED]"
   )
-  
+
   if ($creds.UseToken) {
     $changes += "AWS_SESSION_TOKEN = [REDACTED]"
   }
   else {
     $changes += "AWS_SESSION_TOKEN = [CLEARED]"
   }
-  
+
   $changeDescription = "Setting AWS environment variables for: $identityInfo"
-  
+
   if ($Force -or $PSCmdlet.ShouldProcess($changeDescription, "Set environment variables")) {
     Write-Verbose "Setting AWS environment variables"
-    
+
     $env:AWS_ACCESS_KEY_ID = $creds.AccessKey
     $env:AWS_DEFAULT_REGION = $region
     $env:AWS_SECRET_ACCESS_KEY = $creds.SecretKey
-    
+
     if ($creds.UseToken) {
       $env:AWS_SESSION_TOKEN = $creds.Token
     }
     else {
       $env:AWS_SESSION_TOKEN = $null
     }
-    
+
     Write-Host "AWS environment variables set successfully" -ForegroundColor Green
     Write-Host "  Account: $($identity.Account)" -ForegroundColor Cyan
     Write-Host "  Region: $region" -ForegroundColor Cyan
     Write-Host "  Access Key: $($creds.AccessKey.Substring(0, 4))..." -ForegroundColor Cyan
-    
+
     if ($creds.UseToken) {
       Write-Host "  Session Token: Set (temporary credentials)" -ForegroundColor Cyan
     }
@@ -926,7 +926,7 @@ function Update-CCSSOCredentialList {
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
     [string]$Region,
-    
+
     [Parameter()]
     [string]$ProfileName,
 
@@ -981,7 +981,7 @@ function Update-CCSSOCredentialList {
     AccessKey = 'AKAEXAMPLE123ACCESS'
     SecretKey = 'PseudoS3cret4cceSSKey123PseudoS3cretKey'
   }
-  
+
   # Ensure credentials directory exists
   $credDir = Split-Path $CredentialFile -Parent
   if (-not (Test-Path $credDir)) {
