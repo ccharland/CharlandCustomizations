@@ -15,7 +15,6 @@ BeforeAll {
 
     # Load private helper and import the audit module
     . "$PSScriptRoot/../../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
-    Get-Module 'CharlandCustomizations' -All | Remove-Module -Force -ErrorAction SilentlyContinue
     Get-Module 'Audit-AWSAccount' -All | Remove-Module -Force -ErrorAction SilentlyContinue
     Import-Module "$PSScriptRoot/../../../../src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
 }
