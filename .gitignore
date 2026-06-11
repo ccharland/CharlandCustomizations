@@ -27,3 +27,4 @@ dist/
 .venv/
 venv/
 .pytest_cache/
+.vscode/launch.json
