@@ -389,9 +389,9 @@ if (-not $InstallOnly -and $Package) {
         Remove-Item $zipPath -Force
     }
 
-    # delete .gitkeep before making archive
-    Get-ChildItem -Path $packageDir -Filter .gitkeep -Recurse -File | Remove-Item
-
+    # Delete any .gitkeep placeholders in the package output folder
+    Get-ChildItem -Path $packageDir -Filter '.gitkeep' -Recurse -File -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
 
     Write-Output "Creating package: $zipName"
     Compress-Archive -Path $BuildPath -DestinationPath $zipPath -CompressionLevel Optimal
