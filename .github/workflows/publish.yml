@@ -1,4 +1,7 @@
 # Created by Kiro
+# This GitHub Actions workflow publishes the module to the PowerShell Gallery, 
+# Main is protected, and items in pr-quality-gate workflow must be completed before this workflow will trigger.
+
 name: Publish to PowerShell Gallery
 
 on:
@@ -8,10 +11,41 @@ on:
 
 permissions:
   contents: read
+  checks: read
 
 jobs:
+  status-checks:
+    name: Verify required status checks passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify PR Quality Gate passed on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMIT_SHA=$(git rev-list -n 1 ${{ github.ref }})
+          echo "Checking status checks for commit: $COMMIT_SHA"
+
+          REQUIRED_CHECKS=("Pester Tests" "PSScriptAnalyzer" "Comment-Based Help" "Manifest Compliance")
+
+          for CHECK in "${REQUIRED_CHECKS[@]}"; do
+            echo "Checking: $CHECK"
+            CONCLUSION=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/check-runs" \
+              --jq ".check_runs[] | select(.name == \"${CHECK}\") | .conclusion" | head -1)
+
+            if [ "$CONCLUSION" != "success" ]; then
+              echo "::error::Required check '$CHECK' has not passed (status: ${CONCLUSION:-not found}). Ensure the PR quality gate workflow completed successfully before tagging a release."
+              exit 1
+            fi
+            echo "  ✓ $CHECK passed"
+          done
+
+          echo "All required status checks passed."
+
   validate-version:
     name: Verify tag matches module version
+    needs: status-checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -43,26 +77,30 @@ jobs:
 
           Write-Host "Version match confirmed." -ForegroundColor Green
 
-  test:
+  signature-validation:
+    name: Validate Authenticode Signatures
     needs: validate-version
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
-      - name: Run Pester tests
+      - name: Build module
         shell: pwsh
-        run: |
-          $config = New-PesterConfiguration
-          $config.Run.Path = './tests'
-          $config.Run.Exit = $true
-          $config.Output.Verbosity = 'Detailed'
-          Invoke-Pester -Configuration $config
+        run: ./Scripts/Build-Module.ps1
+
+      - name: Run signature compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-SignatureCompliance.ps1 -Path './build', './Scripts'
 
   publish:
-    needs: test
+    needs: signature-validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Build module
+        shell: pwsh
+        run: ./Scripts/Build-Module.ps1
 
       - name: Publish module
         shell: pwsh
