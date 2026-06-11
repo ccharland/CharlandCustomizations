@@ -5,7 +5,7 @@
 BeforeAll {
     # Define stub functions for AWS cmdlets that may not be installed locally
     $script:awsStubCommands = @(
-        'Get-EC2Instance', 'Get-SSMInstancePatch'
+        'Get-EC2Instance', 'Get-SSMInstancePatch', 'Start-Sleep'
     )
     foreach ($cmd in $script:awsStubCommands) {
         if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
@@ -15,10 +15,21 @@ BeforeAll {
 
     # Load private helper and import the audit module
     . "$PSScriptRoot/../../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
+    Get-Module 'CharlandCustomizations' -All | Remove-Module -Force -ErrorAction SilentlyContinue
+    Get-Module 'Audit-AWSAccount' -All | Remove-Module -Force -ErrorAction SilentlyContinue
     Import-Module "$PSScriptRoot/../../../../src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
 }
 
-Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
+AfterAll {
+    # Clean up global stub functions
+    foreach ($cmd in $script:awsStubCommands) {
+        if (Test-Path "function:global:$cmd") {
+            Remove-Item "function:global:$cmd" -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
 
     Context 'Returns patch data for instances with patches' {
 
@@ -69,7 +80,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
                 }
             } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patches -Region 'us-east-1'
+            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Returns results for all instances' {
@@ -105,11 +116,11 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
         }
 
         It 'Calls Get-EC2Instance once' {
-            Should -Invoke Get-EC2Instance -Times 1 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-EC2Instance -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
 
         It 'Calls Get-SSMInstancePatch once per instance' {
-            Should -Invoke Get-SSMInstancePatch -Times 2 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-SSMInstancePatch -Times 2 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
     }
 
@@ -125,7 +136,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { @() } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patches -Region 'us-east-1'
+            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Returns empty output when no patches exist' {
@@ -133,7 +144,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
         }
 
         It 'Still calls Get-SSMInstancePatch' {
-            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
     }
 
@@ -170,7 +181,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
             } -ModuleName Audit-AWSAccount
             Mock Start-Sleep { } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patches -Region 'us-east-1'
+            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Retries and eventually returns patches' {
@@ -180,11 +191,11 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
         }
 
         It 'Calls Get-SSMInstancePatch more than once due to retry' {
-            Should -Invoke Get-SSMInstancePatch -Times 2 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-SSMInstancePatch -Times 2 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
 
         It 'Calls Start-Sleep for backoff delay' {
-            Should -Invoke Start-Sleep -Times 1 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Start-Sleep -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
     }
 
@@ -201,7 +212,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
             Mock Get-SSMInstancePatch { throw 'Rate exceeded' } -ModuleName Audit-AWSAccount
             Mock Start-Sleep { } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patches -Region 'us-east-1' -WarningVariable warnOut 3>$null
+            $script:result = Get-CCAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
             $script:warnings = $warnOut
         }
 
@@ -210,7 +221,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
         }
 
         It 'Calls Get-SSMInstancePatch the max number of retries (5)' {
-            Should -Invoke Get-SSMInstancePatch -Times 5 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-SSMInstancePatch -Times 5 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
 
         It 'Emits a warning about the failure' {
@@ -231,7 +242,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { throw 'AccessDeniedException: User is not authorized' } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patches -Region 'us-east-1' -WarningVariable warnOut 3>$null
+            $script:result = Get-CCAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
             $script:warnings = $warnOut
         }
 
@@ -240,7 +251,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
         }
 
         It 'Does not retry on non-throttling errors' {
-            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
 
         It 'Emits a warning with the error message' {
@@ -261,29 +272,29 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { @() } -ModuleName Audit-AWSAccount
 
-            Get-CCAllEC2Patches -Region 'eu-west-1' -ProfileName 'testprofile'
+            Get-CCAllEC2Patch -Region 'eu-west-1' -ProfileName 'testprofile'
         }
 
         It 'Passes Region to Get-EC2Instance' {
-            Should -Invoke Get-EC2Instance -Times 1 -Exactly -ModuleName Audit-AWSAccount -ParameterFilter {
+            Should -Invoke Get-EC2Instance -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context -ParameterFilter {
                 $Region -eq 'eu-west-1'
             }
         }
 
         It 'Passes ProfileName to Get-EC2Instance' {
-            Should -Invoke Get-EC2Instance -Times 1 -Exactly -ModuleName Audit-AWSAccount -ParameterFilter {
+            Should -Invoke Get-EC2Instance -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context -ParameterFilter {
                 $ProfileName -eq 'testprofile'
             }
         }
 
         It 'Passes Region to Get-SSMInstancePatch' {
-            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName Audit-AWSAccount -ParameterFilter {
+            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context -ParameterFilter {
                 $Region -eq 'eu-west-1'
             }
         }
 
         It 'Passes ProfileName to Get-SSMInstancePatch' {
-            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName Audit-AWSAccount -ParameterFilter {
+            Should -Invoke Get-SSMInstancePatch -Times 1 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context -ParameterFilter {
                 $ProfileName -eq 'testprofile'
             }
         }
@@ -299,7 +310,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patches -Region 'us-east-1'
+            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Returns empty output when no instances exist' {
@@ -307,7 +318,7 @@ Describe 'Get-CCAllEC2Patches' -Tag 'Unit' {
         }
 
         It 'Does not call Get-SSMInstancePatch' {
-            Should -Invoke Get-SSMInstancePatch -Times 0 -Exactly -ModuleName Audit-AWSAccount
+            Should -Invoke Get-SSMInstancePatch -Times 0 -Exactly -ModuleName 'Audit-AWSAccount' -Scope Context
         }
     }
 }
