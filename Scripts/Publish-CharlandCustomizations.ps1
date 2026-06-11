@@ -141,8 +141,9 @@ if ($publishWithPSResourceGet) {
 
     if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Repository' using Publish-PSResource")) {
         Publish-PSResource -Path $resolvedPath -Repository $Repository -ApiKey $ApiKey
+        Write-Output "Successfully published CharlandCustomizations to '$Repository' using PSResourceGet."
     }
-    return
+    exit 0
 }
 
 if (-not (Get-Command -Name Publish-Module -ErrorAction SilentlyContinue)) {
@@ -151,7 +152,9 @@ if (-not (Get-Command -Name Publish-Module -ErrorAction SilentlyContinue)) {
 
 if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Repository' using Publish-Module")) {
     Publish-Module -Path $resolvedPath -Repository $Repository -NuGetApiKey $ApiKey
+    Write-Output "Successfully published CharlandCustomizations to '$Repository' using PowerShellGet."
 }
+exit 0
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
