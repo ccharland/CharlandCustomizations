@@ -17,6 +17,18 @@ BeforeAll {
     if (-not (Get-Command Publish-PSResource -ErrorAction SilentlyContinue)) {
         function global:Publish-PSResource { param($Path, $Repository, $ApiKey) }
     }
+    # Stub Get-PSResourceRepository if not available
+    if (-not (Get-Command Get-PSResourceRepository -ErrorAction SilentlyContinue)) {
+        function global:Get-PSResourceRepository { param($Name) }
+    }
+    # Stub Set-PSResourceRepository if not available
+    if (-not (Get-Command Set-PSResourceRepository -ErrorAction SilentlyContinue)) {
+        function global:Set-PSResourceRepository { param($Name, [switch]$Trusted) }
+    }
+    # Stub Get-Secret if not available
+    if (-not (Get-Command Get-Secret -ErrorAction SilentlyContinue)) {
+        function global:Get-Secret { param($Name, [switch]$AsPlainText) }
+    }
 
     # Wrapper function that executes the script in the current scope so mocks are visible
     function Invoke-PublishScript {
@@ -293,6 +305,163 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
             # Act & Assert
             { Invoke-PublishScript -Path '/fake/module/path' } | Should -Throw '*No API key was provided*'
+        }
+
+        It 'Throws when neither Publish-PSResource nor Publish-Module is available' {
+            # Arrange
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-Module' }
+
+            # Act & Assert
+            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-key' } |
+                Should -Throw '*Neither Publish-PSResource nor Publish-Module*'
+        }
+
+        It 'Throws when git is not available and publishing to PSGallery' {
+            # Arrange
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'git' }
+
+            # Act & Assert
+            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-key' } |
+                Should -Throw '*requires git*'
+        }
+
+        It 'Throws when not inside a git repository' {
+            # Arrange
+            Mock git {
+                param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+                $gitCommand = $RemainingArgs -join ' '
+                if ($gitCommand -match 'rev-parse --show-toplevel') {
+                    return $null
+                }
+                return $null
+            }
+
+            # Act & Assert
+            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-key' } |
+                Should -Throw '*inside a git repository*'
+        }
+    }
+
+    Context 'Success output' {
+
+        It 'Outputs success message when publishing via Publish-Module' {
+            # Arrange
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
+
+            # Act
+            $output = Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            $output | Should -BeLike '*Successfully published*PowerShellGet*'
+        }
+
+        It 'Outputs success message when publishing via Publish-PSResource' {
+            # Arrange
+            Mock Get-Command { return @{ Name = 'Publish-PSResource' } } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-PSResourceRepository' }
+
+            # Act
+            $output = Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key'
+
+            # Assert
+            $output | Should -BeLike '*Successfully published*PSResourceGet*'
+        }
+
+        It 'Outputs success message containing the repository name' {
+            # Arrange
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
+
+            # Act
+            $output = Invoke-PublishScript -Path '/fake/module/path' -Repository 'InternalRepo' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            $output | Should -BeLike "*InternalRepo*"
+        }
+    }
+
+    Context 'Repository trust handling' {
+
+        It 'Sets repository as trusted when not already trusted and Publish-PSResource path is used' {
+            # Arrange
+            Mock Get-Command { return @{ Name = 'Publish-PSResource' } } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return @{ Name = 'Get-PSResourceRepository' } } -ParameterFilter { $Name -eq 'Get-PSResourceRepository' }
+            Mock Get-PSResourceRepository { [PSCustomObject]@{ Name = 'PSGallery'; Trusted = $false } }
+            Mock Set-PSResourceRepository {}
+
+            # Act
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key'
+
+            # Assert
+            Should -Invoke Set-PSResourceRepository -Times 1 -Exactly
+        }
+
+        It 'Skips repository trust when -SkipRepositoryTrust is specified' {
+            # Arrange
+            Mock Get-Command { return @{ Name = 'Publish-PSResource' } } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return @{ Name = 'Get-PSResourceRepository' } } -ParameterFilter { $Name -eq 'Get-PSResourceRepository' }
+            Mock Get-PSResourceRepository { [PSCustomObject]@{ Name = 'PSGallery'; Trusted = $false } }
+            Mock Set-PSResourceRepository {}
+
+            # Act
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -SkipRepositoryTrust
+
+            # Assert
+            Should -Invoke Set-PSResourceRepository -Times 0 -Exactly
+        }
+
+        It 'Does not set repository trust when already trusted' {
+            # Arrange
+            Mock Get-Command { return @{ Name = 'Publish-PSResource' } } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+            Mock Get-Command { return @{ Name = 'Get-PSResourceRepository' } } -ParameterFilter { $Name -eq 'Get-PSResourceRepository' }
+            Mock Get-PSResourceRepository { [PSCustomObject]@{ Name = 'PSGallery'; Trusted = $true } }
+            Mock Set-PSResourceRepository {}
+
+            # Act
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key'
+
+            # Assert
+            Should -Invoke Set-PSResourceRepository -Times 0 -Exactly
+        }
+    }
+
+    Context 'SecretManagement integration' {
+
+        It 'Reads API key from SecretManagement when available and no key provided' {
+            # Arrange
+            $env:PSGALLERY_API_KEY = $null
+            Remove-Item Env:\PSGALLERY_API_KEY -ErrorAction SilentlyContinue
+            Mock Get-Command { return @{ Name = 'Get-Secret' } } -ParameterFilter { $Name -eq 'Get-Secret' }
+            Mock Get-Secret { return 'secret-api-key' }
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+
+            # Act
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Publish-Module -Times 1 -Exactly -ParameterFilter {
+                $NuGetApiKey -eq 'secret-api-key'
+            }
+        }
+
+        It 'Falls through to Read-Host when SecretManagement throws' {
+            # Arrange
+            $env:PSGALLERY_API_KEY = $null
+            Remove-Item Env:\PSGALLERY_API_KEY -ErrorAction SilentlyContinue
+            Mock Get-Command { return @{ Name = 'Get-Secret' } } -ParameterFilter { $Name -eq 'Get-Secret' }
+            Mock Get-Secret { throw 'Secret not found' }
+            Mock Read-Host { return 'manual-key' }
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
+
+            # Act
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Publish-Module -Times 1 -Exactly -ParameterFilter {
+                $NuGetApiKey -eq 'manual-key'
+            }
         }
     }
 }
