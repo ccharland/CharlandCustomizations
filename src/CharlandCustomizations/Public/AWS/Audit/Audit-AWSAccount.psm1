@@ -2063,10 +2063,10 @@ function Get-CCEC2Count {
 
 
 # ================================================================================================
-# Get-CCAllEC2Patches Function
+# Get-CCAllEC2Patch Function
 # ================================================================================================
 
-function Get-CCAllEC2Patches {
+function Get-CCAllEC2Patch {
     <#
     .SYNOPSIS
         Retrieves patch compliance data for all EC2 instances.
@@ -2106,17 +2106,17 @@ function Get-CCAllEC2Patches {
         The endpoint to make the call against.
 
     .EXAMPLE
-        Get-CCAllEC2Patches -ProfileName 'production' -Region 'us-east-1'
+        Get-CCAllEC2Patch -ProfileName 'production' -Region 'us-east-1'
 
         Retrieves patch data for all instances in the production account, us-east-1.
 
     .EXAMPLE
-        Get-CCAllEC2Patches -AccessKey $ak -SecretKey $sk -SessionToken $st -Region 'eu-west-1'
+        Get-CCAllEC2Patch -AccessKey $ak -SecretKey $sk -SessionToken $st -Region 'eu-west-1'
 
         Retrieves patch data using explicit temporary credentials.
 
     .EXAMPLE
-        Get-CCAllEC2Patches -Region 'us-east-1' | Export-Csv -Path 'patches.csv' -NoTypeInformation
+        Get-CCAllEC2Patch -Region 'us-east-1' | Export-Csv -Path 'patches.csv' -NoTypeInformation
 
         Exports patch compliance report to CSV.
 
@@ -2245,5 +2245,5 @@ Export-ModuleMember -Function @(
     'Get-CCEC2VolumeReport',
     'Start-CCEC2RetryLoop',
     'Find-CCOpenSecurityGroup',
-    'Get-CCAllEC2Patches'
+    'Get-CCAllEC2Patch'
 )
