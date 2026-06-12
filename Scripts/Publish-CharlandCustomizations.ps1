@@ -19,6 +19,9 @@
     Skip setting the target repository to trusted before publishing.
 .PARAMETER SkipSignatureValidation
     Skip verifying Authenticode signatures before publishing.
+.PARAMETER SkipGitValidation
+    Skip git branch and tag validation. Use in CI where these checks are
+    enforced by the workflow and tag protection rules.
 .PARAMETER UseLegacyPowerShellGet
     Force Publish-Module instead of Publish-PSResource.
 .EXAMPLE
@@ -37,6 +40,7 @@ param(
     [string]$SecretName = 'PSGalleryApiKey',
     [switch]$SkipRepositoryTrust,
     [switch]$SkipSignatureValidation,
+    [switch]$SkipGitValidation,
     [switch]$UseLegacyPowerShellGet
 )
 
@@ -48,7 +52,7 @@ if (-not (Test-Path -Path $manifestPath)) {
     throw "Module manifest not found at $manifestPath"
 }
 
-if ($Repository -ieq 'PSGallery') {
+if ($Repository -ieq 'PSGallery' -and -not $SkipGitValidation) {
     $manifestData = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
     $expectedReleaseTag = $manifestData.Version.ToString()
     $prerelease = $manifestData.PrivateData.PSData.Prerelease

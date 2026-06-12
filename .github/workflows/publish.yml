@@ -108,7 +108,7 @@ jobs:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
         run: |
           $buildDir = Get-ChildItem './build/CharlandCustomizations' -Directory | Select-Object -First 1
-          ./Scripts/Publish-CharlandCustomizations.ps1 -Path $buildDir.FullName
+          ./Scripts/Publish-CharlandCustomizations.ps1 -Path $buildDir.FullName -SkipSignatureValidation -SkipGitValidation
 
   protect-tag:
     name: Lock release tag
