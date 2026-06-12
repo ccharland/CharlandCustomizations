@@ -259,8 +259,18 @@ function Invoke-CCScriptMultiAccountRegion {
           if ($results) {
             foreach ($item in $results) {
               $props = [ordered]@{}
-              foreach ($p in $item.PSObject.Properties) {
-                $props[$p.Name] = $p.Value
+
+              # If the item is a simple type (string, number, etc.), wrap it so enrichment works
+              if ($item -is [string]) {
+                $props['Value'] = $item
+              }
+              elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
+                $props['Value'] = $item
+              }
+              else {
+                foreach ($p in $item.PSObject.Properties) {
+                  $props[$p.Name] = $p.Value
+                }
               }
 
               if ($IncludeAccountId) { $props['AccountId'] = $accountId }
