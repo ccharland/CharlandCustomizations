@@ -200,7 +200,7 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
             $script:callCount | Should -Be 2
         }
 
-        It 'Aborts execution when authentication fails because no region is specified' {
+        It 'Aborts execution when region configuration is missing' {
             Mock Get-STSCallerIdentity {
                 throw 'No RegionEndpoint or ServiceURL configured'
             }
@@ -210,6 +210,23 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
 
             {
                 Invoke-CCScriptMultiAccountRegion -ProfileName 'first', 'second' `
+                    -Region 'us-east-1' `
+                    -ScriptBlock $sb
+            } | Should -Throw
+
+            $script:callCount | Should -Be 0
+        }
+
+        It 'Aborts execution when DefaultAWSRegion is not configured' {
+            Mock Get-STSCallerIdentity {
+                throw 'DefaultAWSRegion is not configured for this session'
+            }
+
+            $script:callCount = 0
+            $sb = { $script:callCount++; [PSCustomObject]@{ Name = 'result' } }
+
+            {
+                Invoke-CCScriptMultiAccountRegion -ProfileName 'first' `
                     -Region 'us-east-1' `
                     -ScriptBlock $sb
             } | Should -Throw

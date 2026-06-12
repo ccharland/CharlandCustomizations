@@ -156,6 +156,20 @@ function Invoke-CCScriptMultiAccountRegion {
     }
     $profileCount = 0
     $regionTotal = $Region.Count
+
+    # Match common AWS.Tools missing-region failures:
+    # - "No region..." text
+    # - "RegionEndpoint" / "ServiceURL" configuration errors
+    # - Explicit "DefaultAWSRegion is not configured"/"no default region" failures.
+    $missingRegionPatternAlternatives = @(
+      'no\s+region(?:\s*endpoint)?\b'
+      '\bregionendpoint\b'
+      'serviceurl\s+configured'
+      'defaultawsregion.*(not\s+configured|not\s+set)'
+      'no\s+default\s+aws\s+region'
+      'region.*not.*(configured|specified|set)'
+    )
+    $missingRegionPattern = '(?i)(' + ($missingRegionPatternAlternatives -join '|') + ')'
   }
 
   process {
@@ -177,7 +191,7 @@ function Invoke-CCScriptMultiAccountRegion {
         Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
       }
       catch {
-        if ($_.Exception.Message -match '(?i)(no\s+region|regionendpoint|serviceurl|defaultawsregion|region\s+.*(configured|specified|set))') {
+        if ($_.Exception.Message -match $missingRegionPattern) {
           $missingRegionError = [System.Management.Automation.ErrorRecord]::new(
             $_.Exception,
             'InvokeCCScriptMultiAccountRegion.MissingRegion',
