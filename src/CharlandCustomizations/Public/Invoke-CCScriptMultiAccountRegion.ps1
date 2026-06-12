@@ -189,7 +189,7 @@ function Invoke-CCScriptMultiAccountRegion {
         # Get-AWSCredential -ProfileName with the profile's location resolves correctly
         # because it reads directly from the ini file, not from the SSO token cache.
         $profileDetail = Get-AWSCredential -ListProfileDetail |
-          Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
+        Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
 
         if ($profileDetail -and $profileDetail.ProfileLocation) {
           $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
@@ -223,12 +223,14 @@ function Invoke-CCScriptMultiAccountRegion {
         Write-Verbose "Executing against Profile='$prof', Region='$r'"
 
         try {
-          # Save current environment variables
+          # Save current environment variables and AWS session state
           $origAK = $env:AWS_ACCESS_KEY_ID
           $origSK = $env:AWS_SECRET_ACCESS_KEY
           $origST = $env:AWS_SESSION_TOKEN
           $origRegion = $env:AWS_DEFAULT_REGION
           $origProfile = $env:AWS_PROFILE
+          $origStoredRegion = $global:StoredAWSRegion
+          $origStoredCreds = $global:StoredAWSCredentials
 
           if ($resolvedCreds -and $resolvedCreds.AccessKey) {
             # Set environment variables that the AWS SDK always respects
@@ -237,6 +239,9 @@ function Invoke-CCScriptMultiAccountRegion {
             $env:AWS_SESSION_TOKEN = $resolvedCreds.Token
             $env:AWS_DEFAULT_REGION = $r
             $env:AWS_PROFILE = $null
+            # Set AWS Tools for PowerShell session variables so cmdlets resolve without -Region/-ProfileName
+            $global:StoredAWSRegion = $r
+            $global:StoredAWSCredentials = $prof
           }
           else {
             $env:AWS_ACCESS_KEY_ID = $null
@@ -244,6 +249,8 @@ function Invoke-CCScriptMultiAccountRegion {
             $env:AWS_SESSION_TOKEN = $null
             $env:AWS_DEFAULT_REGION = $r
             $env:AWS_PROFILE = $prof
+            $global:StoredAWSRegion = $r
+            $global:StoredAWSCredentials = $prof
           }
 
           Write-Verbose "Invoking scriptblock for Profile='$prof', Region='$r'"
@@ -279,12 +286,14 @@ function Invoke-CCScriptMultiAccountRegion {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
         }
         finally {
-          # Restore original environment variables
+          # Restore original environment variables and AWS session state
           $env:AWS_ACCESS_KEY_ID = $origAK
           $env:AWS_SECRET_ACCESS_KEY = $origSK
           $env:AWS_SESSION_TOKEN = $origST
           $env:AWS_DEFAULT_REGION = $origRegion
           $env:AWS_PROFILE = $origProfile
+          $global:StoredAWSRegion = $origStoredRegion
+          $global:StoredAWSCredentials = $origStoredCreds
         }
 
         if ($ThrottleLimit -gt 0) {
