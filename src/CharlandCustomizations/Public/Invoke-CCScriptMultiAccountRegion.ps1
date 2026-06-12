@@ -177,6 +177,15 @@ function Invoke-CCScriptMultiAccountRegion {
         Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
       }
       catch {
+        if ($_.Exception.Message -match '(?i)(no\s+region|regionendpoint|serviceurl|defaultawsregion|region\s+.*(configured|specified|set))') {
+          $missingRegionError = [System.Management.Automation.ErrorRecord]::new(
+            $_.Exception,
+            'InvokeCCScriptMultiAccountRegion.MissingRegion',
+            [System.Management.Automation.ErrorCategory]::InvalidOperation,
+            $prof
+          )
+          $PSCmdlet.ThrowTerminatingError($missingRegionError)
+        }
         Write-Warning "Skipping profile '${prof}': unable to authenticate - $_"
         continue
       }

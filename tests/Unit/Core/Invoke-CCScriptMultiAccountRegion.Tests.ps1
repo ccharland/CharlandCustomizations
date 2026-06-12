@@ -199,6 +199,23 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
             # first and last should execute, middle should be skipped
             $script:callCount | Should -Be 2
         }
+
+        It 'Aborts execution when authentication fails because no region is specified' {
+            Mock Get-STSCallerIdentity {
+                throw 'No RegionEndpoint or ServiceURL configured'
+            }
+
+            $script:callCount = 0
+            $sb = { $script:callCount++ }
+
+            {
+                Invoke-CCScriptMultiAccountRegion -ProfileName 'first', 'second' `
+                    -Region 'us-east-1' `
+                    -ScriptBlock $sb
+            } | Should -Throw
+
+            $script:callCount | Should -Be 0
+        }
     }
 
     Context 'Property: N×M execution count' {
