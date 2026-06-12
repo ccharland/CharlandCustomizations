@@ -138,6 +138,7 @@ Describe 'Edit-CCCFTTEbsVolume' -Tag 'Unit' {
                 $expectedOccurrences = ([regex]::Matches($script:iterationTemplate, [regex]::Escape($oldType))).Count
                 $expectedOccurrences | Should -BeGreaterOrEqual $occurrenceCount -Because "iteration ${i} should have at least $occurrenceCount occurrences"
 
+                $script:capturedBody = $null
                 # Act
                 Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
 
