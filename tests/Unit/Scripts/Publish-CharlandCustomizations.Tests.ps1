@@ -139,7 +139,31 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
         }
 
         It 'Throws when required release tag is not on HEAD' {
-            # Arrange
+            # Arrange - tag on HEAD is completely different from expected
+            Mock git {
+                param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+
+                $gitCommand = $RemainingArgs -join ' '
+                if ($gitCommand -match 'rev-parse --show-toplevel') {
+                    return 'C:/fake/repo'
+                }
+                if ($gitCommand -match 'branch --show-current') {
+                    return 'main'
+                }
+                if ($gitCommand -match 'tag --points-at HEAD') {
+                    return 'v0.1.0'
+                }
+
+                return $null
+            }
+
+            # Act & Assert
+            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
+                Should -Throw "*requires immutable release tag*"
+        }
+
+        It 'Accepts v-prefixed release tag on HEAD' {
+            # Arrange - tag on HEAD uses v prefix matching workflow convention
             Mock git {
                 param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
 
@@ -157,9 +181,37 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
                 return $null
             }
 
-            # Act & Assert
-            { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
-                Should -Throw "*requires immutable release tag '0.2.0-beta1'*"
+            # Act - should not throw
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Publish-Module -Times 1 -Exactly
+        }
+
+        It 'Accepts bare release tag on HEAD (no v prefix)' {
+            # Arrange - tag without v prefix also works
+            Mock git {
+                param([Parameter(ValueFromRemainingArguments = $true)][object[]]$RemainingArgs)
+
+                $gitCommand = $RemainingArgs -join ' '
+                if ($gitCommand -match 'rev-parse --show-toplevel') {
+                    return 'C:/fake/repo'
+                }
+                if ($gitCommand -match 'branch --show-current') {
+                    return 'main'
+                }
+                if ($gitCommand -match 'tag --points-at HEAD') {
+                    return '0.2.0-beta1'
+                }
+
+                return $null
+            }
+
+            # Act - should not throw
+            Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
+
+            # Assert
+            Should -Invoke Publish-Module -Times 1 -Exactly
         }
 
         It 'Does not enforce git branch/tag gate for non-PSGallery repositories' {
