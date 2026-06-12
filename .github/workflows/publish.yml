@@ -1,5 +1,5 @@
 # Created by Kiro
-# This GitHub Actions workflow publishes the module to the PowerShell Gallery, 
+# This GitHub Actions workflow publishes the module to the PowerShell Gallery,
 # Main is protected, and items in pr-quality-gate workflow must be completed before this workflow will trigger.
 
 name: Publish to PowerShell Gallery
@@ -86,7 +86,7 @@ jobs:
 
       - name: Build module
         shell: pwsh
-        run: ./Scripts/Build-Module.ps1
+        run: ./Scripts/Build-Module.ps1 -SkipSigning -SkipAnalysis -Clean
 
       - name: Run signature compliance gate
         shell: pwsh
@@ -106,7 +106,9 @@ jobs:
         shell: pwsh
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
-        run: ./Scripts/Publish-CharlandCustomizations.ps1
+        run: |
+          $buildDir = Get-ChildItem './build/CharlandCustomizations' -Directory | Select-Object -First 1
+          ./Scripts/Publish-CharlandCustomizations.ps1 -Path $buildDir.FullName
 
   protect-tag:
     name: Lock release tag
