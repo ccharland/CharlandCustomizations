@@ -3,7 +3,7 @@ BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../Scripts/Test-SignatureCompliance.ps1"
 }
 
-Describe 'Test-SignatureCompliance' -Tag 'Windows' {
+Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
 
     BeforeAll {
         # Create a temp directory with test .ps1 files for each run
