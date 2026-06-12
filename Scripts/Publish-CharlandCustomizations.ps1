@@ -19,6 +19,9 @@
     Skip setting the target repository to trusted before publishing.
 .PARAMETER SkipSignatureValidation
     Skip verifying Authenticode signatures before publishing.
+.PARAMETER SkipGitValidation
+    Skip git branch and tag validation. Use in CI where these checks are
+    enforced by the workflow and tag protection rules.
 .PARAMETER UseLegacyPowerShellGet
     Force Publish-Module instead of Publish-PSResource.
 .EXAMPLE
@@ -37,6 +40,7 @@ param(
     [string]$SecretName = 'PSGalleryApiKey',
     [switch]$SkipRepositoryTrust,
     [switch]$SkipSignatureValidation,
+    [switch]$SkipGitValidation,
     [switch]$UseLegacyPowerShellGet
 )
 
@@ -48,7 +52,7 @@ if (-not (Test-Path -Path $manifestPath)) {
     throw "Module manifest not found at $manifestPath"
 }
 
-if ($Repository -ieq 'PSGallery') {
+if ($Repository -ieq 'PSGallery' -and -not $SkipGitValidation) {
     $manifestData = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
     $expectedReleaseTag = $manifestData.Version.ToString()
     $prerelease = $manifestData.PrivateData.PSData.Prerelease
@@ -71,8 +75,10 @@ if ($Repository -ieq 'PSGallery') {
     }
 
     $headTags = @(& git -C $repoRoot tag --points-at HEAD 2>$null)
-    if ($expectedReleaseTag -notin $headTags) {
-        throw "Publishing to PSGallery requires immutable release tag '$expectedReleaseTag' on HEAD (ModuleVersion[-Prerelease])."
+    # Accept both 'v'-prefixed and bare version tags (e.g., v0.3.0-beta or 0.3.0-beta)
+    $tagMatch = $headTags | Where-Object { $_ -eq $expectedReleaseTag -or $_ -eq "v$expectedReleaseTag" }
+    if (-not $tagMatch) {
+        throw "Publishing to PSGallery requires immutable release tag '$expectedReleaseTag' (or 'v$expectedReleaseTag') on HEAD."
     }
 }
 
@@ -141,8 +147,9 @@ if ($publishWithPSResourceGet) {
 
     if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Repository' using Publish-PSResource")) {
         Publish-PSResource -Path $resolvedPath -Repository $Repository -ApiKey $ApiKey
+        Write-Output "Successfully published CharlandCustomizations to '$Repository' using PSResourceGet."
     }
-    return
+    exit 0
 }
 
 if (-not (Get-Command -Name Publish-Module -ErrorAction SilentlyContinue)) {
@@ -151,12 +158,15 @@ if (-not (Get-Command -Name Publish-Module -ErrorAction SilentlyContinue)) {
 
 if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Repository' using Publish-Module")) {
     Publish-Module -Path $resolvedPath -Repository $Repository -NuGetApiKey $ApiKey
+    Write-Output "Successfully published CharlandCustomizations to '$Repository' using PowerShellGet."
 }
+exit 0
+
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDyPxUQeX450QKl
-# 1Fj3iALH6r5gFdG5Ese5p61t//X0BaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBeURP4cbUowzf1
+# Fg2gCwiglPUx3a5NxJJrZQ39VYMiAKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -358,33 +368,33 @@ if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Reposit
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIEv+U5cFqffXxu9TNugnF1q69bzDnYMPiRb0DavurwWwMA0GCSqG
-# SIb3DQEBAQUABIICABTrptEyi5c2wApn0pUEXBqlfeGDaJ4z1CbS7fSubVWcXT64
-# OL2OW4dfZmU30z/RLrsBYpABugbtL1MuMPUdPQPJyVF1MUbs664z7pRcpDs3GY3S
-# N/JEnGoqvcfjup8nl7xvN1OoD7DKTM7dTQiItwrM0LspmIhrJTdch0us1Z4x9VaD
-# LPYP7uv0Jv3HAdxNxyfR6ImRXzt0Ej0/jYt5felLIS+krNHb5X5JKznsMA7W/GOX
-# Js36VqbOtsZrzGvi+S+LJKQJoBWbl8fs8u2KtIhGFNJuLrLvnVAvJbtga9Eb7Kmb
-# gSKb2lhfFha2iFkOZpJ7zqVBh1HREzzjLgtsgZenx30gjECPJPFIkTB7XskH3WeF
-# 1BSamomWjaQh+RaF3A39Fp5FlOvJFoRt3Bl468WlYer/3trupT07CwKOtiqo2wVD
-# 8aIKpmlLSthc8Y58j9NoZW/zQSvmjHK9dW6LZGtwAaSbq7O4yY9bXwd7c//fj7Qu
-# 8Sca2aS0UvdTjkJ+p0wonKG7zD59XJQnLgNUwAU+PdKkYNC1p81oXSBk23AYjUXY
-# bVKRRAT2KNfJUoOr6LPoWFXdguTPiSuwTO/fGSjhDJHKtCWZBZF9uRHOZ8LSNtxD
-# hCTZ+qBjBJxh3Iv1LJjWoQIQADKFPkLOTUKbV/8pC35nqp3U9mQFBnm1owu0oYID
+# hvcNAQkEMSIEIJbh46wLe7Za/hFgCgTAFxqkcbGm6E5kcSfU/qct8gGSMA0GCSqG
+# SIb3DQEBAQUABIICAJe1X1LoklfmCmj3DRXPV3XgbSg6tishpMeteIN3NIEKNZLp
+# 1wx21GTXuq9A9N579ZIVOvVIQ3ZSaKYysDuzuY/FCwFXMm3qb297TL4zkA4UUW2y
+# 8RYei/Mlc6W7nF/QkLMsM2lTD1sUVjpuQdvQ+3mQZhbpDn+MaGtVwpl4svVrce+f
+# VK9f9E3XnfMYuaKO5OEFuWRuqO3L3wUUkf6KbNbHQpXuk8aBisFj2OLmLjP+2uYW
+# SVV+EvL3emexIcgdfhp2BoPE6lA/bGbPxFtvYQex6tftUKj2F2LwqIui95eHuyPl
+# xEDuhQjahp66Nv6cJLqKWKVc/axUQoO6YwkE9M17nnm/QPZYcaQ8m7zDTAY1HZbE
+# bxDAKjxTWlkybeBSBNZUqtRxm8XhhGJr2jyB8s2xslcVH999+8OwAaHLAakd9RUh
+# NH+UQ/CHSE9vBHwvF7n0qCc/25Ic7j1LCE8SqQUIYy7wiwZOsRhFaCRT5i4B3uxZ
+# nzLP78lCLD2iEi+DNqlJlNzSTnI8IN8Ojaqf/SO3H8bnCszB1ZXE2QJhex17XU29
+# 8QahM1XCjrDUoqYxJ3qOg1oJNKmFhsviQRAlqUz+6tWncshjZOe/++bthfrfyGZu
+# GXUCJYUOq2OfybgjxUigp8S2NYrCrPqMMbHQsRiMNPgzyeeJqwaLA3VzZDAvoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MDAzNjU2WjA/BgkqhkiG9w0BCQQxMgQwK61wUiNwoL1w6n1DxZSO
-# SU+0q77SuspscdzrSm35e8jyIbUt1mqws5rD3NJzIg82MA0GCSqGSIb3DQEBAQUA
-# BIICAMZ0Jb9nSxOBE1NfvtxJTq7ZidkGQU/2cFe3L5vCdHi4dB3EgB+t1myrmrCx
-# pCskhNRsMbdPiCY39JNYnYQ5jFg9gi2KPpjawLRtfBfhMuTCaacWHVA7ChMGbovN
-# 5vxODR8CXB3RNIvdt8LfieBmpESkemL6lhG3D1SYftba7/9/fvOyRSeo/Of8YMV7
-# GiPJ6mfH69MfX8y9XOLiV4AJhN+U8+GWaMnQvT763Bor6HcqP8Z1iQdKlBBOLrAH
-# uSPmVBcaiHSptd+KvQofRYDRmm1TWMQhB6YHV13jZEclByMmz3ah+BHGjY2sRFsm
-# Zrr77RfJtgRAOmfcf/qjuhNb+bVSnITsnE8IOBnfLfy7JvMI/Lq/otahCiog4s2O
-# iuGaVR34KcUPwxdYRtNqbf8paF0Xjs1l2MN3uKvbAI7F4WZmy4NdHn3i8njlBV0q
-# +So1qZ7/u9SaFJ7ggVVG3kv11adwJUEgyIhb9SP/y+eHv8VKqgk1PpsYLBL5hq5A
-# VFNE2GaRKatLkEyYhCuwGbDqhHoZUW2KDrv0F7r4b7X10IPJ6u8pSNsJJkhRgXj/
-# Eif8RNrZS5y9DpivWYkQRMoEq0m3Zct9EiF8A6/RVbNqvZvTyiXKfeXWhkbU0Gb6
-# mri5BIMDaGwg6cgFbNiw59Nt4yWvdHfR14LwpRgwu8KU9Mq1
+# DxcNMjYwNjEyMDIxMDAxWjA/BgkqhkiG9w0BCQQxMgQwLMMCgXEeespa3X7nFNh3
+# cCjvzVDY9PKdCYbr1lRSraBNIP1EarjsCOKii1J0gPR6MA0GCSqGSIb3DQEBAQUA
+# BIICAIKpwHKraWoQmyJdKIaHXv6ZL9Cun8vZZEs1MKCCBcDhoyAqobUsGtuM6TIR
+# n4TZaFXXPfzlWfqbn91nXE5/UNiH5q28affheCZ2uSd3dLnDH3ckoY+jUigMGJD+
+# MswrNX99dEgZg/Oq1uYRpnnXjcnDmabcoD4WWUMdAmuA0KT10BNy+mZ0OUgJqcdK
+# oxIeojL8FexND1EQJSp3JO5lpvpQaHETPiW7nSkKtWXlRPW5Cri+oljaLqai8nIc
+# CNEB10S35hvNOnynWndExNrhPhnKveCWD+tqiZF3kC2goY+T7uVea0SD5WejXi44
+# 7f7CWKwBsAyf+g6wf3VOH4abf7gRV2g8aUFukIOW+v2gB43+d0TSe8vCaZGxMPs/
+# v1wZEohkQfvVNcTnna0/r4jbzBAlGFfa6LnaJ6TGw4xXmaMEtq7Q/GrLoJCrahq3
+# DOz4XmDDzjCY1NuFXdtAsLsY8TBzTs7T5p/gNG4g2NkmEUVq3msce9reVh5uiemD
+# 6K5dDbnRmdAeD6bmscZ10Zlaz3g99oSaaDISB9R+e9TRdHOs4AwRhgVvbBuscr9C
+# pfbxfeDiORXkaNVHyCdXXU0njJUBIjwkZMz0ZlB2CnqopH7hxC1nignoRuAzl6U3
+# PiPmEcohF0NCIF/wlC7rmVVM18WOUbXaFDwWK90NJbFibfI2
 # SIG # End signature block

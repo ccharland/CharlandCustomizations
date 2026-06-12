@@ -1,17 +1,51 @@
 # Created by Kiro
+# This GitHub Actions workflow publishes the module to the PowerShell Gallery,
+# Main is protected, and items in pr-quality-gate workflow must be completed before this workflow will trigger.
+
 name: Publish to PowerShell Gallery
 
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+*"
+      - "v[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
-  contents: read
+  contents: write
+  checks: read
 
 jobs:
+  status-checks:
+    name: Verify required status checks passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Verify PR Quality Gate passed on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          COMMIT_SHA=$(git rev-list -n 1 ${{ github.ref }})
+          echo "Checking status checks for commit: $COMMIT_SHA"
+
+          REQUIRED_CHECKS=("Pester Tests" "PSScriptAnalyzer" "Comment-Based Help" "Manifest Compliance")
+
+          for CHECK in "${REQUIRED_CHECKS[@]}"; do
+            echo "Checking: $CHECK"
+            CONCLUSION=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/check-runs" \
+              --jq ".check_runs[] | select(.name == \"${CHECK}\") | .conclusion" | head -1)
+
+            if [ "$CONCLUSION" != "success" ]; then
+              echo "::error::Required check '$CHECK' has not passed (status: ${CONCLUSION:-not found}). Ensure the PR quality gate workflow completed successfully before tagging a release."
+              exit 1
+            fi
+            echo "  ✓ $CHECK passed"
+          done
+
+          echo "All required status checks passed."
+
   validate-version:
     name: Verify tag matches module version
+    needs: status-checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -43,29 +77,67 @@ jobs:
 
           Write-Host "Version match confirmed." -ForegroundColor Green
 
-  test:
+  signature-validation:
+    name: Validate Authenticode Signatures
     needs: validate-version
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
-      - name: Run Pester tests
+      - name: Build module
         shell: pwsh
-        run: |
-          $config = New-PesterConfiguration
-          $config.Run.Path = './tests'
-          $config.Run.Exit = $true
-          $config.Output.Verbosity = 'Detailed'
-          Invoke-Pester -Configuration $config
+        run: ./Scripts/Build-Module.ps1 -SkipSigning -SkipAnalysis -Clean
+
+      - name: Run signature compliance gate
+        shell: pwsh
+        run: ./Scripts/Test-SignatureCompliance.ps1 -Path './build', './Scripts'
 
   publish:
-    needs: test
+    needs: signature-validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Build module
+        shell: pwsh
+        run: ./Scripts/Build-Module.ps1 -SkipSigning -SkipAnalysis -Clean
 
       - name: Publish module
         shell: pwsh
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
-        run: ./Scripts/Publish-CharlandCustomizations.ps1
+        run: |
+          $buildDir = Get-ChildItem './build/CharlandCustomizations' -Directory | Select-Object -First 1
+          ./Scripts/Publish-CharlandCustomizations.ps1 -Path $buildDir.FullName -SkipSignatureValidation -SkipGitValidation
+
+  protect-tag:
+    name: Lock release tag
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark tag as immutable via GitHub API
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          echo "Protecting tag: $TAG_NAME"
+
+          # Detect prerelease: any tag with a hyphen after the version (e.g., v0.3.0-beta)
+          VERSION="${TAG_NAME#v}"
+          if [[ "$VERSION" == *-* ]]; then
+            IS_PRERELEASE=true
+          else
+            IS_PRERELEASE=false
+          fi
+          echo "Prerelease: $IS_PRERELEASE"
+
+          # Create a GitHub release for the tag, which makes it a permanent
+          # annotated reference that cannot be moved or deleted without removing the release first
+          gh api --method POST /repos/${{ github.repository }}/releases \
+            --field tag_name="$TAG_NAME" \
+            --field name="$TAG_NAME" \
+            --field body="Published to PowerShell Gallery. This release is immutable." \
+            --field draft=false \
+            --field prerelease="$IS_PRERELEASE"
+
+          echo "✓ Release created — tag '$TAG_NAME' is now protected as a GitHub release."
