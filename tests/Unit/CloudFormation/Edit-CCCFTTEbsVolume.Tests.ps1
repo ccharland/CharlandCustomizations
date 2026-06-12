@@ -105,8 +105,19 @@ Describe 'Edit-CCCFTTEbsVolume' -Tag 'Unit' {
             $oldType = 'gp2'
             $newType = 'gp3'
 
-            # Characters safe for JSON template bodies (avoid quotes/backslashes that break JSON)
-            $safeChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.: '
+            # Characters that cannot accidentally form 'gp2' - exclude digits and 'g','p' to prevent false matches
+            $safeChars = 'abcdefhijklmnoqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_.: '
+
+            # Use a script-scoped variable the mock reads, avoiding re-registration per iteration
+            $script:iterationTemplate = ''
+            Mock Get-CFNTemplate {
+                $script:iterationTemplate
+            } -ModuleName $moduleName
+
+            $script:capturedBody = $null
+            Mock New-CFNChangeSet {
+                $script:capturedBody = $TemplateBody
+            } -ModuleName $moduleName
 
             foreach ($i in 1..100) {
                 # Generate a random number of occurrences (1-10) of OldVolumeType in the template
@@ -121,32 +132,21 @@ Describe 'Edit-CCCFTTEbsVolume' -Tag 'Unit' {
                     $segments += $filler
                 }
                 # Join segments with the old volume type string between them
-                $templateBody = $segments -join $oldType
+                $script:iterationTemplate = $segments -join $oldType
 
                 # Verify our generated template actually contains the old type
-                $expectedOccurrences = ([regex]::Matches($templateBody, [regex]::Escape($oldType))).Count
+                $expectedOccurrences = ([regex]::Matches($script:iterationTemplate, [regex]::Escape($oldType))).Count
                 $expectedOccurrences | Should -BeGreaterOrEqual $occurrenceCount -Because "iteration ${i} should have at least $occurrenceCount occurrences"
-
-                # Override Get-CFNTemplate mock to return this iteration's template
-                Mock Get-CFNTemplate {
-                    $templateBody
-                } -ModuleName $moduleName
-
-                # Capture the TemplateBody passed to New-CFNChangeSet
-                $capturedBody = $null
-                Mock New-CFNChangeSet {
-                    Set-Variable -Name capturedBody -Value $TemplateBody -Scope 2
-                } -ModuleName $moduleName
 
                 # Act
                 Edit-CCCFTTEbsVolume -StackName 'TestStack' -OldVolumeType $oldType -NewVolumeType $newType -Confirm:$false *>&1 | Out-Null
 
                 # Assert — zero occurrences of OldVolumeType remain
-                $remainingOccurrences = ([regex]::Matches($capturedBody, [regex]::Escape($oldType))).Count
+                $remainingOccurrences = ([regex]::Matches($script:capturedBody, [regex]::Escape($oldType))).Count
                 $remainingOccurrences | Should -Be 0 -Because "iteration ${i} - all '$oldType' occurrences should be replaced with '$newType'"
 
                 # Assert — all former occurrences are now NewVolumeType
-                $newOccurrences = ([regex]::Matches($capturedBody, [regex]::Escape($newType))).Count
+                $newOccurrences = ([regex]::Matches($script:capturedBody, [regex]::Escape($newType))).Count
                 $newOccurrences | Should -BeGreaterOrEqual $expectedOccurrences -Because "iteration ${i} - replaced occurrences should appear as '$newType'"
             }
         }
