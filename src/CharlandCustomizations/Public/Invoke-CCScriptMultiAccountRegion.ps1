@@ -67,6 +67,11 @@ function Invoke-CCScriptMultiAccountRegion {
             -ScriptBlock { Get-S3Bucket } -IncludeAccountId -IncludeProfileName
 #>
   [CmdletBinding()]
+  # Suppress: StoredAWSCredentials is a well-known AWS.Tools global variable used to detect the current session profile
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
+    Justification = 'AWS.Tools uses global:StoredAWSCredentials and global:StoredAWSRegion for session state; must read/write them to set context for ScriptBlock execution')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUsePSCredentialType', '',
+    Justification = 'Credential parameter accepts an AWSCredentials object from AWS.Tools, not a PSCredential')]
   param(
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string[]]$ProfileName,
