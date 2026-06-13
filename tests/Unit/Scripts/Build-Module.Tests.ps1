@@ -36,7 +36,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Remove-Module {}
             Mock Get-Command { @() }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like '*CodeSigningCert*' -or $Path -like 'Cert:\*' }
+            Mock Get-ChildItem { @() }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -89,7 +89,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Remove-Module {}
             Mock Get-Command { @() }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like '*CodeSigningCert*' -or $Path -like 'Cert:\*' }
+            Mock Get-ChildItem { @() }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -163,7 +163,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Remove-Module {}
             Mock Get-Command { @() }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like '*CodeSigningCert*' -or $Path -like 'Cert:\*' }
+            Mock Get-ChildItem { @() }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
