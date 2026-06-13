@@ -35,14 +35,37 @@ jobs:
           echo "Checking status checks for commit: $COMMIT_SHA"
 
           REQUIRED_CHECKS=("Pester Tests" "PSScriptAnalyzer" "Comment-Based Help" "Manifest Compliance")
+          TIMEOUT_SECONDS=600
+          POLL_INTERVAL=15
 
           for CHECK in "${REQUIRED_CHECKS[@]}"; do
-            echo "Checking: $CHECK"
-            CONCLUSION=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/check-runs" \
-              --jq ".check_runs[] | select(.name == \"${CHECK}\") | .conclusion" | head -1)
+            echo "Waiting for check to complete: $CHECK"
+            ELAPSED=0
+            while true; do
+              RESULT=$(gh api "repos/${{ github.repository }}/commits/${COMMIT_SHA}/check-runs" \
+                --jq ".check_runs[] | select(.name == \"${CHECK}\") | \"\(.status)|\(.conclusion // \"\")\"" | head -1)
+              STATUS="${RESULT%%|*}"
+              CONCLUSION="${RESULT#*|}"
+
+              if [ -z "$STATUS" ]; then
+                echo "  Check '$CHECK' not found yet (${ELAPSED}s elapsed), waiting..."
+              elif [ "$STATUS" = "in_progress" ] || [ "$STATUS" = "queued" ] || [ "$STATUS" = "waiting" ] || [ "$STATUS" = "pending" ]; then
+                echo "  Check '$CHECK' is $STATUS (${ELAPSED}s elapsed), waiting..."
+              else
+                break
+              fi
+
+              if [ "$ELAPSED" -ge "$TIMEOUT_SECONDS" ]; then
+                echo "::error::Timed out after ${TIMEOUT_SECONDS}s waiting for check '$CHECK' to complete."
+                exit 1
+              fi
+
+              sleep "$POLL_INTERVAL"
+              ELAPSED=$((ELAPSED + POLL_INTERVAL))
+            done
 
             if [ "$CONCLUSION" != "success" ]; then
-              echo "::error::Required check '$CHECK' has not passed (status: ${CONCLUSION:-not found}). Ensure the PR quality gate workflow completed successfully before tagging a release."
+              echo "::error::Required check '$CHECK' has not passed (conclusion: ${CONCLUSION:-not found}). Ensure the PR quality gate workflow completed successfully before tagging a release."
               exit 1
             fi
             echo "  ✓ $CHECK passed"
