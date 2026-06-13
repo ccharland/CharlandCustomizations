@@ -92,6 +92,7 @@ user_display_name = "John"
 - **Functions/Variables**: snake_case (`get_user_data`, `retry_count`)
 - **Constants**: UPPER_SNAKE_CASE (`MAX_RETRIES`, `API_ENDPOINT`)
 - **PowerShell exception**: `.ps1` and `.psm1` files follow `Verb-Noun` PascalCase convention per PowerShell standards (`Get-Something.ps1`, `Lambda-Customizations.psm1`)
+Remind user to use a singular noun.
 
 ### Directory Structure
 - Organize by function/feature, not by file type
@@ -121,7 +122,8 @@ project/
 ├── tests/
 ```
 
-### File Headers
+### File Headers/comment based help required
+
 Every script/template must include:
 - Purpose/description
 - Author and creation date
@@ -158,6 +160,7 @@ See `git-workflow.md` for detailed guidelines.
 - Keep branches short-lived (days, not weeks)
 - Merge frequently to avoid conflicts
 - Delete branches after merging
+- Encouage user to avoid scopoe creep
 
 ## Documentation Standards
 
