@@ -8,12 +8,20 @@ BeforeAll {
         function global:chmod { }
     }
 
+    # Stub gpg on systems where it isn't installed so Pester can mock it
+    if (-not (Get-Command gpg -ErrorAction SilentlyContinue)) {
+        function global:gpg { }
+    }
+
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Git/Install-CCGitHook.ps1"
 }
 
 AfterAll {
     if (Test-Path "function:global:chmod") {
         Remove-Item "function:global:chmod" -ErrorAction SilentlyContinue
+    }
+    if (Test-Path "function:global:gpg") {
+        Remove-Item "function:global:gpg" -ErrorAction SilentlyContinue
     }
 }
 

@@ -79,7 +79,8 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
             Mock Get-STSCallerIdentity {
                 if ($ProfileName -eq 'dev') {
                     [PSCustomObject]@{ Account = '111111111111'; Arn = 'arn:aws:iam::111111111111:user/test' }
-                } else {
+                }
+                else {
                     [PSCustomObject]@{ Account = '222222222222'; Arn = 'arn:aws:iam::222222222222:user/test' }
                 }
             }
@@ -198,6 +199,40 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
             # first and last should execute, middle should be skipped
             $script:callCount | Should -Be 2
         }
+
+        It 'Aborts execution when region configuration is missing' {
+            Mock Get-STSCallerIdentity {
+                throw 'No RegionEndpoint or ServiceURL configured'
+            }
+
+            $script:callCount = 0
+            $sb = { $script:callCount++ }
+
+            {
+                Invoke-CCScriptMultiAccountRegion -ProfileName 'first', 'second' `
+                    -Region 'us-east-1' `
+                    -ScriptBlock $sb
+            } | Should -Throw
+
+            $script:callCount | Should -Be 0
+        }
+
+        It 'Aborts execution when DefaultAWSRegion is not configured' {
+            Mock Get-STSCallerIdentity {
+                throw 'DefaultAWSRegion is not configured for this session'
+            }
+
+            $script:callCount = 0
+            $sb = { $script:callCount++; [PSCustomObject]@{ Name = 'result' } }
+
+            {
+                Invoke-CCScriptMultiAccountRegion -ProfileName 'first' `
+                    -Region 'us-east-1' `
+                    -ScriptBlock $sb
+            } | Should -Throw
+
+            $script:callCount | Should -Be 0
+        }
     }
 
     Context 'Property: N×M execution count' {
@@ -251,6 +286,140 @@ Describe 'Invoke-CCScriptMultiAccountRegion' -Tag 'Unit' {
                     $result.AccountId | Should -Be $expectedAccountId -Because "iteration ${i}: all objects should have AccountId from mocked STS"
                 }
             }
+        }
+    }
+
+    Context 'Sets StoredAWSRegion and StoredAWSCredentials during ScriptBlock execution' {
+
+        It 'ScriptBlock sees StoredAWSRegion set to the current iteration region' {
+            $sb = { [PSCustomObject]@{ SeenRegion = $global:StoredAWSRegion } }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'eu-west-1' `
+                -ScriptBlock $sb
+
+            $results.SeenRegion | Should -Be 'eu-west-1'
+        }
+
+        It 'ScriptBlock sees StoredAWSCredentials set to the current profile name' {
+            $sb = { [PSCustomObject]@{ SeenCreds = $global:StoredAWSCredentials } }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'prod-account' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.SeenCreds | Should -Be 'prod-account'
+        }
+
+        It 'Restores original StoredAWSRegion after execution completes' {
+            $global:StoredAWSRegion = 'ap-southeast-1'
+
+            $sb = { [PSCustomObject]@{ Done = $true } }
+
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'testprofile' `
+                -Region 'us-west-2' `
+                -ScriptBlock $sb | Out-Null
+
+            $global:StoredAWSRegion | Should -Be 'ap-southeast-1'
+        }
+
+        It 'Restores original StoredAWSCredentials after execution completes' {
+            $global:StoredAWSCredentials = 'original-profile'
+
+            $sb = { [PSCustomObject]@{ Done = $true } }
+
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'different-profile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb | Out-Null
+
+            $global:StoredAWSCredentials | Should -Be 'original-profile'
+        }
+
+        It 'Restores StoredAWSRegion even when ScriptBlock throws' {
+            $global:StoredAWSRegion = 'original-region'
+
+            $sb = { throw 'something broke' }
+
+            Invoke-CCScriptMultiAccountRegion -ProfileName 'failprofile' `
+                -Region 'eu-central-1' `
+                -ScriptBlock $sb `
+                -WarningVariable w 3>&1 | Out-Null
+
+            $global:StoredAWSRegion | Should -Be 'original-region'
+        }
+
+        It 'Updates StoredAWSRegion per region iteration' {
+            $sb = { [PSCustomObject]@{ SeenRegion = $global:StoredAWSRegion } }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'us-east-1', 'eu-west-1' `
+                -ScriptBlock $sb
+
+            $results | Should -HaveCount 2
+            $results[0].SeenRegion | Should -Be 'us-east-1'
+            $results[1].SeenRegion | Should -Be 'eu-west-1'
+        }
+    }
+
+    Context 'Wraps string and primitive results in Value property' {
+
+        It 'Wraps string results with a Value property' {
+            $sb = { 'https://sqs.us-east-1.amazonaws.com/123456789012/my-queue' }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results | Should -Not -BeNullOrEmpty
+            $results.Value | Should -Be 'https://sqs.us-east-1.amazonaws.com/123456789012/my-queue'
+        }
+
+        It 'Does not produce a Length property for string results' {
+            $sb = { 'some-string-value' }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.PSObject.Properties.Name | Should -Contain 'Value'
+            $results.PSObject.Properties.Name | Should -Not -Contain 'Length'
+        }
+
+        It 'Enriches string results with AccountId and Region when switches specified' {
+            $sb = { 'queue-url-1'; 'queue-url-2' }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb `
+                -IncludeAccountId -IncludeRegion
+
+            $results | Should -HaveCount 2
+            $results[0].Value | Should -Be 'queue-url-1'
+            $results[0].AccountId | Should -Be '123456789012'
+            $results[0].Region | Should -Be 'us-east-1'
+            $results[1].Value | Should -Be 'queue-url-2'
+        }
+
+        It 'Wraps integer results with a Value property' {
+            $sb = { 42 }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.Value | Should -Be 42
+        }
+
+        It 'Does not wrap PSCustomObject results — preserves original properties' {
+            $sb = { [PSCustomObject]@{ Name = 'MyFunc'; Runtime = 'dotnet6' } }
+
+            $results = Invoke-CCScriptMultiAccountRegion -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.Name | Should -Be 'MyFunc'
+            $results.Runtime | Should -Be 'dotnet6'
+            $results.PSObject.Properties.Name | Should -Not -Contain 'Value'
         }
     }
 }
