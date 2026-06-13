@@ -236,6 +236,18 @@ if (-not $InstallOnly) {
     Get-ChildItem -Path $BuildRoot -Filter '.gitkeep' -Recurse -File -ErrorAction SilentlyContinue |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
+    # Remove any non-PowerShell files that shouldn't be in the published module
+    $allowedBuildExtensions = @('.ps1', '.psm1', '.psd1')
+    $junkFiles = @(Get-ChildItem -Path $BuildPath -Recurse -File |
+        Where-Object { $_.Extension -notin $allowedBuildExtensions })
+    if ($junkFiles.Count -gt 0) {
+        Write-Output "  Removing $($junkFiles.Count) non-PowerShell file(s) from build output:"
+        foreach ($junk in $junkFiles) {
+            Write-Output "    Removed: $($junk.Name)"
+            Remove-Item -Path $junk.FullName -Force
+        }
+    }
+
 
     # Validate all files declared in the manifest FileList exist in the build output
     Write-Host "Validating manifest FileList..." -ForegroundColor Yellow

@@ -17,6 +17,10 @@
     SecretManagement secret name to read when ApiKey is not passed.
 .PARAMETER SkipRepositoryTrust
     Skip setting the target repository to trusted before publishing.
+.PARAMETER SkipGitValidation
+    Skip branch and tag checks when publishing to PSGallery (used in CI).
+.PARAMETER SkipSignatureValidation
+    Skip Authenticode signature validation (used in CI where signing is validated separately).
 .PARAMETER UseLegacyPowerShellGet
     Force Publish-Module instead of Publish-PSResource.
 .EXAMPLE
@@ -35,6 +39,7 @@ param(
     [string]$SecretName = 'PSGalleryApiKey',
     [switch]$SkipRepositoryTrust,
     [switch]$SkipGitValidation,
+    [switch]$SkipSignatureValidation,
     [switch]$UseLegacyPowerShellGet
 )
 
@@ -109,15 +114,17 @@ if (-not $signatureValidationCommand) {
     $signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue
 }
 
-if (-not $signatureValidationCommand) {
-    throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
-}
+if (-not $SkipSignatureValidation) {
+    if (-not $signatureValidationCommand) {
+        throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
+    }
 
-$invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension $allowedExtensions)
-if ($invalidSignatures.Count -gt 0) {
-    Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
-    $invalidSignatures | Format-Table -AutoSize
-    throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
+    $invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension $allowedExtensions)
+    if ($invalidSignatures.Count -gt 0) {
+        Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
+        $invalidSignatures | Format-Table -AutoSize
+        throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
+    }
 }
 
 if (-not $ApiKey) {
