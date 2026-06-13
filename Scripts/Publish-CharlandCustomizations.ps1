@@ -6,8 +6,7 @@
     secret, then publishes using PSResourceGet when available and falls back to
     PowerShellGet for older environments.
 .PARAMETER Path
-    Path to the module folder that contains CharlandCustomizations.psd1.
-    Default is '..\src\CharlandCustomizations' relative to the script location.
+    Path to the module folder that contains CharlandCustomizations.psd1
 .PARAMETER Repository
     Target repository name. Defaults to PSGallery.
 .PARAMETER ApiKey
@@ -17,34 +16,45 @@
     SecretManagement secret name to read when ApiKey is not passed.
 .PARAMETER SkipRepositoryTrust
     Skip setting the target repository to trusted before publishing.
-.PARAMETER SkipSignatureValidation
-    Skip verifying Authenticode signatures before publishing.
 .PARAMETER SkipGitValidation
-    Skip git branch and tag validation. Use in CI where these checks are
-    enforced by the workflow and tag protection rules.
+    Skip branch and tag checks when publishing to PSGallery (used in CI).
 .PARAMETER UseLegacyPowerShellGet
     Force Publish-Module instead of Publish-PSResource.
 .EXAMPLE
     $env:PSGALLERY_API_KEY = '...'
-    ./Scripts/Publish-CharlandCustomizations.ps1
+    ./Scripts/Publish-CharlandCustomizations.ps1 -Path ./build-location
 .EXAMPLE
     ./Scripts/Publish-CharlandCustomizations.ps1 -Repository PSGallery -SecretName PSGalleryApiKey
 .EXAMPLE
-    ./Scripts/Publish-CharlandCustomizations.ps1 -SkipSignatureValidation
+    ./Scripts/Publish-CharlandCustomizations.ps1 -WhatIf -path /build-location
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [string]$Path = (Join-Path $PSScriptRoot '..\src\CharlandCustomizations'),
+    [Parameter(Mandatory)]
+    [string]$Path,
     [string]$Repository = 'PSGallery',
     [string]$ApiKey,
     [string]$SecretName = 'PSGalleryApiKey',
     [switch]$SkipRepositoryTrust,
-    [switch]$SkipSignatureValidation,
     [switch]$SkipGitValidation,
     [switch]$UseLegacyPowerShellGet
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:CCIsWindows = if ($PSVersionTable.PSVersion.Major -lt 7) {
+        [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+    }
+    else {
+        [bool]$IsWindows
+    }
+}
+
+if (-not $script:CCIsWindows) {
+    throw 'Publish-CharlandCustomizations is only supported on Windows systems.'
+}
+
 $resolvedPath = Resolve-Path -Path $Path
 $manifestPath = Join-Path $resolvedPath 'CharlandCustomizations.psd1'
 
@@ -82,31 +92,34 @@ if ($Repository -ieq 'PSGallery' -and -not $SkipGitValidation) {
     }
 }
 
-if (-not $SkipSignatureValidation) {
-    $filesToValidate = Get-ChildItem -Path $resolvedPath -Recurse -File |
-        Where-Object { $_.Extension -in '.ps1', '.psm1', '.psd1' }
 
-    if (-not $filesToValidate) {
-        throw "No PowerShell module files were found under $resolvedPath"
-    }
+$allowedExtensions = @('.ps1', '.psm1', '.psd1')
+$allModuleFiles = @(Get-ChildItem -Path $resolvedPath -Recurse -File)
+$nonPowerShellFiles = @($allModuleFiles | Where-Object { $_.Extension -notin $allowedExtensions })
+if ($nonPowerShellFiles.Count -gt 0) {
+    $disallowedFiles = ($nonPowerShellFiles | Select-Object -ExpandProperty FullName) -join ', '
+    throw "Publishing requires the module directory to contain only .ps1, .psm1, and .psd1 files. Found disallowed file(s): $disallowedFiles"
+}
 
-    $invalidSignatures = @()
+$filesToValidate = @($allModuleFiles | Where-Object { $_.Extension -in $allowedExtensions })
+if (-not $filesToValidate) {
+    throw "No PowerShell module files were found under $resolvedPath"
+}
 
-    foreach ($file in $filesToValidate) {
-        $signature = Get-AuthenticodeSignature -FilePath $file.FullName
-        if ($signature.Status -ne 'Valid') {
-            $invalidSignatures += [PSCustomObject]@{
-                File   = $file.FullName
-                Status = $signature.Status
-            }
-        }
-    }
+$signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue
+if (-not $signatureValidationCommand) {
+    $signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue
+}
 
-    if ($invalidSignatures.Count -gt 0) {
-        Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
-        $invalidSignatures | Format-Table -AutoSize
-        throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
-    }
+if (-not $signatureValidationCommand) {
+    throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
+}
+
+$invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension $allowedExtensions)
+if ($invalidSignatures.Count -gt 0) {
+    Write-Error 'Publishing requires all module files to have valid Authenticode signatures.'
+    $invalidSignatures | Format-Table -AutoSize
+    throw 'Publishing aborted because one or more files have invalid Authenticode signatures.'
 }
 
 if (-not $ApiKey) {
@@ -162,11 +175,12 @@ if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Reposit
 }
 exit 0
 
+
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBeURP4cbUowzf1
-# Fg2gCwiglPUx3a5NxJJrZQ39VYMiAKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDIp/43lLnhVHYM
+# aPR9NYxZxzIr56c63S5HH2ciVFLLA6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -368,33 +382,33 @@ exit 0
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIJbh46wLe7Za/hFgCgTAFxqkcbGm6E5kcSfU/qct8gGSMA0GCSqG
-# SIb3DQEBAQUABIICAJe1X1LoklfmCmj3DRXPV3XgbSg6tishpMeteIN3NIEKNZLp
-# 1wx21GTXuq9A9N579ZIVOvVIQ3ZSaKYysDuzuY/FCwFXMm3qb297TL4zkA4UUW2y
-# 8RYei/Mlc6W7nF/QkLMsM2lTD1sUVjpuQdvQ+3mQZhbpDn+MaGtVwpl4svVrce+f
-# VK9f9E3XnfMYuaKO5OEFuWRuqO3L3wUUkf6KbNbHQpXuk8aBisFj2OLmLjP+2uYW
-# SVV+EvL3emexIcgdfhp2BoPE6lA/bGbPxFtvYQex6tftUKj2F2LwqIui95eHuyPl
-# xEDuhQjahp66Nv6cJLqKWKVc/axUQoO6YwkE9M17nnm/QPZYcaQ8m7zDTAY1HZbE
-# bxDAKjxTWlkybeBSBNZUqtRxm8XhhGJr2jyB8s2xslcVH999+8OwAaHLAakd9RUh
-# NH+UQ/CHSE9vBHwvF7n0qCc/25Ic7j1LCE8SqQUIYy7wiwZOsRhFaCRT5i4B3uxZ
-# nzLP78lCLD2iEi+DNqlJlNzSTnI8IN8Ojaqf/SO3H8bnCszB1ZXE2QJhex17XU29
-# 8QahM1XCjrDUoqYxJ3qOg1oJNKmFhsviQRAlqUz+6tWncshjZOe/++bthfrfyGZu
-# GXUCJYUOq2OfybgjxUigp8S2NYrCrPqMMbHQsRiMNPgzyeeJqwaLA3VzZDAvoYID
+# hvcNAQkEMSIEIL/5LHv5HTAlr6Pe+nGaAmfCLjHwwMid5/kxr4WM8eLYMA0GCSqG
+# SIb3DQEBAQUABIICAHHbK0SMV1wXUKkJQtj18OOuK48k897Ybg5+YKYr519Bpaw3
+# Q5ArNbJRjgg0otlhHXIaqpXUCVIp1ZakFSUDF7gEEubzbKi5lXG97hjDIXnfz7mn
+# Iy4jICgXkUlG0vGCecgXOaS0sVGAgsthjZCyFtxkBRvB3+RWCSjbaG81LZiOz/EK
+# 75xWe4t25GGqfZZjfDmXERifOCUF0VEoxK5JES/t7yBkflePeKbCCSq6huJDD7KL
+# e6skcqQfPWKodB5BEJ6Xnz0+FOCtHWrQYSrNbqcsMHbeprzZMcDbScdFFRvvnAfJ
+# 1o1dE3vKX9YBicKhsbPmcM0X7OyfhuB0jgNCe+f4nsCXsvwFtR4sNkfI6JgpXgBX
+# YwkHshvi3Dl2ZVHCccfE+D/WLtgicWHjCgBtVY+Y/whJ7DQt0hzwxoz7bXhorf/l
+# m4c+hxf3CvYEGE2vA0NqW4CiD9UeHnuR2LjkEvviU3sKK7ehpf46pDnNLUyDEZnc
+# 2JgXLA1hCm3pVFdN+mwfVbje9jiydNqTEJXeEJSxndsJqkjIDMSejP03uVEAbqJz
+# V5KeiWZ2UOgim7dw/Tt6tyoVQvRWwO1Sq9OoNqMuoHlko0QEoa1hmRUTUSr8WbDx
+# qZ+kXbPKC+jT7kEXHuwcZUVHMk525lbq1v9JN4oKD+E3FMBHnvlJ9aUjsc8joYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjEyMDIxMDAxWjA/BgkqhkiG9w0BCQQxMgQwLMMCgXEeespa3X7nFNh3
-# cCjvzVDY9PKdCYbr1lRSraBNIP1EarjsCOKii1J0gPR6MA0GCSqGSIb3DQEBAQUA
-# BIICAIKpwHKraWoQmyJdKIaHXv6ZL9Cun8vZZEs1MKCCBcDhoyAqobUsGtuM6TIR
-# n4TZaFXXPfzlWfqbn91nXE5/UNiH5q28affheCZ2uSd3dLnDH3ckoY+jUigMGJD+
-# MswrNX99dEgZg/Oq1uYRpnnXjcnDmabcoD4WWUMdAmuA0KT10BNy+mZ0OUgJqcdK
-# oxIeojL8FexND1EQJSp3JO5lpvpQaHETPiW7nSkKtWXlRPW5Cri+oljaLqai8nIc
-# CNEB10S35hvNOnynWndExNrhPhnKveCWD+tqiZF3kC2goY+T7uVea0SD5WejXi44
-# 7f7CWKwBsAyf+g6wf3VOH4abf7gRV2g8aUFukIOW+v2gB43+d0TSe8vCaZGxMPs/
-# v1wZEohkQfvVNcTnna0/r4jbzBAlGFfa6LnaJ6TGw4xXmaMEtq7Q/GrLoJCrahq3
-# DOz4XmDDzjCY1NuFXdtAsLsY8TBzTs7T5p/gNG4g2NkmEUVq3msce9reVh5uiemD
-# 6K5dDbnRmdAeD6bmscZ10Zlaz3g99oSaaDISB9R+e9TRdHOs4AwRhgVvbBuscr9C
-# pfbxfeDiORXkaNVHyCdXXU0njJUBIjwkZMz0ZlB2CnqopH7hxC1nignoRuAzl6U3
-# PiPmEcohF0NCIF/wlC7rmVVM18WOUbXaFDwWK90NJbFibfI2
+# DxcNMjYwNjEzMjA0MTU5WjA/BgkqhkiG9w0BCQQxMgQwtWDbtoYP3rqqr8uYCyIP
+# yI2etZcCgygdWAnrRcT8UjC8Be6Fvar3F63wr5jN77ilMA0GCSqGSIb3DQEBAQUA
+# BIICAHXqiNgAwPvZce9ejkDjuJMg2EYowlgHIM2tBsN6T15ZwF7yDftkyiV3iHr3
+# WI2oirBFEpxOevyZw91IX9q0taPR0hWZu/MwCHSIkF6VB6cx8la5TeBUe7d9VRg5
+# +s7weGHNqIgiCkpjzzfkLYVW6UYpNCGRn+Ek4Na1roS2bWnCLPdnWMV3h0hcbVzV
+# YGiT8y+pu2OjT+6RiAn+VdLMbtb1pwnoX4Y25sPNSzKAiG4i3QeQMFlYr/zhitRw
+# gw3vH8YrSTOQqoZ48Xk1c7MAVIDXzaVtN+vdunFa5eAnJPP52NGv9HPje1nObbVo
+# SiFsMtsZFZyn7rllq/u4qvOAKJNkcD7EwgIJ3Dk+VVlNIIth9QPqXO87Pkp8uJTi
+# cP5xN3azuAlkIdyqBG5s36orLcl+idKrRNPjb+bCUHauTr3A0PqSzdADK1E/0sQA
+# 8UT1U0DM/BnOTcFIeVpUXmh8rvpA9Ywt5mvEPIKUjXCA9M/7LmUXi66JIfw/d81Z
+# Ny4sm3Ue+hAqNbEROpOICV7bjr7qnwh4IGymWlOU+FBCItAwMGoG8k31jnZr0vQu
+# bjghC1wHm1J5XbKU7TljaOuxT807O4jEFAqGF7xJzKznnswFT4LY+QHzrktw1eMs
+# aO0nAKEvg1fWsHI0aaOD89RA2bpvb8mg6TyjSL5FU866cZAj
 # SIG # End signature block

@@ -1,4 +1,4 @@
-name: Signature Compliance-Sign /scripts on every PR
+name: Signature Compliance - Scripts
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   validate-signatures:
-    name: Validate Authenticode Signatures
+    name: Validate Authenticode Signatures (Scripts)
     runs-on: windows-latest
 
     steps:
@@ -22,4 +22,4 @@ jobs:
 
       - name: Run signature compliance gate
         shell: pwsh
-        run: ./Scripts/Test-SignatureCompliance.ps1
+        run: ./Scripts/Test-SignatureCompliance.ps1 -Path './Scripts'

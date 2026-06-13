@@ -8,6 +8,13 @@ on:
   push:
     tags:
       - "v[0-9]*.[0-9]*.[0-9]*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run with -WhatIf (no actual publish)"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -94,7 +101,7 @@ jobs:
 
   publish:
     needs: signature-validation
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -107,12 +114,20 @@ jobs:
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
         run: |
+          Import-Module './src/CharlandCustomizations/CharlandCustomizations.psd1' -Force
           $buildDir = Get-ChildItem './build/CharlandCustomizations' -Directory | Select-Object -First 1
-          ./Scripts/Publish-CharlandCustomizations.ps1 -Path $buildDir.FullName -SkipSignatureValidation -SkipGitValidation
+          $dryRun = '${{ inputs.dry_run }}' -eq 'true'
+          $params = @{
+              Path = $buildDir.FullName
+              SkipGitValidation = $true
+          }
+          if ($dryRun) { $params['WhatIf'] = $true }
+          ./Scripts/Publish-CharlandCustomizations.ps1 @params
 
   protect-tag:
     name: Lock release tag
     needs: publish
+    if: ${{ inputs.dry_run != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Mark tag as immutable via GitHub API
