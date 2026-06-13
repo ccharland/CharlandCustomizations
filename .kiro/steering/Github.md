@@ -162,6 +162,7 @@ For SSH:
 - **dev** (optional): Integration branch for testing
 - Feature branches: Use descriptive names like `feature/alarm-management` or `fix/iam-permissions`
 - Keep branches short-lived (merge within days, not weeks)
+- **One feature per branch**: Each branch should contain a single logical feature or fix. Do not mix unrelated changes into the same branch — if a change doesn't belong to the current feature, save it for a separate branch.
 
 ## What to Commit
 

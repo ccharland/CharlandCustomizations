@@ -91,6 +91,7 @@ user_display_name = "John"
 - **Classes**: PascalCase (`UserManager`, `CloudWatchAlarm`)
 - **Functions/Variables**: snake_case (`get_user_data`, `retry_count`)
 - **Constants**: UPPER_SNAKE_CASE (`MAX_RETRIES`, `API_ENDPOINT`)
+- **PowerShell exception**: `.ps1` and `.psm1` files follow `Verb-Noun` PascalCase convention per PowerShell standards (`Get-Something.ps1`, `Lambda-Customizations.psm1`)
 
 ### Directory Structure
 - Organize by function/feature, not by file type
