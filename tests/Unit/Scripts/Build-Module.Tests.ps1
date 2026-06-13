@@ -209,11 +209,11 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Get-ChildItem { @() }
             # For the build-path scan (no -Filter, no -Include): return a non-PowerShell file
             Mock Get-ChildItem {
-                [PSCustomObject]@{
+                @([PSCustomObject]@{
                     Extension = '.gitkeep'
                     FullName  = 'C:\fake\build\CharlandCustomizations\0.3.0\.gitkeep'
                     Name      = '.gitkeep'
-                }
+                })
             } -ParameterFilter { -not $Filter -and -not $Include }
             Mock Write-Host {}
             Mock Write-Output {}
