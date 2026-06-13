@@ -59,7 +59,7 @@ BeforeAll {
         if ($SkipRepositoryTrust) { $invokeParams['SkipRepositoryTrust'] = $true }
         if ($UseLegacyPowerShellGet) { $invokeParams['UseLegacyPowerShellGet'] = $true }
         if ($WhatIfMode) { $invokeParams['WhatIf'] = $true }
-        & $sb @invokeParams
+        . $sb @invokeParams
     }
 }
 
