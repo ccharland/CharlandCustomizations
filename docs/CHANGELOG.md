@@ -6,7 +6,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 ### Added
 
-- `Test-CCAuthenticodeSignature` — new public function and standalone script for validating Authenticode signatures on release-critical PowerShell files
+- `Test-CCAuthenticodeSignature` — public function and standalone script for validating Authenticode signatures on release-critical PowerShell files
 - `Invoke-CCScriptMultiAccountRegion` now sets `$global:StoredAWSRegion` and `$global:StoredAWSCredentials` during ScriptBlock execution so AWS.Tools cmdlets resolve context without explicit `-Region`/`-ProfileName`
 - `Invoke-CCScriptMultiAccountRegion` now wraps string and primitive ScriptBlock results in a `Value` property for consistent enrichment with `-IncludeAccountId`/`-IncludeRegion`
 - `Invoke-CCScriptMultiAccountRegion` terminates early with a clear error when AWS region configuration is missing (e.g., `No RegionEndpoint`, `DefaultAWSRegion is not configured`)
