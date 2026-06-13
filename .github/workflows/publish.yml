@@ -114,6 +114,7 @@ jobs:
         env:
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
         run: |
+          Import-Module './src/CharlandCustomizations/CharlandCustomizations.psd1' -Force
           $buildDir = Get-ChildItem './build/CharlandCustomizations' -Directory | Select-Object -First 1
           $dryRun = '${{ inputs.dry_run }}' -eq 'true'
           $params = @{
