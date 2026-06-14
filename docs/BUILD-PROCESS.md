@@ -146,6 +146,31 @@ Default gate scope:
 
 The gate validates `.ps1`, `.psm1`, and `.psd1` files and fails if any signature status is not `Valid`.
 
+## Git Hook Path Policy
+
+Install the local pre-commit hook after cloning or when `.githooks/pre-commit` changes:
+
+```powershell
+Install-CCGitHook -Force
+```
+
+The hook keeps code work and repository automation work separated by branch type:
+
+- Normal code branches block staged changes under `.github/`, `.kiro/`, and `.vscode/`.
+- Workflow or infrastructure branches block staged changes under `src/` and `tests/`.
+- Branch names containing `workflow`, `workflows`, `infra`, or `infrastructure` are treated as workflow/infrastructure branches.
+- Branch names that use `ci` as a branch segment or token, such as `ci/update` or `chore-ci-config`, are also treated as workflow/infrastructure branches.
+
+For an exceptional mixed-scope commit, make the override deliberate and visible:
+
+```powershell
+$env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE = '1'
+git commit -m 'Explain why this mixed-scope commit is necessary'
+Remove-Item Env:\CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE
+```
+
+Use the override only when splitting the commit would make the history harder to review.
+
 ## Build Process Steps
 
 1. **Validate Source**

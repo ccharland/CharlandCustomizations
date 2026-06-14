@@ -1,0 +1,53 @@
+#!/bin/sh
+
+set -u
+
+OVERRIDE="${CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE:-}"
+
+if [ "$OVERRIDE" = "1" ]; then
+    echo "CC git path policy override enabled; skipping branch/path guard." >&2
+    exit 0
+fi
+
+BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)"
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+is_workflow_or_infrastructure_branch() {
+    case "$1" in
+        *workflow*|*workflows*|*infra*|*infrastructure*|ci|ci/*|*/ci|*/ci/*|*-ci|*-ci-*|*_ci|*_ci_*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+if is_workflow_or_infrastructure_branch "$BRANCH"; then
+    BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E '^(src|tests)(/|$)' || true)"
+    POLICY_NAME='workflow/infrastructure branch'
+    BLOCKED_PATHS='src/ and tests/'
+else
+    BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E '^(\.github|\.kiro|\.vscode)(/|$)' || true)"
+    POLICY_NAME='normal code branch'
+    BLOCKED_PATHS='.github/, .kiro/, and .vscode/'
+fi
+
+if [ -n "$BLOCKED_FILES" ]; then
+    echo "Commit blocked by CC git path policy." >&2
+    echo "Branch '$BRANCH' is treated as a $POLICY_NAME." >&2
+    echo "Do not commit $BLOCKED_PATHS changes on this branch type." >&2
+    echo >&2
+    echo "Blocked staged files:" >&2
+    printf '%s\n' "$BLOCKED_FILES" >&2
+    echo >&2
+    echo "For a deliberate exception, rerun the commit with:" >&2
+    echo "  CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit ..." >&2
+    exit 1
+fi
+
+exit 0
