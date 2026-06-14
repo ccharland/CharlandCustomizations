@@ -11,6 +11,7 @@ These files serve as documentation so the team can review, version-track, and re
 | File | Description |
 |------|-------------|
 | `protect-deployment-tags.json` | Protects version tags (`v*.*.*`) used to trigger module publishing. Requires GPG-signed tags, prevents force-pushes, and enforces that all PR quality gate checks have passed before a release tag is accepted. |
+| `require-branch-path-policy.json` | Requires pull requests into `main` to pass the Branch Path Policy status check before merge. The workflow blocks mixed code/infrastructure branch scopes. |
 
 ## Applying Changes
 
@@ -27,6 +28,13 @@ To import a new ruleset:
 ```bash
 gh api --method POST /repos/ccharland/CharlandCustomizations/rulesets \
   --input .github/rulesets/protect-deployment-tags.json
+```
+
+To import the branch path policy ruleset:
+
+```bash
+gh api --method POST /repos/ccharland/CharlandCustomizations/rulesets \
+  --input .github/rulesets/require-branch-path-policy.json
 ```
 
 ## Notes
