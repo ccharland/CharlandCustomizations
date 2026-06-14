@@ -22,6 +22,23 @@
         "clear": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Remove Authenticode Signature Block",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$file = '${file}'; $content = Get-Content -Path $file -Raw; $cleaned = $content -replace '(?s)\\r?\\n# SIG # Begin signature block.*# SIG # End signature block\\r?\\n?', ''; Set-Content -Path $file -Value $cleaned -NoNewline"
+      ],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     }
   ]
 }
