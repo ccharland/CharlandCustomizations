@@ -89,7 +89,7 @@ function Get-CCDeprecatedLMFunctionList {
     #>
     [CmdletBinding()]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-        'PSUsePSCredentialType', 'Credential',
+        'PSAvoidUsingPlainTextForPassword', 'Credential',
         Justification = 'Credential is an AWS SDK credential object, not a PSCredential.')]
     param(
         [Parameter()]
