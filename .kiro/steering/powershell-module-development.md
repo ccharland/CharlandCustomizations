@@ -129,6 +129,20 @@ Optional additions:
 - Use semantic versioning (MAJOR.MINOR.PATCH)
 - Update version when making changes to the module
 
+## Export Array Style
+
+All arrays in `.psd1` files must stay sorted alphabetically with one element per line. This applies to export lists, nested module lists, aliases, tags, and any future manifest arrays. `Export-ModuleMember -Function` arrays in `.psm1` files must follow the same rule. Prefer the explicit `@(...)` form for multi-value arrays:
+
+```powershell
+FunctionsToExport = @(
+    'Get-CCExample',
+    'Set-CCExample',
+    'Test-CCExample'
+)
+```
+
+Run `./Scripts/Test-ManifestCompliance.ps1` after changing a manifest or nested module export list. The PR and main status-check workflows call the same gate, so unsorted or single-line export arrays block merges.
+
 ## Adding New Functions
 
 ### Public Functions (Exported)
