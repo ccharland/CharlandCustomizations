@@ -67,6 +67,11 @@ function Invoke-CCScriptMultiAccountRegion {
             -ScriptBlock { Get-S3Bucket } -IncludeAccountId -IncludeProfileName
 #>
   [CmdletBinding()]
+  # Suppress: StoredAWSCredentials is a well-known AWS.Tools global variable used to detect the current session profile
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '',
+    Justification = 'AWS.Tools uses global:StoredAWSCredentials and global:StoredAWSRegion for session state; must read/write them to set context for ScriptBlock execution')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUsePSCredentialType', '',
+    Justification = 'Credential parameter accepts an AWSCredentials object from AWS.Tools, not a PSCredential')]
   param(
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string[]]$ProfileName,
@@ -156,6 +161,20 @@ function Invoke-CCScriptMultiAccountRegion {
     }
     $profileCount = 0
     $regionTotal = $Region.Count
+
+    # Match common AWS.Tools missing-region failures:
+    # - "No region..." text
+    # - "RegionEndpoint" / "ServiceURL" configuration errors
+    # - Explicit "DefaultAWSRegion is not configured"/"no default region" failures.
+    $missingRegionPatternAlternatives = @(
+      'no\s+region(?:\s*endpoint)?\b'
+      '\bregionendpoint\b'
+      'serviceurl\s+configured'
+      'defaultawsregion.*(not\s+configured|not\s+set)'
+      'no\s+default\s+aws\s+region'
+      'region.*not.*(configured|specified|set)'
+    )
+    $missingRegionPattern = '(?i)(' + ($missingRegionPatternAlternatives -join '|') + ')'
   }
 
   process {
@@ -177,6 +196,15 @@ function Invoke-CCScriptMultiAccountRegion {
         Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
       }
       catch {
+        if ($_.Exception.Message -match $missingRegionPattern) {
+          $missingRegionError = [System.Management.Automation.ErrorRecord]::new(
+            $_.Exception,
+            'InvokeCCScriptMultiAccountRegion.MissingRegion',
+            [System.Management.Automation.ErrorCategory]::InvalidOperation,
+            $prof
+          )
+          $PSCmdlet.ThrowTerminatingError($missingRegionError)
+        }
         Write-Warning "Skipping profile '${prof}': unable to authenticate - $_"
         continue
       }
@@ -189,7 +217,7 @@ function Invoke-CCScriptMultiAccountRegion {
         # Get-AWSCredential -ProfileName with the profile's location resolves correctly
         # because it reads directly from the ini file, not from the SSO token cache.
         $profileDetail = Get-AWSCredential -ListProfileDetail |
-          Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
+        Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
 
         if ($profileDetail -and $profileDetail.ProfileLocation) {
           $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
@@ -223,12 +251,14 @@ function Invoke-CCScriptMultiAccountRegion {
         Write-Verbose "Executing against Profile='$prof', Region='$r'"
 
         try {
-          # Save current environment variables
+          # Save current environment variables and AWS session state
           $origAK = $env:AWS_ACCESS_KEY_ID
           $origSK = $env:AWS_SECRET_ACCESS_KEY
           $origST = $env:AWS_SESSION_TOKEN
           $origRegion = $env:AWS_DEFAULT_REGION
           $origProfile = $env:AWS_PROFILE
+          $origStoredRegion = $global:StoredAWSRegion
+          $origStoredCreds = $global:StoredAWSCredentials
 
           if ($resolvedCreds -and $resolvedCreds.AccessKey) {
             # Set environment variables that the AWS SDK always respects
@@ -237,6 +267,9 @@ function Invoke-CCScriptMultiAccountRegion {
             $env:AWS_SESSION_TOKEN = $resolvedCreds.Token
             $env:AWS_DEFAULT_REGION = $r
             $env:AWS_PROFILE = $null
+            # Set AWS Tools for PowerShell session variables so cmdlets resolve without -Region/-ProfileName
+            $global:StoredAWSRegion = $r
+            $global:StoredAWSCredentials = $prof
           }
           else {
             $env:AWS_ACCESS_KEY_ID = $null
@@ -244,6 +277,8 @@ function Invoke-CCScriptMultiAccountRegion {
             $env:AWS_SESSION_TOKEN = $null
             $env:AWS_DEFAULT_REGION = $r
             $env:AWS_PROFILE = $prof
+            $global:StoredAWSRegion = $r
+            $global:StoredAWSCredentials = $prof
           }
 
           Write-Verbose "Invoking scriptblock for Profile='$prof', Region='$r'"
@@ -252,8 +287,18 @@ function Invoke-CCScriptMultiAccountRegion {
           if ($results) {
             foreach ($item in $results) {
               $props = [ordered]@{}
-              foreach ($p in $item.PSObject.Properties) {
-                $props[$p.Name] = $p.Value
+
+              # If the item is a simple type (string, number, etc.), wrap it so enrichment works
+              if ($item -is [string]) {
+                $props['Value'] = $item
+              }
+              elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
+                $props['Value'] = $item
+              }
+              else {
+                foreach ($p in $item.PSObject.Properties) {
+                  $props[$p.Name] = $p.Value
+                }
               }
 
               if ($IncludeAccountId) { $props['AccountId'] = $accountId }
@@ -279,12 +324,14 @@ function Invoke-CCScriptMultiAccountRegion {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
         }
         finally {
-          # Restore original environment variables
+          # Restore original environment variables and AWS session state
           $env:AWS_ACCESS_KEY_ID = $origAK
           $env:AWS_SECRET_ACCESS_KEY = $origSK
           $env:AWS_SESSION_TOKEN = $origST
           $env:AWS_DEFAULT_REGION = $origRegion
           $env:AWS_PROFILE = $origProfile
+          $global:StoredAWSRegion = $origStoredRegion
+          $global:StoredAWSCredentials = $origStoredCreds
         }
 
         if ($ThrottleLimit -gt 0) {
@@ -307,8 +354,8 @@ function Invoke-CCScriptMultiAccountRegion {
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAN1jGoF81unpSK
-# gvp8KOaa4CZZ3utnGPFCu+iycx4iDqCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCD3Pj5UmtoyiQkN
+# S3l4MxhDnJDFKEwK5f8EFkHDDuejw6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -510,33 +557,33 @@ function Invoke-CCScriptMultiAccountRegion {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIAhkS4wIxo7A2aevBBB+pCcK73k0AHmS324eHm83AumQMA0GCSqG
-# SIb3DQEBAQUABIICAEqvLcC7Q2iTiWt0CGVHyvgOqST4b6eELhvDB/UpNSTuZpaD
-# E089d+RfCA6Vx4sC9mVmHLe3e8RjzXMKn48Fti2nb7s/zkBzQtWS0ybxshjYxY8M
-# bVcEpBFcFaz+XWvXgDF+uSK2ZH+ezZAsB3NcFHN+GSzW6sz4Iu0mksW3ks+j4GAm
-# uiS70dT7sFXX2wjjwoRbvJhiJXdETtuFACAndMqisr8aPbMmts+X5HmR60KBawjf
-# Ci2BRCrnlDUPat2GfEm49se1hp56beILh6xhPu9QeuEJWVYbUWC7rsA8VCP/aCXq
-# DEFbznQNWpv95xSQJbRYamSrSCX5l265wAyjku5URXmknj/WZx1aJWkbALw9657W
-# 7b2tjfJdlUsg+aVTTRNStt9Hk6TevL0sPoZGWi3KzyGaHps1xJS5vsyUUc6s3xIN
-# PHRbU+ihFAuin1jS57fz0J0jHyfvBkFP6ZBt2Mxc1rQN4SUD9gL/+bKsVIFlZA62
-# D/y95HE7QddYkG4/5zGOR99ihNlzFttgtiiy1Vh091cAxZhGwLWHuZ7xZTq8f0YY
-# MNUE82DPdzAFkIFGXoPuL0NKalknEYWpLq2/VvtCoN6mSs4dFeNKfRo66oDSZcEl
-# 8B1Rgrwlz9zIlr9UY+Hy5D5eRLKSd6kKnHzwXMkO3KSixJjIiLxMDtuYH4Q/oYID
+# hvcNAQkEMSIEINsmvZHOxfbkzlk4/9VFuEsThEGIWoIe/Et1kff68I1wMA0GCSqG
+# SIb3DQEBAQUABIICAJx4xqiSfxISxWYPStAk30apih5B7cx3zSHluyHq2hbJGuIi
+# uA6cmi9WhngoBGKw/o7OLCRKb+2/wYsrg/Hx2DVx+KSc7bwiiixWXoKnMI0Jzrw6
+# EuW/+t3aIY1Aev6Ke+ihFiMk+pm5RBNZIrJSBgdDeNmHt023ZRxIsi8nfOYqVygc
+# VjhGPh3LusQcC2S5oYraMtuqq4/G9tZRVqWuLK113NG1Vz+gVd08oxLQz289/r5l
+# Ip7QJEg2ayrZBPFoUNtXejrVjEKpWnJ5BI1L49cZZSpS/qc1DOmtbhGsfi/xBR9L
+# s8NHJimZtwZTxrzr5K6qDI6dXKrOkX5Hv3DQK0qVsUdqDlZz1zNV6mSLrHbCgVuw
+# b2HM79dfe8QGbrkE4Rb8vabFUE1vH/QAeiVThbElRLnLodu6RZc0nucDC1Hsfch9
+# NhDfMepE6QpKwxMTicCrtbT+zVU97wiscBWpf2nu+UchjGGoxvK6mUyjautvAPqt
+# d5YzeQn4GDCkG+dP0FkbXuk9f9NOPy5ycwKSKkluSel7wJh16mGADFjQNF8dfkMz
+# vqkA2/W5Ej53BbCLSSwNDcfY+uKh8Utnrk8PgqO6GhkJIWOiZ+wNUxHbjw1sG7Va
+# ysuzlpJt13gOdmcNyypSv/0HaYD7YRXydU7pTPenncNfE7ckFJCCRzf/veJtoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MDIwNjM4WjA/BgkqhkiG9w0BCQQxMgQwF+Z52YzAoB4hitLDTogi
-# q+NBg464Ul3xsKS922UTzckbqN59sqOfVTn4y4EmjxU+MA0GCSqGSIb3DQEBAQUA
-# BIICAM5Sc7w7Zs8cNvTmJd8LyKIZjF8d5XrQmgsapvq0OzDBykWLyDk3Q4ZxBaIe
-# 7s01OW3FuEr17nQKG9oYVQjODHNQAA8OxFRniDfeDJlrGrw+CMzYTzSGRNXzqR2+
-# J7TQntlzsvR/GghQ3e1allL4JQNlkaQsKN13E4e7OcHCrdwChb3UrW/FcWcPkJFw
-# tcPFfRT76hrYxdw0DHjMh9mNEBlZub8iJgBpwq91CVE40qAEeSKavmWm/LLv7gGK
-# 877UZSRrVyzYRLabR/ZA+PJD5G7ZGf7zTMjku/Bxqx8hOuUAMKUuxakGE3399Kn5
-# sYvsrmmpaLwoGNRYsXuZdLqEqfrdQXiStgXR3b/GEJ0Z3o6r8z0X3twUuZDInEas
-# Tts27ydT4f92yTgWudBemTPTsv1JV9t8Kj1Jo5yVUg/8XK2Eg28mHg87Z+qloJC2
-# 8RtHiQIuHYHNI19EONAqEGBQPiNYxooNiB1YvKPoa89ZegfwolET6a9R12+6KFwO
-# 78jrtruQek7jaNdSA7dYYHzpd512OBZ8JskW9jhnoyAi+G3tKu+x8IDKcgVkk2Fe
-# J+czCIErOSyqJ5TLvGi2kKCdxkwt6Nk8XjwD9bsZzcuLlaPAF2DaY/AJmOd2nFyu
-# F0utAouls9v3iXZJUWgSBSSMeX+GkV+ZMpG+pzshgUi/2X/i
+# DxcNMjYwNjEzMDQxNzU2WjA/BgkqhkiG9w0BCQQxMgQw2zJjXM+4SpKaNWqTuQkb
+# YU/0w17HFmh6+BZDDrSowmJcktT6wv2MPadpi1sZSBG4MA0GCSqGSIb3DQEBAQUA
+# BIICADYG7NUFxdn0h8fF0LN4ldzdnPQEo+oqrxdaMBc4c//lK6q4H14dRyBs+0/0
+# rf1crk1Aoej3FIOYK4xRxBc4louKz3tpHwivO547q5FJ2BmoQvtXk2OiUIpq82ZX
+# 7PteoET2HbxBcEDWHPnv9aRAmQyqm8OsuKQD1plsfrA+FnpuQOVGHLs/EWE1eJzT
+# uIQKbg972+E8Rr65aslOgn0cvT997xc6O/aS5fJDSkK+FPORogC8HetkuzOer+P2
+# Rzp4HxJw4zQQbzRozf/1/4i+/UOUU0nhJO+fewIpz9OYpy+Hfku5CX+emDDXBKgY
+# zXUq8Zxanvt94jfGQ/4/uOlivJHaVkSCZ4KGrgGrr36Scnf/8NagucjkhgE9hdfu
+# WLslMnTQsasaaNIurSvcEMdHTYINHVaHcn9iyCyxX3IJc0EHILOJyBZqKlpdjZqA
+# 36/um7DM3qyfIZhubihsZ0SIyT7RHElsecNxRmJ1PDt0CP9zGePKSvEUbiC1Eapb
+# d+Ym3J+tuRHm8JsHabwoNeIOEMa6c15UDYc583/9EI9HPhYK/0C8yuX06L0mPaiQ
+# kyaXExU0mjjfegf9lpiVYAAlpuMf49Rs9c3fe0hboNR+Z7F6uQQzOZAx6JXuaD2F
+# jMJxhPCd4tWXiQidVbsE26gMviGzwM0829fnLJiVYr+/SRkg
 # SIG # End signature block

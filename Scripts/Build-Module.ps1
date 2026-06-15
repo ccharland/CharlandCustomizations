@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Build and optionally install the CharlandCustomizations module
 .DESCRIPTION
@@ -230,6 +230,24 @@ if (-not $InstallOnly) {
     Write-Output "Copying module files to build directory..."
     Copy-Item -Path "$SourcePath\*" -Destination $BuildPath -Recurse -Force
     Write-Output "  Copied to: $BuildPath"
+    
+    Write-Output "Looking for .gitkeep placeholders in $($BuildPath)"
+    # Delete any .gitkeep placeholders in $BuildPath
+    Get-ChildItem -Path $BuildRoot -Filter '.gitkeep' -Recurse -File -ErrorAction SilentlyContinue |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+
+    # Remove any non-PowerShell files that shouldn't be in the published module
+    $allowedBuildExtensions = @('.ps1', '.psm1', '.psd1')
+    $junkFiles = @(Get-ChildItem -Path $BuildPath -Recurse -File |
+        Where-Object { $_.Extension -notin $allowedBuildExtensions })
+    if ($junkFiles.Count -gt 0) {
+        Write-Output "  Removing $($junkFiles.Count) non-PowerShell file(s) from build output:"
+        foreach ($junk in $junkFiles) {
+            Write-Output "    Removed: $($junk.Name)"
+            Remove-Item -Path $junk.FullName -Force
+        }
+    }
+
 
     # Validate all files declared in the manifest FileList exist in the build output
     Write-Host "Validating manifest FileList..." -ForegroundColor Yellow
@@ -388,7 +406,7 @@ if (-not $InstallOnly -and $Package) {
     if (Test-Path $zipPath) {
         Remove-Item $zipPath -Force
     }
-
+    
     Write-Output "Creating package: $zipName"
     Compress-Archive -Path $BuildPath -DestinationPath $zipPath -CompressionLevel Optimal
 
@@ -554,8 +572,8 @@ if (-not $PrepareRelease) {
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDmC5nODXuS7qqy
-# iC/EApvwpvUZdJF9zcMd4OXMgwHZBKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBi62+HrUtj84EQ
+# 0CF56N1Zrg3s4DFvraDP3MmJkA51B6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -757,33 +775,33 @@ if (-not $PrepareRelease) {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIBHArrcz6hoUlvsJgcXI/UCYlz7ldDMAJMcHk1VL8mKfMA0GCSqG
-# SIb3DQEBAQUABIICABAmZTOofpWCwDvr5gEFaiq0OXw39dMuyBhYow6i8fcqmdY9
-# WHOVXO0/fVZtzFCiJWxioHFExr3rtoGbFkIOg6vd6ir3vpX+PFXXs+3xLDMGzYW7
-# sx6Cq4fhp/vMsM2WBxD7kLaJroF2xXpOUZuBF4imU2IdvyDPuCRA2NlC1o1Fp4mX
-# PSo8o2kgY3lVbV8O2sKr5meuMmZVjdcuGuJF4Zk2e/+ocJt9FXFUs4E451rnRTdX
-# DbhiHnCsVbhcPLHhGswVnR7s+R2UOM8yKB+5RnLXL/iwc+h06CpPPxYVes3TAECD
-# OwtlvRZiu0da0yXLNWYzsEcwECAqsLwinIXWnxSLpPDwfQ4IYN5ZM+CslrZxFNIt
-# pmUaWRU7cOrW22InTNjf0cllAA/S4bxUGFno1PfJYyAAopiA5jBzR38AjB1VM4LN
-# +rF2xQ0Za8Cz6jmcjR7uzpzagmA+yMkD5lzNyGvrJIwwZVDr8lHa/yO5zPGGCThv
-# oZJ/Ba6ZLMsuo58QUQ4dMBkWAW2t4QSqVd0jBxurWe2/4OsgBFaGMUt8V+f+pTpi
-# b8XNLMF49D4bbcbinVvDmFa1+5rdTh/7/dXl+o16WGZbT7ltmX8m8mL0mTA2iLRT
-# MmhrJ/5UnFsckXqSbmE3+k533a0MiJ/DUG7XKtvu3EVjiqfIsB2yaVjZjBQSoYID
+# hvcNAQkEMSIEIA4Naa6BOnqt3kEwUEMS+MQme6Br/xokaPMnMx9j8oclMA0GCSqG
+# SIb3DQEBAQUABIICAFe2BQ1wauw4irYsvIjUDcnt6TVSDBiRauBujMKybVYNzHZ6
+# fdIIAoR8vNaLcDy1NIMTJ4QyQxvmpfrPBYLD8n2MAF8Ky20sr+s8By7wP7LTE8Mm
+# TJNHyHiH0KvTzTGSFm28wi0T2PZE+D8KanZFVURLikiEO1iwcLMms8hQznbb26+x
+# r/0gZBQNiOdDhYPfrUJRObBwG7flY/CO9hqpEwMMfMlvrp9G0mDqef49c2NueD8X
+# 6VdjPLTrRJKph18ZF1Y9oqgo6fCPFFsUPXLhhTHQbt5MFJ2rt52qhI29LXF8sgOe
+# XUAwAx62Vk69l993Gc0I0vzZafKMmHHxiUSDCO9kiOun4p2mRI0Bmjaa7uaYzS0W
+# lPtkYwYoDhfP3boIinOKDbppG8D9s7NRk8kPRkoP8u68C5WcAESZYLOLOMRfsEO/
+# 91Q0+nj5K7a4q6LrECJbFEWZreB1stu0T/iI/GPtnmBSK+GXQFkpeGkpTEgkyC9+
+# RfxbYV/iC6p2gIvDYw9dVE8fapH5XtCiEU0t0nAB0FqFkbQQa7htUkdWHW8bgFyk
+# BDJr9fZJa2eNJhLuhT6lbDQZotJ3uple/vyNXJG+ctZRW70/iqokVuLJ8iJArPOO
+# P7yScwcPt8Mz8Djlep4sk39Taoos2kDHJSX4VVmdbtA98fMZe+c+0Aij7YEsoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MjAzNjM2WjA/BgkqhkiG9w0BCQQxMgQwLJd7mMLs7ZykJYdGL6CX
-# Vp2FT6uVSUviE3wZ31oqUASONR6FvLJrTL9hWUg0mjG9MA0GCSqGSIb3DQEBAQUA
-# BIICAHicpZLeRxIKD8YI8ugcutL07/HlE+2gRO+2sDC+0DSX/n40Lnv0K/nw7DEd
-# DNVHBReD6fL/hSjgYT3jZdUAOk28ZMxag4yO6eUVuhy/eI1l8dHJ1UOOCXh1S2vD
-# 0dV0gFhtC7D+3trPMssO9SiUcJrH6liW0t2Sh+cvSw1CQLzookI5haJ90fPI3JIZ
-# R55CSpnurAR7NuOBmPq9S6uXwN55NBQCvqyabWTdLW3e8mX4on1RwRUAcazlWVlH
-# 3x+emGJ2ArzgRnm+DO2EmGjU33pY8gYFTD8whM611Hk4hEgd02wzk1KcQeFFZPaZ
-# X4c3okUDnEcboBtJ48imihx3ebsezp2e0z6kVBPlO/vPioQia1RtOUH1nRev3fSd
-# HSJzubdU5r5fgmLzAMiCRFRjqmjAnCihoxI02mwa9HK1Sa0gIXwHxv5M5ZO0hu/b
-# dqHrrGMqaRlXJTLD/yhiwZz/oFh208L0zSRP+T13H81e7wGoPLf0ORA9mSF4tw06
-# 4sbm5BhiLZrBUFjZKrTud5HnvSTLzk9LuEEL1mEz1EcGvYvG9I3Mz+3/G2/vpuoc
-# 43iyeQByiG+bRNg8QXbBa69sb5f4+fNv59xCgX5SaG75HRKidOOk7RQFIklqy/Id
-# GsxCPYW8dPKRp5mHT5qGZSvODTd480E+4BHiGTv4y9grK5rL
+# DxcNMjYwNjEzMDQxNjU2WjA/BgkqhkiG9w0BCQQxMgQwJsVCy8o1bvd3buYcwpI7
+# vYCs2vSYcH+qfNYK3c9QDKLk3S3imwHyE3ssZwxidri7MA0GCSqGSIb3DQEBAQUA
+# BIICACVM7eX7DBJy80Nz6YKoVHyltkm7x/ftMfa8NydHG3AUn3Y46DHkt5pOutz3
+# y9fTh3aUy3I/1QML1Mv27gPdNkbQHLvcDgdnalw5BII3WlfMqCJICEJIfHDQkv5c
+# 4GJ6bo0CvHaUnKHTt24u9PJ02garaFTwF/vxgnAi6C/JpUDPG9BeVhl3yqD+iS/g
+# ZM+ZY0YZPMkvZy+0Uuzct9zX6/AAQlhUUr/5d2v+7zWTalZpxcH9vALXHjvvGTcN
+# 2sqEwkm15gE4j/0EBblM+A24hrV6ooudPqYxZt0qWxpkeH6trrfepPGexnGdEgg5
+# d9tXTuyjAlcD5KQzcu9Wkwh42LFwu+vdYRTNY5uR/om6ATalUcaTyjKrTU+UBtDx
+# ffDDmjDEZco9KFgemomiaBmbgqqan3T9m8iFMpS7j/HEMmDBy90MyN/tkwwHg1Pj
+# scuUKZKLfIn6dkLoOy+2KHYZtZXezTjHcgPDHLFUOx3NMAurxQggDu8XXQZmbQP3
+# 0KICCzT8poyZzWggDgT+wvNijbMTlsxxQdRy6v1Ll1bjAu8wUF/QQtMl6IX5WYCZ
+# s3GE9VptS9C3nZ3xtfNzrrQ8qWbYqz6hHly5p0omjQf9rZ5Bg7capehDgWi+58Jk
+# ZZi0/qyItTeP/Hhofa/RupQU/CcdcsPqjjICuXVkOKPdyY3t
 # SIG # End signature block

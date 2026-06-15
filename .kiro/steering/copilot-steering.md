@@ -1,13 +1,13 @@
 ---
-description: Copilot-specific steering for CharlandCustomizations development and maintenance
+description: Agent steering for CharlandCustomizations development and maintenance
 inclusion: auto
 ---
 
-# Copilot Steering for CharlandCustomizations
+# Agent Steering for CharlandCustomizations
 
 ## Purpose
 
-This document defines how GitHub Copilot should work in this repository.
+This document defines how AI assistants should work in this repository.
 It complements existing steering documents and focuses on repo-specific implementation rules.
 
 ## Repository Facts
@@ -60,8 +60,9 @@ Required AWS common parameters:
 Implementation pattern:
 
 1. Accept AWS common parameters in the function parameter block.
-2. Build `$awsParams` once in `begin` using:
+2. Build `$awsParams` using:
    `New-AWSParamSplat -BoundParameters $PSBoundParameters`
+   Place this in `begin` or at the top of `process` depending on function design.
 3. Splat `@awsParams` into each AWS cmdlet invocation.
 
 This is the preferred pattern for new/refactored AWS code.
@@ -137,7 +138,7 @@ At minimum, keep these aligned with code:
 - `docs/CODE-QUALITY.md`
 - `docs/BUILD-PROCESS.md`
 
-## Copilot Implementation Checklist
+## Agent Implementation Checklist
 
 Before finishing a code change, verify:
 

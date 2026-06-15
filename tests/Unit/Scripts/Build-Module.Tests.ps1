@@ -36,7 +36,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Remove-Module {}
             Mock Get-Command { @() }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like '*CodeSigningCert*' -or $Path -like 'Cert:\*' }
+            Mock Get-ChildItem { @() }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -89,7 +89,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Remove-Module {}
             Mock Get-Command { @() }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like '*CodeSigningCert*' -or $Path -like 'Cert:\*' }
+            Mock Get-ChildItem { @() }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -163,7 +163,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Remove-Module {}
             Mock Get-Command { @() }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like '*CodeSigningCert*' -or $Path -like 'Cert:\*' }
+            Mock Get-ChildItem { @() }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -176,6 +176,57 @@ Describe 'Build-Module' -Tag 'Unit' {
             # Assert — Remove-Item called for the build directory
             Should -Invoke Remove-Item -ParameterFilter {
                 $Recurse -eq $true -and $Force -eq $true -and $Path -like '*build*'
+            }
+        }
+    }
+
+    Context 'Non-PowerShell file removal' {
+
+        BeforeAll {
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command { @() }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            # Default: return empty for .gitkeep filter scan and other calls
+            Mock Get-ChildItem { @() }
+            # For the build-path scan (no -Filter, no -Include): return a non-PowerShell file
+            Mock Get-ChildItem {
+                @([PSCustomObject]@{
+                    Extension = '.gitkeep'
+                    FullName  = 'C:\fake\build\CharlandCustomizations\0.3.0\.gitkeep'
+                    Name      = '.gitkeep'
+                })
+            } -ParameterFilter { -not $Filter -and -not $Include }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+        }
+
+        It 'Removes non-PowerShell files from build output' {
+            # Act
+            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            # Assert — Remove-Item called for the non-PowerShell file
+            Should -Invoke Remove-Item -ParameterFilter {
+                $Path -like '*.gitkeep' -and $Force -eq $true
             }
         }
     }
