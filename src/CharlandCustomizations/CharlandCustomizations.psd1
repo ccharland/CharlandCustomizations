@@ -66,37 +66,58 @@ PowerShellVersion = '7.2'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('Public/AWS/AWSCustomizations.psm1', 
-               'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1', 
-               'Public/AWS/S3/S3Customizations.psm1', 
-               'Public/AWS/Lambda/Lambda-Customizations.psm1', 
-               'Public/AWS/Audit/Audit-AWSAccount.psm1', 
-               'Public/Git/GitCustomizations.psm1')
+NestedModules = @(
+    'Public/AWS/Audit/Audit-AWSAccount.psm1',
+    'Public/AWS/AWSCustomizations.psm1',
+    'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1',
+    'Public/AWS/Lambda/Lambda-Customizations.psm1',
+    'Public/AWS/S3/S3Customizations.psm1',
+    'Public/Git/GitCustomizations.psm1'
+)
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Install-CCProfilesFromSource', 'Invoke-CCScriptMultiAccountRegion', 
-               'Set-CCAuthenticodeSignature', 'Update-CCPowershell7', 
-               'Clear-CCAuthenticodeSignature', 'Find-CCCFNStackError', 
-               'Set-CCAWSProfileWithMFA', 'Get-CCAWSMFASession', 
-               'Start-CCMultiStackDriftDetection', 
-               'Get-CCAWSAccountListOfDriftedResource', 'Get-CCAWSObjectCount', 
-               'Set-CCAWSEnv', 'Update-CCSSOCredentialList', 
-               'Remove-CCExpiredAWSProfile', 'Get-CCAccountListFromProfile', 
-               'Use-CCAssumedRole', 'New-CCCFNStackFromDirectory', 
-               'Test-CCCFNStackFromDirectory', 'Out-CCCFNStackInfo', 
-               'Update-CCCFNStackFromDirectory', 'New-CCCFNStackDirectory', 
-               'Edit-CCCFTTEbsVolume', 'Clear-CCS3Bucket', 'Get-CCEC2SGInUse', 
-               'Get-CCEC2Count', 'Find-CCEC2DBSG', 'Out-CCAWSSupportingInfo', 
-               'Out-CCAWSNetworkingComponent', 'Get-CCIAMAuditList', 
-               'Get-CCGlobalAuditReportItem', 'Get-CCEC2KeyTagNameStatus', 
-               'Get-CCEC2SnapshotReport', 'Get-CCEC2VolumeReport', 
-               'Start-CCEC2RetryLoop', 
-               'Find-CCOpenSecurityGroup',
-               'Test-CCCommitSignature',
-               'Install-CCGitHook',
-               'Test-CCAuthenticodeSignature',
-               'Get-CCDeprecatedLMFunctionList',
-               'Get-CCAllEC2Patch'
+FunctionsToExport = @(
+    'Clear-CCAuthenticodeSignature',
+    'Clear-CCS3Bucket',
+    'Edit-CCCFTTEbsVolume',
+    'Find-CCCFNStackError',
+    'Find-CCEC2DBSG',
+    'Find-CCOpenSecurityGroup',
+    'Get-CCAccountListFromProfile',
+    'Get-CCAllEC2Patch',
+    'Get-CCAWSAccountListOfDriftedResource',
+    'Get-CCAWSMFASession',
+    'Get-CCAWSObjectCount',
+    'Get-CCDeprecatedLMFunctionList',
+    'Get-CCEC2Count',
+    'Get-CCEC2KeyTagNameStatus',
+    'Get-CCEC2SGInUse',
+    'Get-CCEC2SnapshotReport',
+    'Get-CCEC2VolumeReport',
+    'Get-CCGlobalAuditReportItem',
+    'Get-CCIAMAuditList',
+    'Install-CCGitHook',
+    'Install-CCProfilesFromSource',
+    'Invoke-CCScriptMultiAccountRegion',
+    'New-CCCFNStackDirectory',
+    'New-CCCFNStackFromDirectory',
+    'Out-CCAWSNetworkingComponent',
+    'Out-CCAWSSupportingInfo',
+    'Out-CCCFNStackInfo',
+    'Remove-CCExpiredAWSProfile',
+    'Set-CCAuthenticodeSignature',
+    'Set-CCAWSEnv',
+    'Set-CCAWSProfileWithMFA',
+    'Start-CCEC2RetryLoop',
+    'Start-CCMultiStackDriftDetection',
+    'Test-CCAuthenticodeSignature',
+    'Test-CCCFNStackFromDirectory',
+    'Test-CCCommitSignature',
+    'Update-CCCFNStackFromDirectory',
+    'Update-CCPowershell7',
+    'Update-CCSSOCredentialList',
+    'Use-CCAssumedRole'
+)
               
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -105,7 +126,10 @@ CmdletsToExport = @()
 # VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'Set-CCFileSignature', 'Test-CCAuthenticodeSignatures'
+AliasesToExport = @(
+    'Set-CCFileSignature',
+    'Test-CCAuthenticodeSignatures'
+)
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -122,7 +146,14 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = 'PowerShell','AWS','Automation','CloudFormation','Utilities','Beta'
+        Tags = @(
+            'Automation',
+            'AWS',
+            'Beta',
+            'CloudFormation',
+            'PowerShell',
+            'Utilities'
+        )
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/ccharland/CharlandCustomizations/blob/main/LICENSE'
@@ -156,4 +187,3 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
-
