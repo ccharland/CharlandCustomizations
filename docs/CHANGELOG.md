@@ -2,6 +2,12 @@
 
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Manifest compliance now enforces sorted `.psd1` arrays and `.psm1` `Export-ModuleMember -Function` arrays with one element per line to reduce merge conflicts in frequently edited export lists.
+
 ## [0.3.1] - 2026-06-13
 
 ### Added
@@ -82,4 +88,3 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - Published to PowerShell Gallery as a pre-release (`0.1.0-beta1`).
 - Reviewer-identified code updates are intentionally deferred to a future release; this beta focuses on packaging and documentation alignment.
-
