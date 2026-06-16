@@ -20,10 +20,15 @@ if (-not (Test-Path -LiteralPath $Path)) {
 }
 
 $content = Get-Content -LiteralPath $Path -Raw
-$cleaned = $content -replace '(?s)(\r?\n)?# SIG # Begin signature block.*?# SIG # End signature block(\r?\n)?', ''
+$signatureStart = $content.IndexOf('# SIG # Begin signature block')
 
-[System.IO.File]::WriteAllText($Path, $cleaned)
-Write-Host "Signature block removed from: $Path"
+if ($signatureStart -gt -1) {
+    $cleaned = $content.Substring(0, $signatureStart).TrimEnd()
+    Set-Content -LiteralPath $Path -Value $cleaned -NoNewline
+    Write-Host "Signature block removed from: $Path"
+} else {
+    Write-Host "No signature block found in: $Path"
+}
 
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
