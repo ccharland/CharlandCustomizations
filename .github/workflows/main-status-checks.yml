@@ -17,61 +17,16 @@ permissions:
 jobs:
   pester-tests:
     name: Pester Tests
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install AWS.Tools modules
+      - name: Install and import AWSPowerShell.NetCore
         shell: pwsh
         run: |
-          Install-Module -Name AWS.Tools.Installer -Scope CurrentUser -Force
-          Install-AWSToolsModule -Name @(
-            'AWS.Tools.Common',
-            'AWS.Tools.AutoScaling',
-            'AWS.Tools.CertificateManager',
-            'AWS.Tools.CloudFormation',
-            'AWS.Tools.CloudFront',
-            'AWS.Tools.CloudWatch',
-            'AWS.Tools.CodeBuild',
-            'AWS.Tools.DAX',
-            'AWS.Tools.DirectoryService',
-            'AWS.Tools.DirectoryServiceData',
-            'AWS.Tools.DocDB',
-            'AWS.Tools.DynamoDBv2',
-            'AWS.Tools.EC2',
-            'AWS.Tools.ECS',
-            'AWS.Tools.EKS',
-            'AWS.Tools.ElastiCache',
-            'AWS.Tools.ElasticFileSystem',
-            'AWS.Tools.ElasticLoadBalancing',
-            'AWS.Tools.ElasticLoadBalancingV2',
-            'AWS.Tools.ElasticMapReduce',
-            'AWS.Tools.ForecastService',
-            'AWS.Tools.FSx',
-            'AWS.Tools.Glue',
-            'AWS.Tools.IdentityManagement',
-            'AWS.Tools.Kafka',
-            'AWS.Tools.KeyManagementService',
-            'AWS.Tools.Lambda',
-            'AWS.Tools.MQ',
-            'AWS.Tools.Neptune',
-            'AWS.Tools.OpenSearchService',
-            'AWS.Tools.RDS',
-            'AWS.Tools.Redshift',
-            'AWS.Tools.S3',
-            'AWS.Tools.SageMaker',
-            'AWS.Tools.SecretsManager',
-            'AWS.Tools.SecurityToken',
-            'AWS.Tools.SimpleNotificationService',
-            'AWS.Tools.SimpleSystemsManagement',
-            'AWS.Tools.SQS',
-            'AWS.Tools.SSO',
-            'AWS.Tools.SSOOIDC',
-            'AWS.Tools.StepFunctions',
-            'AWS.Tools.StorageGateway',
-            'AWS.Tools.Transfer',
-            'AWS.Tools.WorkSpaces'
-          ) -Scope CurrentUser -Force -CleanUp
+          Install-Module -Name AWSPowerShell.NetCore -Scope CurrentUser -Force
+          Import-Module AWSPowerShell.NetCore -ErrorAction Stop
+          Write-Output "AWSPowerShell.NetCore $(Get-Module AWSPowerShell.NetCore | Select-Object -ExpandProperty Version) loaded"
 
       - name: Run Pester tests
         shell: pwsh
@@ -80,7 +35,6 @@ jobs:
           $config.Run.Path = './tests'
           $config.Run.Exit = $true
           $config.Output.Verbosity = 'Detailed'
-          $config.Filter.ExcludeTag = @('Windows')
           Invoke-Pester -Configuration $config
 
   code-quality:
