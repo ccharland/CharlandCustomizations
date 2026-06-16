@@ -1,14 +1,20 @@
 <#
 .SYNOPSIS
-    Validates that FunctionsToExport in the manifest matches the actual public function surface.
+    Validates that the module manifest matches the actual public function surface.
 .DESCRIPTION
     Uses the PowerShell AST to discover all function definitions in the Public directory
     (both .ps1 and .psm1 files, including nested module sources). Compares the discovered
     functions against FunctionsToExport in the module manifest.
 
-    Reports two types of drift:
+    Also validates that arrays in the manifest and Export-ModuleMember -Function arrays
+    in nested .psm1 files are formatted with one element per line and sorted alphabetically.
+    This keeps frequently-edited export arrays merge-friendly.
+
+    Reports these types of drift:
     - Functions defined in source but missing from FunctionsToExport (forgot to export)
     - Functions listed in FunctionsToExport but not defined in source (stale export)
+    - Manifest arrays with multiple elements on one line or unsorted elements
+    - Export-ModuleMember -Function arrays with multiple elements on one line or unsorted elements
 .PARAMETER ManifestPath
     Path to the module manifest (.psd1). Defaults to src/CharlandCustomizations/CharlandCustomizations.psd1.
 .PARAMETER PublicPath
@@ -39,6 +45,212 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Get-SortableArrayElement {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Management.Automation.Language.Ast]$ArrayAst,
+
+        [Parameter()]
+        [switch]$PreferNestedArrayLiteral
+    )
+
+    if ($ArrayAst -is [System.Management.Automation.Language.ArrayExpressionAst]) {
+        $containsArrayLiteral = $ArrayAst.FindAll(
+            { param($node) $node -is [System.Management.Automation.Language.ArrayLiteralAst] },
+            $true
+        )
+
+        if ($PreferNestedArrayLiteral -and $containsArrayLiteral.Count -gt 0) {
+            return @($containsArrayLiteral[0].Elements)
+        }
+
+        return @($ArrayAst.SubExpression.Statements)
+    }
+
+    if ($ArrayAst -is [System.Management.Automation.Language.ArrayLiteralAst]) {
+        return @($ArrayAst.Elements)
+    }
+
+    return @()
+}
+
+function Test-SortedArrayStyle {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [System.Management.Automation.Language.Ast]$ArrayAst,
+
+        [Parameter(Mandatory)]
+        [string]$IssuePrefix,
+
+        [Parameter()]
+        [switch]$PreferNestedArrayLiteral
+    )
+
+    $elements = @(Get-SortableArrayElement -ArrayAst $ArrayAst -PreferNestedArrayLiteral:$PreferNestedArrayLiteral)
+    if ($elements.Count -le 1) {
+        return @()
+    }
+
+    $styleFailures = @()
+    $duplicateLine = $elements |
+        Group-Object { $_.Extent.StartLineNumber } |
+        Where-Object { $_.Count -gt 1 } |
+        Select-Object -First 1
+
+    if ($duplicateLine) {
+        $styleFailures += [PSCustomObject]@{
+            Line  = $ArrayAst.Extent.StartLineNumber
+            Issue = "$IssuePrefix has multiple elements on one line"
+        }
+    }
+
+    $values = @(
+        foreach ($element in $elements) {
+            if ($element -is [System.Management.Automation.Language.StringConstantExpressionAst]) {
+                [string]$element.Value
+            }
+            elseif ($element -is [System.Management.Automation.Language.ConstantExpressionAst]) {
+                [string]$element.Value
+            }
+            else {
+                $element.Extent.Text.Trim().Trim("'`"")
+            }
+        }
+    )
+
+    $sortedValues = [string[]]$values.Clone()
+    [array]::Sort($sortedValues, [System.StringComparer]::OrdinalIgnoreCase)
+
+    for ($i = 0; $i -lt $values.Count; $i++) {
+        if ($values[$i] -cne $sortedValues[$i]) {
+            $styleFailures += [PSCustomObject]@{
+                Line  = $ArrayAst.Extent.StartLineNumber
+                Issue = "$IssuePrefix elements are not sorted alphabetically"
+            }
+            break
+        }
+    }
+
+    return $styleFailures
+}
+
+function Test-ManifestArrayStyle {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $tokens = $null
+    $parseErrors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+        $Path,
+        [ref]$tokens,
+        [ref]$parseErrors
+    )
+
+    if ($parseErrors.Count -gt 0) {
+        throw "Module manifest has parse errors: $Path"
+    }
+
+    $arrayAsts = $ast.FindAll(
+        {
+            param($node)
+            $node -is [System.Management.Automation.Language.ArrayLiteralAst] -or
+            $node -is [System.Management.Automation.Language.ArrayExpressionAst]
+        },
+        $true
+    )
+
+    $styleFailures = @()
+
+    foreach ($arrayAst in $arrayAsts) {
+        if ($arrayAst -is [System.Management.Automation.Language.ArrayExpressionAst]) {
+            $containsArrayLiteral = $arrayAst.FindAll(
+                { param($node) $node -is [System.Management.Automation.Language.ArrayLiteralAst] },
+                $true
+            )
+
+            if ($containsArrayLiteral.Count -gt 0) {
+                continue
+            }
+        }
+
+        $styleFailures += Test-SortedArrayStyle -ArrayAst $arrayAst -IssuePrefix 'Array'
+    }
+
+    return $styleFailures
+}
+
+function Test-ExportModuleMemberFunctionStyle {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [AllowEmptyCollection()]
+        [System.IO.FileInfo[]]$SourceFiles
+    )
+
+    $styleFailures = @()
+
+    foreach ($file in $SourceFiles | Where-Object { $_.Extension -eq '.psm1' }) {
+        $tokens = $null
+        $parseErrors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            $file.FullName,
+            [ref]$tokens,
+            [ref]$parseErrors
+        )
+
+        if ($parseErrors.Count -gt 0) {
+            throw "PowerShell module has parse errors: $($file.FullName)"
+        }
+
+        $exportCommands = $ast.FindAll(
+            {
+                param($node)
+                $node -is [System.Management.Automation.Language.CommandAst] -and
+                $node.GetCommandName() -eq 'Export-ModuleMember'
+            },
+            $true
+        )
+
+        foreach ($command in $exportCommands) {
+            for ($i = 0; $i -lt $command.CommandElements.Count; $i++) {
+                $element = $command.CommandElements[$i]
+                if ($element -isnot [System.Management.Automation.Language.CommandParameterAst]) {
+                    continue
+                }
+
+                if ($element.ParameterName -ne 'Function') {
+                    continue
+                }
+
+                if ($i + 1 -ge $command.CommandElements.Count) {
+                    continue
+                }
+
+                $functionArgument = $command.CommandElements[$i + 1]
+                if ($functionArgument -isnot [System.Management.Automation.Language.ArrayExpressionAst] -and
+                    $functionArgument -isnot [System.Management.Automation.Language.ArrayLiteralAst]) {
+                    continue
+                }
+
+                foreach ($failure in (Test-SortedArrayStyle -ArrayAst $functionArgument -IssuePrefix 'Export-ModuleMember -Function array' -PreferNestedArrayLiteral)) {
+                    $styleFailures += [PSCustomObject]@{
+                        File  = $file.FullName
+                        Line  = $failure.Line
+                        Issue = $failure.Issue
+                    }
+                }
+            }
+        }
+    }
+
+    return $styleFailures
+}
+
 if (-not (Test-Path -Path $ManifestPath)) {
     throw "Module manifest not found: $ManifestPath"
 }
@@ -49,10 +261,12 @@ if (-not (Test-Path -Path $PublicPath)) {
 
 $manifest = Import-PowerShellDataFile -Path $ManifestPath
 $exportedFunctions = @($manifest.FunctionsToExport)
+$manifestArrayFailures = @(Test-ManifestArrayStyle -Path $ManifestPath)
 
 # Discover all function definitions in Public/**/*.ps1 and Public/**/*.psm1 using AST
 $sourceFiles = Get-ChildItem -Path $PublicPath -Recurse -Include '*.ps1', '*.psm1' -File
 $discoveredFunctions = @()
+$exportModuleMemberFailures = @(Test-ExportModuleMemberFunctionStyle -SourceFiles $sourceFiles)
 
 foreach ($file in $sourceFiles) {
     Write-Verbose "Scanning: $($file.FullName)"
@@ -96,20 +310,31 @@ foreach ($func in $staleExports) {
     }
 }
 
-if ($failures.Count -gt 0) {
-    Write-Host "Manifest compliance failed. $($failures.Count) issue(s) found:" -ForegroundColor Red
-    $failures | Format-Table FunctionName, Issue -AutoSize | Out-Host
+if ($failures.Count -gt 0 -or $manifestArrayFailures.Count -gt 0 -or $exportModuleMemberFailures.Count -gt 0) {
+    Write-Host "Manifest compliance failed. $($failures.Count + $manifestArrayFailures.Count + $exportModuleMemberFailures.Count) issue(s) found:" -ForegroundColor Red
 
-    throw 'FunctionsToExport does not match the public function surface. Update the manifest or add/remove the function.'
+    if ($failures.Count -gt 0) {
+        $failures | Format-Table FunctionName, Issue -AutoSize | Out-Host
+    }
+
+    if ($manifestArrayFailures.Count -gt 0) {
+        $manifestArrayFailures | Format-Table Line, Issue -AutoSize | Out-Host
+    }
+
+    if ($exportModuleMemberFailures.Count -gt 0) {
+        $exportModuleMemberFailures | Format-Table File, Line, Issue -AutoSize | Out-Host
+    }
+
+    throw 'Manifest compliance failed. FunctionsToExport does not match the public function surface, or export arrays are invalid; keep manifest arrays and Export-ModuleMember -Function arrays sorted with one element per line.'
 }
 
-Write-Host "Manifest compliance passed. $($exportedFunctions.Count) exported function(s) match $($discoveredFunctions.Count) discovered function(s)." -ForegroundColor Green
+Write-Host "Manifest compliance passed. $($exportedFunctions.Count) exported function(s) match $($discoveredFunctions.Count) discovered function(s), and export arrays are sorted one element per line." -ForegroundColor Green
 
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB5r29rTFbkoMZV
-# UgIFsuabrfsJoV2ZcSuSpv19fJbkoKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC6ZcoBy5qCWUHD
+# A0FbbkKcroGrGw+frvERHPMQ1OP15aCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -311,33 +536,33 @@ Write-Host "Manifest compliance passed. $($exportedFunctions.Count) exported fun
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIM2fr/ZUBFiefQ1eC2V5pjZibLCksmDnI58zlxSO4abmMA0GCSqG
-# SIb3DQEBAQUABIICALOp2vuEXnmORAezk6ZVm6fgJTzRXF6+//chMjd+tlT/+643
-# V2x8MO7mOe04HKoNJmg7FP42kgz4URU5x0IIdCT3iK9Nx4OoJELldZ1B3WfWAiZ0
-# +lzA/uqGAH0i1muvUbkx+hboLcV2AUIGe7kEpF2VmX/a6QirfjxqUpi1deESIM9B
-# SA4f9x/R7b4k0AiaOgsQYI1SGcTNCFETt8FFwTFzWIaeLkejfbZejmumT/D2XvzP
-# cuSZJaOHrYOlW0eDTKJKVCRaYJfrQfk6xRCRcGkb7RgSBLyvod4ef2Q+vX5Ja6XF
-# OYEgHRYgVhv7UyIRb/g/us++oUVWCNPvaJbXweNNVWgtC9PA+O892LsUCT7jVFc5
-# 75lfbwr/F0lQzX6K5JpFwKlHkSI4CKhKShrw0hoIwA8qxnDQw1BIYacJU9ElE0Bf
-# f5/wcHeoLI6rbVII9mcSuJhaVh7U3/QLk8PcvnDwRqPSf7pu40Sl7Vdt9uMLFfMo
-# bTJbzG4X6lnAq7H0SNNc6agNohPnWogwnDs90zPwxQYLTwarCMOuAIsqTAuT/FPS
-# JNMiXy97gj73Hfz3Co4BihwwVj8ij74FP1YkyZkMd4eAlMHgrQ6C+MfisCKeUS4z
-# l1F3B+dQXMIjsGDMpuznu5m7arXgLplumhl1bBu9y740nnLSTgfGaF1i9oYtoYID
+# hvcNAQkEMSIEIOqw1GXGoB7M1HDfcpzjCr942APTL5E9qE0ytDtCyQ93MA0GCSqG
+# SIb3DQEBAQUABIICAGDaKVFGpgYct55oC+YF8OOg7IOXTBMcKgk/oH2Qfqp8Bq5N
+# Bg3f3MdWo8p1hlzmUAvu6XaQvRsA4KD2YPBP3jHWhx/rAFSpov54hwgbVGEIFgfM
+# s0PLaVqWmnMMIW0uRA5TqH+Yc5qD2RLKCH99xzyMxoFiTeIDOVjkltAOwzMh8lnz
+# 2X33rnSj+RGi1hs1Q52PbCsRqdv9MiCHjS73lXVsoQaroQt1DyKcA47UbxchduWJ
+# OWUjAiZENiM1t4JjfjLdcQ9lCYgcsqGX/4VDFdT80rjRLmrhzZ1vA6MiMMvYy+PZ
+# O98dgSaBfQueqdgmfGx6kEnLYzrrYYOmoPadpdHaGyDTmBUJbhuy9h9aLu9IWjOI
+# zQJjh9QNtsa7BI2ii9WDCvEISF5X6sPT/GDhkJ8pl1MKmY/+Gfz5gaRCrCwvxVNP
+# Q0ZHWTdZvPsWdZ1ihxOFXEHTdB7tCKtgZsXo6dwKKNG25N/mRTx9ms92ScGNXYkK
+# 70PJr3MgMDL6sEfdBNjXWuOO+1UFQXGx0IC83NhSbFzsrC0So2weCIDp/5xk4CfV
+# 0RvaUnvAJc/XGUtFzKA2oITgw4CBpQ0p2U8b30cAQ0DMIEEKzrVRd7nScH1zNp8r
+# SX8BgPPZsYN5wdsRrhwv9QF75A59Z3tXcO/C8jhT8M5FvNiTM6sbJ2i1hLxpoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjA2MDAzNzEzWjA/BgkqhkiG9w0BCQQxMgQw39O2O3ll4J4zTxYeWIW9
-# vRFZtjlYPRisGx1GGweYDoi9e4ewgKbYRQZuFEng+NrnMA0GCSqGSIb3DQEBAQUA
-# BIICAEXY9Kihl8gQfiyK8XBFI8AzHkQyeIJmtbKG9j7cHKrtgjzu4KCy8uU9WBJD
-# KLzzkDnhs/ggftVKXVt6zoqL6UVk7yp+ETFprbuKM8SGVEAGo45cXWxesx4ptuNg
-# Xp7qq2lZUATHjcLC1lbnQnt/ESODlTWj61pXalIAokoVP9wR3wrO0SYngB9v34Y+
-# Ma4psJRWIoWhj2VxAz0RVuswf3ZIYgfnJpV05I9JwaHsnk0DD37WjMAILDEDIqP7
-# oqGrg6Hkb/MkY9Zo2nEtaRg6xwqGiyZ1G4ebjbDklomR/PLGqFyBTGYrOt5zUyYM
-# Vb7G6H0BZC5CQdp37w42EuPlo4QWKmK0MemTOaf5jw7BWK8ICg8IqzMKNh02EDQr
-# 37jZ1LvWDaUuVf0SGcW3wsYUrAgzzcn5lsLUEIpb6rIj5s97RSHqYavHZgrBPlhp
-# oww2ZSlgM4QXzTNV1jlyLRTIYz26QZzSeZjIew72WqKXPAoPY+U/XrTu0zS0wwgW
-# JFgnG/Xhf8CfLTKO5lfryliAbX+mQTAOG+sDCLaeBvZA8AG+fnXeA61yCL4/vAAF
-# KJEGpoaf/M2MvW78B6WMqOK06R6h+xpwlRwayPnUxqDPvcMz6EsgItu9aAqTtYAm
-# LOja4i6RFO+E6hi6zC16MYLZLsTC1NqnWxr7AfBRdilDsGTR
+# DxcNMjYwNjE1MjMxODAwWjA/BgkqhkiG9w0BCQQxMgQwH4cocGSH7YM5JKEKPJde
+# LeiefvMKmjnXYVaRY0Ro+K/suDK4Q8Gso2meenKEaASeMA0GCSqGSIb3DQEBAQUA
+# BIICAIJlibCYz5mOABByZNXZiqin9mAWtKkTMYVofnibQIOXO1RLGOqq8pPiM5/j
+# Q6biBhWRpUBvJ1myEFIQOW065AILzcbiOf36Ltqc93cAOdrCkkNA8f1gaCfogabd
+# Y6RFPubD8WQemezYpsiSWFrNgG1WeqrtEm3vOj0uEkEvsHVO4/1585UZVZ66G/Lw
+# vkatBR9rlbQP9b8CQB9Td8YWH0jGcuC7Aik0AJJypKYHkleFJ9C9iyJNX7x5/B1p
+# iXkj7KTeM1zsXIey4Qyc0MrD1yjmsa9Xjk+LseDGsS9uBqyU9E4GY54w4rtjlnTR
+# kWIhDlNYwfdIZOMnHY5Rh57zJ7pSIkXJki9q63GyYTkpDI6mlrfHdHQAXR7vRD+8
+# YUo0kAi12PZZeYljldOpcsmRsKr7K6KQTc7PwVMWJZcB4CzlPAzxSn2/nvuCGLEg
+# 8w/hDICzr2gKxpYDtEgxFGsg22ijxOmh+JXO2SKU1zXQxMGmyNk8VatYdphucSiM
+# fIwoXQPr9lKssHtBPOvDNMF3Nq65aRCMPF/lPS4obPwlW9Ny8Qe7EzRdOiVFjFgU
+# 5Fx2HiJz8U3ediXlqUuKZ664PTgNn7F9gaYG4uUmrwHNMlizVcbuZQDPpbE3k4gQ
+# ah2LrXbu2zUSmtbj8eqD25zr1b9pXrvP2yVxnZmCGnnSMNmu
 # SIG # End signature block

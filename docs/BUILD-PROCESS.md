@@ -146,11 +146,22 @@ Default gate scope:
 
 The gate validates `.ps1`, `.psm1`, and `.psd1` files and fails if any signature status is not `Valid`.
 
+### Manifest Compliance Gate
+
+Validate the module manifest before packaging/publishing:
+
+```powershell
+./Scripts/Test-ManifestCompliance.ps1
+```
+
+The gate verifies that `FunctionsToExport` matches the public function surface and that every `.psd1` array and `.psm1` `Export-ModuleMember -Function` array is sorted alphabetically with one element per line. The PR quality gate and main status checks run this same script, so malformed export arrays block merges.
+
 ## Build Process Steps
 
 1. **Validate Source**
    - Checks module manifest exists
    - Tests manifest syntax
+   - Runs manifest compliance checks for export drift, `.psd1` array formatting, and nested module export-list formatting
    - Reads version number
    - Runs PSScriptAnalyzer (if installed)
 

@@ -113,7 +113,14 @@ function Get-RealItem {
 
             # Manifest lists the real one plus a stale one
             $script:StaleManifest = Join-Path $script:StaleDir 'Test.psd1'
-            Set-Content -Path $script:StaleManifest -Value "@{ FunctionsToExport = @('Get-RealItem', 'Get-DeletedItem') }"
+            Set-Content -Path $script:StaleManifest -Value @'
+@{
+    FunctionsToExport = @(
+        'Get-DeletedItem'
+        'Get-RealItem'
+    )
+}
+'@
         }
 
         It 'Throws when a function is exported but not defined in source' {
@@ -164,6 +171,115 @@ function Get-NestedItem {
         It 'Passes with no exported functions and no source functions' {
             { & $script:ScriptPath -ManifestPath $script:EmptyManifest -PublicPath $script:EmptyPublic } |
             Should -Not -Throw
+        }
+    }
+
+    Context 'Manifest array style' {
+
+        BeforeAll {
+            $script:StyleDir = Join-Path $script:TestRoot 'ArrayStyle'
+            $script:StylePublic = Join-Path $script:StyleDir 'Public'
+            New-Item -ItemType Directory -Path $script:StylePublic -Force | Out-Null
+
+            $functionContent = @'
+function Get-AlphaItem {
+    [CmdletBinding()]
+    param()
+}
+
+function Get-BetaItem {
+    [CmdletBinding()]
+    param()
+}
+'@
+            Set-Content -Path (Join-Path $script:StylePublic 'Functions.ps1') -Value $functionContent
+
+            $script:SingleLineArrayManifest = Join-Path $script:StyleDir 'SingleLineArray.psd1'
+            Set-Content -Path $script:SingleLineArrayManifest -Value "@{ FunctionsToExport = @('Get-AlphaItem', 'Get-BetaItem') }"
+
+            $script:UnsortedArrayManifest = Join-Path $script:StyleDir 'UnsortedArray.psd1'
+            Set-Content -Path $script:UnsortedArrayManifest -Value @'
+@{
+    FunctionsToExport = @(
+        'Get-BetaItem'
+        'Get-AlphaItem'
+    )
+}
+'@
+        }
+
+        It 'Throws when a manifest array has multiple elements on one line' {
+            { & $script:ScriptPath -ManifestPath $script:SingleLineArrayManifest -PublicPath $script:StylePublic } |
+            Should -Throw '*keep manifest arrays and Export-ModuleMember -Function arrays sorted with one element per line*'
+        }
+
+        It 'Throws when a manifest array is not sorted' {
+            { & $script:ScriptPath -ManifestPath $script:UnsortedArrayManifest -PublicPath $script:StylePublic } |
+            Should -Throw '*keep manifest arrays and Export-ModuleMember -Function arrays sorted with one element per line*'
+        }
+    }
+
+    Context 'Export-ModuleMember function array style' {
+
+        BeforeAll {
+            $script:ExportStyleDir = Join-Path $script:TestRoot 'ExportArrayStyle'
+            $script:ExportStylePublic = Join-Path $script:ExportStyleDir 'Public'
+            New-Item -ItemType Directory -Path $script:ExportStylePublic -Force | Out-Null
+
+            $script:ExportStyleManifest = Join-Path $script:ExportStyleDir 'Test.psd1'
+            Set-Content -Path $script:ExportStyleManifest -Value @'
+@{
+    FunctionsToExport = @(
+        'Get-AlphaItem'
+        'Get-BetaItem'
+    )
+}
+'@
+
+            $script:SingleLineExportModule = Join-Path $script:ExportStylePublic 'SingleLineExport.psm1'
+            Set-Content -Path $script:SingleLineExportModule -Value @'
+function Get-AlphaItem {
+    [CmdletBinding()]
+    param()
+}
+
+function Get-BetaItem {
+    [CmdletBinding()]
+    param()
+}
+
+Export-ModuleMember -Function @('Get-AlphaItem', 'Get-BetaItem')
+'@
+
+            $script:UnsortedExportModule = Join-Path $script:ExportStylePublic 'UnsortedExport.psm1'
+            Set-Content -Path $script:UnsortedExportModule -Value @'
+function Get-AlphaItem {
+    [CmdletBinding()]
+    param()
+}
+
+function Get-BetaItem {
+    [CmdletBinding()]
+    param()
+}
+
+Export-ModuleMember -Function @(
+    'Get-BetaItem',
+    'Get-AlphaItem'
+)
+'@
+        }
+
+        It 'Throws when an Export-ModuleMember -Function array has multiple elements on one line' {
+            { & $script:ScriptPath -ManifestPath $script:ExportStyleManifest -PublicPath $script:ExportStylePublic } |
+            Should -Throw '*keep manifest arrays and Export-ModuleMember -Function arrays sorted with one element per line*'
+        }
+
+        It 'Throws when an Export-ModuleMember -Function array is not sorted' {
+            Remove-Item -Path $script:SingleLineExportModule
+
+            { & $script:ScriptPath -ManifestPath $script:ExportStyleManifest -PublicPath $script:ExportStylePublic } |
+            Should -Throw '*keep manifest arrays and Export-ModuleMember -Function arrays sorted with one element per line*'
         }
     }
 }

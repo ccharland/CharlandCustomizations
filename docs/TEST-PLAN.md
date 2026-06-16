@@ -45,7 +45,7 @@ The release is ready only when all required gates pass:
 3. Coverage gate: every exported function and release-support script has at least one mapped Pester test or a documented release exception.
 4. Static analysis gate: PSScriptAnalyzer reports no errors.
 5. Build gate: `./Scripts/Build-Module.ps1 -Clean -Package` completes successfully.
-6. Manifest gate: exported functions in the manifest match the public release surface.
+6. Manifest gate: exported functions in the manifest match the public release surface, and every `.psd1` array plus `.psm1` `Export-ModuleMember -Function` array is sorted with one element per line.
 7. Manual smoke gate: the packaged module imports cleanly and one representative command from each area can be discovered with `Get-Command` and `Get-Help`.
 
 ## 5. Test Levels
