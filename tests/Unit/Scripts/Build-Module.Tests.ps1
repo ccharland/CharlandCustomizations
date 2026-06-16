@@ -230,4 +230,219 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
         }
     }
+
+    Context 'Signing behavior — default (sign only invalid/missing)' {
+
+        BeforeAll {
+            # Define stub so the build script's Get-Command check finds it and skips dot-sourcing the real file
+            function Set-CCAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
+
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command {
+                [PSCustomObject]@{ Name = 'Set-CCAuthenticodeSignature' }
+            } -ParameterFilter { $Name -eq 'Set-CCAuthenticodeSignature' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'Set-CCAuthenticodeSignature' -or -not $Name }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            # Return mock files for the build path -Include scan
+            Mock Get-ChildItem {
+                @(
+                    [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\Valid.ps1'; Name = 'Valid.ps1' },
+                    [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\Invalid.ps1'; Name = 'Invalid.ps1' },
+                    [PSCustomObject]@{ Extension = '.psm1'; FullName = 'C:\fake\build\NoTimestamp.psm1'; Name = 'NoTimestamp.psm1' }
+                )
+            } -ParameterFilter { $Include }
+            Mock Get-ChildItem { @() } -ParameterFilter { -not $Include -and $Path -notlike 'Cert:\*' }
+            # Mock code signing cert
+            Mock Get-ChildItem {
+                @([PSCustomObject]@{
+                    Subject       = 'CN=Test Cert'
+                    NotAfter      = (Get-Date).AddYears(1)
+                    HasPrivateKey = $true
+                    Thumbprint    = 'AABBCCDD'
+                })
+            } -ParameterFilter { $Path -like 'Cert:\*' }
+            # Mock signature validation per file
+            Mock Get-AuthenticodeSignature {
+                $fileName = Split-Path $FilePath -Leaf
+                switch ($fileName) {
+                    'Valid.ps1' {
+                        [PSCustomObject]@{ Status = 'Valid'; TimeStamperCertificate = [PSCustomObject]@{ Subject = 'CN=Timestamp' } }
+                    }
+                    'Invalid.ps1' {
+                        [PSCustomObject]@{ Status = 'NotSigned'; TimeStamperCertificate = $null }
+                    }
+                    'NoTimestamp.psm1' {
+                        [PSCustomObject]@{ Status = 'Valid'; TimeStamperCertificate = $null }
+                    }
+                    default {
+                        [PSCustomObject]@{ Status = 'Valid'; TimeStamperCertificate = [PSCustomObject]@{ Subject = 'CN=Timestamp' } }
+                    }
+                }
+            }
+            Mock Set-CCAuthenticodeSignature {
+                [PSCustomObject]@{ Status = 'Valid' }
+            }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+            Mock Write-Verbose {}
+        }
+
+        It 'Only signs files with invalid or missing timestamp signatures' {
+            & $script:BuildModulePath -SkipAnalysis
+
+            # Set-CCAuthenticodeSignature called for Invalid.ps1 and NoTimestamp.psm1, but not Valid.ps1
+            Should -Invoke Set-CCAuthenticodeSignature -Times 2 -Exactly
+        }
+
+        It 'Does not sign files that already have valid timestamped signatures' {
+            & $script:BuildModulePath -SkipAnalysis
+
+            # Should only be called for Invalid.ps1 and NoTimestamp.psm1
+            Should -Invoke Set-CCAuthenticodeSignature -ParameterFilter {
+                $Path -like '*Invalid.ps1'
+            }
+            Should -Invoke Set-CCAuthenticodeSignature -ParameterFilter {
+                $Path -like '*NoTimestamp.psm1'
+            }
+            # Total calls should be exactly 2 (not 3), confirming Valid.ps1 was skipped
+            Should -Invoke Set-CCAuthenticodeSignature -Times 2 -Exactly
+        }
+
+        It 'Calls Get-AuthenticodeSignature to check each file before signing' {
+            & $script:BuildModulePath -SkipAnalysis
+
+            Should -Invoke Get-AuthenticodeSignature -Times 3 -Exactly
+        }
+    }
+
+    Context 'Signing behavior — UpdateAllSignatures' {
+
+        BeforeAll {
+            function Set-CCAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
+
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command {
+                [PSCustomObject]@{ Name = 'Set-CCAuthenticodeSignature' }
+            } -ParameterFilter { $Name -eq 'Set-CCAuthenticodeSignature' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'Set-CCAuthenticodeSignature' -or -not $Name }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            Mock Get-ChildItem {
+                @(
+                    [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\FileA.ps1'; Name = 'FileA.ps1' },
+                    [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\FileB.ps1'; Name = 'FileB.ps1' },
+                    [PSCustomObject]@{ Extension = '.psd1'; FullName = 'C:\fake\build\Module.psd1'; Name = 'Module.psd1' }
+                )
+            } -ParameterFilter { $Include }
+            Mock Get-ChildItem { @() } -ParameterFilter { -not $Include -and $Path -notlike 'Cert:\*' }
+            Mock Get-ChildItem {
+                @([PSCustomObject]@{
+                    Subject       = 'CN=Test Cert'
+                    NotAfter      = (Get-Date).AddYears(1)
+                    HasPrivateKey = $true
+                    Thumbprint    = 'AABBCCDD'
+                })
+            } -ParameterFilter { $Path -like 'Cert:\*' }
+            Mock Set-CCAuthenticodeSignature {
+                [PSCustomObject]@{ Status = 'Valid' }
+            }
+            Mock Get-AuthenticodeSignature {
+                [PSCustomObject]@{ Status = 'Valid'; TimeStamperCertificate = [PSCustomObject]@{ Subject = 'CN=TS' } }
+            }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+            Mock Write-Verbose {}
+        }
+
+        It 'Signs all files regardless of current signature status' {
+            & $script:BuildModulePath -UpdateAllSignatures -SkipAnalysis
+
+            Should -Invoke Set-CCAuthenticodeSignature -Times 3 -Exactly
+        }
+
+        It 'Does not call Get-AuthenticodeSignature to check files first' {
+            & $script:BuildModulePath -UpdateAllSignatures -SkipAnalysis
+
+            Should -Not -Invoke Get-AuthenticodeSignature
+        }
+    }
+
+    Context 'Signing behavior — parameter conflicts' {
+
+        BeforeAll {
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command { @() }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            Mock Get-ChildItem { @() }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+        }
+
+        It 'Writes warning when -UpdateAllSignatures and -SkipSigning are both specified' {
+            & $script:BuildModulePath -UpdateAllSignatures -SkipSigning -SkipAnalysis
+
+            Should -Invoke Write-Warning -ParameterFilter {
+                $Message -like '*UpdateAllSignatures*SkipSigning*'
+            }
+        }
+    }
 }
