@@ -124,9 +124,13 @@ if ($Clean -and (Test-Path $BuildRoot)) {
 
 # Dirty working tree check — prevent packaging/releasing with uncommitted changes
 if ($Package -or $PrepareRelease) {
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        throw "Build aborted: git is required to verify a clean working tree for -Package/-PrepareRelease."
+    }
+
     $gitStatus = git status --porcelain 2>$null
     if ($gitStatus) {
-        $dirtyCount = ($gitStatus | Measure-Object).Count
+        $dirtyCount = @($gitStatus).Count
         Write-Error "Build aborted: working tree has $dirtyCount uncommitted change(s). Commit or stash changes before using -Package or -PrepareRelease."
         exit 1
     }
@@ -144,12 +148,11 @@ foreach ($srcFile in $sourceFiles) {
     $matches = [regex]::Matches($content, '(?mi)^\s*function\s+([\w-]+)')
     foreach ($m in $matches) {
         $funcName = $m.Groups[1].Value
-        if ($functionDefinitions.ContainsKey($funcName)) {
-            Write-Error "Build aborted: duplicate function '$funcName' defined in both '$($functionDefinitions[$funcName])' and '$($srcFile.Name)'."
-            exit 1
-        }
-        $functionDefinitions[$funcName] = $srcFile.Name
-    }
+if ($functionDefinitions.ContainsKey($funcName)) {
+    Write-Error "Build aborted: duplicate function '$funcName' defined in both '$($functionDefinitions[$funcName])' and '$($srcFile.FullName)'."
+    exit 1
+}
+$functionDefinitions[$funcName] = $srcFile.FullName
 }
 Write-Verbose "  Scanned $($sourceFiles.Count) files, found $($functionDefinitions.Count) unique function definitions"
 
@@ -288,6 +291,13 @@ if ($prerelease) {
 Write-Output "  GUID: $($manifest.Guid)"
 
 # Abort if a git tag for this version already exists in the repository
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    throw "Build aborted: git is required to validate tag collisions (tag '$releaseTag')."
+}
+
+# Ensure tags are available in shallow clones (best-effort)
+try { git fetch --tags --quiet 2>$null } catch { }
+
 $existingTag = git tag -l $releaseTag 2>$null
 if ($existingTag) {
     Write-Error "Build aborted: tag '$releaseTag' already exists in the repository. Bump the version before building."
