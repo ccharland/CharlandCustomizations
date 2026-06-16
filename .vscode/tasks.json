@@ -31,8 +31,9 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "$file = '${file}'; $content = Get-Content -LiteralPath $file -Raw; $cleaned = $content -replace '(?s)(\\r?\\n)?# SIG # Begin signature block.*?# SIG # End signature block(\\r?\\n)?', ''; [System.IO.File]::WriteAllText($file, $cleaned)"
+        "-File",
+        "${workspaceFolder}/.vscode/Remove-SignatureBlock.ps1",
+        "${file}"
       ],
       "presentation": {
         "reveal": "silent",
