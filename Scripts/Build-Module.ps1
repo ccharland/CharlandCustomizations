@@ -5,6 +5,9 @@
     Validates module structure, signs files (if certificate available), and optionally installs to user module path.
     Creates a versioned build output in the 'build' directory.
 
+    The build will abort if a git tag matching the current version already exists
+    in the repository. Bump the version (via -BumpVersion or -Version) to proceed.
+
     By default, the signing step only re-signs files with invalid or missing Authenticode
     signatures (including files without a timestamp counter-signature). Use
     -UpdateAllSignatures to force re-signing of all PowerShell files regardless of
@@ -231,6 +234,16 @@ if ($prerelease) {
     Write-Output "  Prerelease: $prerelease"
 }
 Write-Output "  GUID: $($manifest.Guid)"
+
+# Abort if a git tag for this version already exists in the repository
+$existingTag = git tag -l $releaseTag 2>$null
+if ($existingTag) {
+    Write-Error "Build aborted: tag '$releaseTag' already exists in the repository. Bump the version before building."
+    exit 1
+}
+else {
+    Write-Verbose "Tag '$releaseTag' does not exist — safe to build"
+}
 
 if (-not $InstallOnly) {
     # Create versioned build directory

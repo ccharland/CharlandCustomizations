@@ -445,4 +445,72 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
         }
     }
+
+    Context 'Tag collision detection' {
+
+        BeforeAll {
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    PrivateData   = @{ PSData = @{ Prerelease = 'beta1' } }
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command { @() }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            Mock Get-ChildItem { @() }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+            Mock Write-Error {}
+        }
+
+        It 'Aborts build when the release tag already exists as a git tag' {
+            # Mock git to return the tag (simulating it exists)
+            Mock git { '0.3.0-beta1' } -ParameterFilter { $args[0] -eq 'tag' -and $args[1] -eq '-l' }
+
+            $result = & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            Should -Invoke Write-Error -ParameterFilter {
+                $Message -like '*tag*already exists*'
+            }
+        }
+
+        It 'Proceeds with build when the release tag does not exist' {
+            # Mock git to return empty (tag does not exist)
+            Mock git { $null } -ParameterFilter { $args[0] -eq 'tag' -and $args[1] -eq '-l' }
+
+            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            Should -Not -Invoke Write-Error -ParameterFilter {
+                $Message -like '*tag*already exists*'
+            }
+        }
+
+        It 'Does not match a prerelease tag against a bare version tag (0.3.0-beta1 vs 0.3.0)' {
+            # Manifest has prerelease=beta1, so releaseTag is "0.3.0-beta1"
+            # Existing tag "0.3.0" should NOT cause a collision
+            Mock git { $null } -ParameterFilter { $args[0] -eq 'tag' -and $args[1] -eq '-l' -and $args[2] -eq '0.3.0-beta1' }
+
+            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            Should -Not -Invoke Write-Error -ParameterFilter {
+                $Message -like '*tag*already exists*'
+            }
+        }
+    }
 }
