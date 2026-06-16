@@ -5,8 +5,12 @@
     Validates module structure, signs files (if certificate available), and optionally installs to user module path.
     Creates a versioned build output in the 'build' directory.
 
-    The build will abort if a git tag matching the current version already exists
-    in the repository. Bump the version (via -BumpVersion or -Version) to proceed.
+    Safety guardrails:
+    - Aborts if a git tag matching the current version already exists.
+    - Aborts if duplicate function names are detected across source files.
+    - Aborts if the working tree is dirty when -Package or -PrepareRelease is used.
+    - Runs Pester tests before packaging (-Package) and aborts on any failure.
+    - Throws if -UpdateAllSignatures and -SkipSigning are both specified.
 
     By default, the signing step only re-signs files with invalid or missing Authenticode
     signatures (including files without a timestamp counter-signature). Use
@@ -109,13 +113,61 @@ if ($InstallOnly -and $SkipSigning) {
     Write-Warning "-SkipSigning has no effect with -InstallOnly."
 }
 if ($UpdateAllSignatures -and $SkipSigning) {
-    Write-Warning "-UpdateAllSignatures has no effect with -SkipSigning."
+    throw "-UpdateAllSignatures cannot be used with -SkipSigning."
 }
 
 # Clean build directory if requested
 if ($Clean -and (Test-Path $BuildRoot)) {
     Write-Output "Cleaning build directory..."
     Remove-Item $BuildRoot -Recurse -Force
+}
+
+# Dirty working tree check — prevent packaging/releasing with uncommitted changes
+if ($Package -or $PrepareRelease) {
+    $gitStatus = git status --porcelain 2>$null
+    if ($gitStatus) {
+        $dirtyCount = ($gitStatus | Measure-Object).Count
+        Write-Error "Build aborted: working tree has $dirtyCount uncommitted change(s). Commit or stash changes before using -Package or -PrepareRelease."
+        exit 1
+    }
+    else {
+        Write-Verbose "Working tree is clean — safe to proceed with release operations"
+    }
+}
+
+# Duplicate function name detection — scan source for conflicting definitions
+Write-Host "Checking for duplicate function definitions..." -ForegroundColor Yellow
+$functionDefinitions = @{}
+$sourceFiles = Get-ChildItem -Path $SourcePath -Include *.ps1, *.psm1 -Recurse
+foreach ($srcFile in $sourceFiles) {
+    $content = Get-Content -Path $srcFile.FullName -Raw
+    $matches = [regex]::Matches($content, '(?mi)^\s*function\s+([\w-]+)')
+    foreach ($m in $matches) {
+        $funcName = $m.Groups[1].Value
+        if ($functionDefinitions.ContainsKey($funcName)) {
+            Write-Error "Build aborted: duplicate function '$funcName' defined in both '$($functionDefinitions[$funcName])' and '$($srcFile.Name)'."
+            exit 1
+        }
+        $functionDefinitions[$funcName] = $srcFile.Name
+    }
+}
+Write-Verbose "  Scanned $($sourceFiles.Count) files, found $($functionDefinitions.Count) unique function definitions"
+
+# Pester gate — run tests before packaging to prevent shipping broken code
+if ($Package) {
+    Write-Host "Running Pester tests (required for -Package)..." -ForegroundColor Yellow
+    $testsPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'tests'
+    if (Test-Path $testsPath) {
+        $pesterResult = Invoke-Pester -Path $testsPath -PassThru -Output Minimal
+        if ($pesterResult.FailedCount -gt 0) {
+            Write-Error "Build aborted: $($pesterResult.FailedCount) Pester test(s) failed. Fix failing tests before packaging."
+            exit 1
+        }
+        Write-Host "  All $($pesterResult.TotalCount) tests passed" -ForegroundColor Green
+    }
+    else {
+        Write-Warning "Tests directory not found at $testsPath — skipping Pester gate"
+    }
 }
 
 # Validate source module structure

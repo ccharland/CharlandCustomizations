@@ -280,6 +280,8 @@ Describe 'Build-Module' -Tag 'Unit' {
                     Thumbprint    = 'AABBCCDD'
                 })
             } -ParameterFilter { $Path -like 'Cert:\*' }
+            # Mock Get-Content for duplicate function scan (returns unique function per file)
+            Mock Get-Content { "function Fake-$([guid]::NewGuid().ToString().Substring(0,8)) { }" } -ParameterFilter { $Raw }
             # Mock signature validation per file
             Mock Get-AuthenticodeSignature {
                 $fileName = Split-Path $FilePath -Leaf
@@ -301,6 +303,7 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Set-CCAuthenticodeSignature {
                 [PSCustomObject]@{ Status = 'Valid' }
             }
+            Mock git { $null }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -381,12 +384,14 @@ Describe 'Build-Module' -Tag 'Unit' {
                     Thumbprint    = 'AABBCCDD'
                 })
             } -ParameterFilter { $Path -like 'Cert:\*' }
+            Mock Get-Content { "function Unique-$([guid]::NewGuid().ToString().Substring(0,8)) { }" } -ParameterFilter { $Raw }
             Mock Set-CCAuthenticodeSignature {
                 [PSCustomObject]@{ Status = 'Valid' }
             }
             Mock Get-AuthenticodeSignature {
                 [PSCustomObject]@{ Status = 'Valid'; TimeStamperCertificate = [PSCustomObject]@{ Subject = 'CN=TS' } }
             }
+            Mock git { $null }
             Mock Write-Host {}
             Mock Write-Output {}
             Mock Write-Warning {}
@@ -437,12 +442,10 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Write-Warning {}
         }
 
-        It 'Writes warning when -UpdateAllSignatures and -SkipSigning are both specified' {
-            & $script:BuildModulePath -UpdateAllSignatures -SkipSigning -SkipAnalysis
-
-            Should -Invoke Write-Warning -ParameterFilter {
-                $Message -like '*UpdateAllSignatures*SkipSigning*'
-            }
+        It 'Throws when -UpdateAllSignatures and -SkipSigning are both specified' {
+            {
+                & $script:BuildModulePath -UpdateAllSignatures -SkipSigning -SkipAnalysis
+            } | Should -Throw '*UpdateAllSignatures*SkipSigning*'
         }
     }
 
@@ -510,6 +513,144 @@ Describe 'Build-Module' -Tag 'Unit' {
 
             Should -Not -Invoke Write-Error -ParameterFilter {
                 $Message -like '*tag*already exists*'
+            }
+        }
+    }
+
+    Context 'Dirty working tree check' {
+
+        BeforeAll {
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command { @() }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            Mock Get-ChildItem { @() }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+            Mock Write-Error {}
+            Mock git { $null } -ParameterFilter { $args[0] -eq 'tag' }
+        }
+
+        It 'Aborts -Package when working tree has uncommitted changes' {
+            Mock git { " M src/file.ps1`n?? newfile.ps1" } -ParameterFilter { $args[0] -eq 'status' -and $args[1] -eq '--porcelain' }
+
+            & $script:BuildModulePath -Package -SkipAnalysis
+
+            Should -Invoke Write-Error -ParameterFilter {
+                $Message -like '*uncommitted change*'
+            }
+        }
+
+        It 'Aborts -PrepareRelease when working tree has uncommitted changes' {
+            Mock git { " M docs/CHANGELOG.md" } -ParameterFilter { $args[0] -eq 'status' -and $args[1] -eq '--porcelain' }
+
+            & $script:BuildModulePath -PrepareRelease -SkipSigning -SkipAnalysis
+
+            Should -Invoke Write-Error -ParameterFilter {
+                $Message -like '*uncommitted change*'
+            }
+        }
+
+        It 'Does not abort normal build when working tree is dirty' {
+            Mock git { " M src/file.ps1" } -ParameterFilter { $args[0] -eq 'status' -and $args[1] -eq '--porcelain' }
+
+            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            Should -Not -Invoke Write-Error -ParameterFilter {
+                $Message -like '*uncommitted change*'
+            }
+        }
+    }
+
+    Context 'Duplicate function name detection' {
+
+        BeforeAll {
+            Mock Copy-Item {}
+            Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
+            Mock Remove-Item {}
+            Mock Test-Path { return $true }
+            Mock Test-ModuleManifest {
+                [PSCustomObject]@{
+                    Version = [version]'0.3.0'
+                    Guid    = [guid]::NewGuid()
+                }
+            }
+            Mock Import-PowerShellDataFile {
+                @{
+                    ModuleVersion = '0.3.0'
+                    RootModule    = 'CharlandCustomizations.psm1'
+                    NestedModules = @()
+                    FileList      = @()
+                }
+            }
+            Mock Import-Module {}
+            Mock Remove-Module {}
+            Mock Get-Command { @() }
+            Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
+            Mock Write-Host {}
+            Mock Write-Output {}
+            Mock Write-Warning {}
+            Mock Write-Error {}
+            Mock git { $null }
+        }
+
+        It 'Aborts when two source files define the same function name' {
+            Mock Get-ChildItem {
+                @(
+                    [PSCustomObject]@{ FullName = 'C:\fake\src\FileA.ps1'; Name = 'FileA.ps1'; Extension = '.ps1' },
+                    [PSCustomObject]@{ FullName = 'C:\fake\src\FileB.ps1'; Name = 'FileB.ps1'; Extension = '.ps1' }
+                )
+            } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
+            Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
+            Mock Get-Content {
+                # Both files define the same function
+                'function Get-Duplicate { }'
+            } -ParameterFilter { $Raw }
+
+            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            Should -Invoke Write-Error -ParameterFilter {
+                $Message -like '*duplicate function*Get-Duplicate*'
+            }
+        }
+
+        It 'Proceeds when all function names are unique' {
+            Mock Get-ChildItem {
+                @(
+                    [PSCustomObject]@{ FullName = 'C:\fake\src\FuncA.ps1'; Name = 'FuncA.ps1'; Extension = '.ps1' },
+                    [PSCustomObject]@{ FullName = 'C:\fake\src\FuncB.ps1'; Name = 'FuncB.ps1'; Extension = '.ps1' }
+                )
+            } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
+            Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
+            Mock Get-Content {
+                if ($Path -like '*FuncA*') { 'function Get-FuncA { }' }
+                elseif ($Path -like '*FuncB*') { 'function Get-FuncB { }' }
+                else { '' }
+            } -ParameterFilter { $Raw }
+
+            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+
+            Should -Not -Invoke Write-Error -ParameterFilter {
+                $Message -like '*duplicate function*'
             }
         }
     }
