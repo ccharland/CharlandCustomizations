@@ -40,9 +40,9 @@
     Suppress progress bar output.
 
 .PARAMETER OutputSubTemplate
-    When specified, outputs a ScriptBlock function stub with CmdletBinding,
-    param block, and begin/process/end structure. Assign the output to a
-    variable and pass it directly to the -ScriptBlock parameter.
+    When specified, outputs a string containing a ScriptBlock function stub with CmdletBinding,
+    param block, and begin/process/end structure. Assign the output to a variable and
+    convert it to a ScriptBlock (e.g. `[scriptblock]::Create($output)`) before passing to -ScriptBlock.
 
 .PARAMETER AccessKey
     AWS access key for explicit credentials. Optional.
@@ -122,7 +122,7 @@
     [string]$SessionToken,
 
     [Parameter(ParameterSetName = 'Execute')]
-    [SecureString] $Credential,
+    $Credential,
 
     [Parameter(ParameterSetName = 'Execute')]
     [string]$ProfileLocation,
