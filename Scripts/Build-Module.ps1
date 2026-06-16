@@ -4,11 +4,26 @@
 .DESCRIPTION
     Validates module structure, signs files (if certificate available), and optionally installs to user module path.
     Creates a versioned build output in the 'build' directory.
+
+    Safety guardrails:
+    - Aborts if a git tag matching the current version already exists.
+    - Aborts if duplicate function names are detected across source files.
+    - Aborts if the working tree is dirty when -Package or -PrepareRelease is used.
+    - Runs Pester tests before packaging (-Package) and aborts on any failure.
+    - Throws if -UpdateAllSignatures and -SkipSigning are both specified.
+
+    By default, the signing step only re-signs files with invalid or missing Authenticode
+    signatures (including files without a timestamp counter-signature). Use
+    -UpdateAllSignatures to force re-signing of all PowerShell files regardless of
+    their current signature state.
 .PARAMETER Install
     Install module to user's PowerShell modules directory after building
 .PARAMETER SkipSigning
     Skip code signing step
-
+.PARAMETER UpdateAllSignatures
+    Force re-sign all PowerShell files in the build output, even those with valid
+    signatures. Without this switch, only files with invalid, missing, or
+    non-timestamped signatures are re-signed.
 .PARAMETER SkipAnalysis
     Skip PSScriptAnalyzer code quality check
 .PARAMETER Clean
@@ -29,7 +44,10 @@
     Ensure changelog contains an entry for the current version and print release commit/tag commands
 .EXAMPLE
     ./Build-Module.ps1 -Install
-    Builds, signs, and installs the module
+    Builds, signs invalid/missing signatures, and installs the module
+.EXAMPLE
+    ./Build-Module.ps1 -UpdateAllSignatures -Install
+    Builds, re-signs all files, and installs the module
 .EXAMPLE
     ./Build-Module.ps1 -Clean
     Cleans and rebuilds without installing
@@ -58,6 +76,7 @@
 param(
     [switch]$Install,
     [switch]$SkipSigning,
+    [switch]$UpdateAllSignatures,
     [switch]$SkipAnalysis,
     [switch]$Clean,
     [switch]$Package,
@@ -93,11 +112,66 @@ if ($InstallOnly -and $Clean) {
 if ($InstallOnly -and $SkipSigning) {
     Write-Warning "-SkipSigning has no effect with -InstallOnly."
 }
+if ($UpdateAllSignatures -and $SkipSigning) {
+    throw "-UpdateAllSignatures cannot be used with -SkipSigning."
+}
 
 # Clean build directory if requested
 if ($Clean -and (Test-Path $BuildRoot)) {
     Write-Output "Cleaning build directory..."
     Remove-Item $BuildRoot -Recurse -Force
+}
+
+# Dirty working tree check — prevent packaging/releasing with uncommitted changes
+if ($Package -or $PrepareRelease) {
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        throw "Build aborted: git is required to verify a clean working tree for -Package/-PrepareRelease."
+    }
+
+    $gitStatus = git status --porcelain 2>$null
+    if ($gitStatus) {
+        $dirtyCount = @($gitStatus).Count
+        Write-Error "Build aborted: working tree has $dirtyCount uncommitted change(s). Commit or stash changes before using -Package or -PrepareRelease."
+        exit 1
+    }
+    else {
+        Write-Verbose "Working tree is clean — safe to proceed with release operations"
+    }
+}
+
+# Duplicate function name detection — scan source for conflicting definitions
+Write-Host "Checking for duplicate function definitions..." -ForegroundColor Yellow
+$functionDefinitions = @{}
+$sourceFiles = Get-ChildItem -Path $SourcePath -Include *.ps1, *.psm1 -Recurse
+foreach ($srcFile in $sourceFiles) {
+    $content = Get-Content -Path $srcFile.FullName -Raw
+    $matchList = [regex]::Matches($content, '(?mi)^\s*function\s+([\w-]+)')
+    foreach ($m in $matchList) {
+        $funcName = $m.Groups[1].Value
+        if ($functionDefinitions.ContainsKey($funcName)) {
+            Write-Error "Build aborted: duplicate function '$funcName' defined in both '$($functionDefinitions[$funcName])' and '$($srcFile.FullName)'."
+            exit 1
+        }
+        $functionDefinitions[$funcName] = $srcFile.FullName
+    }
+}
+Write-Verbose "  Scanned $($sourceFiles.Count) files, found $($functionDefinitions.Count) unique function definitions"
+
+# Pester gate — run tests before packaging to prevent shipping broken code
+if ($Package) {
+    Write-Host "Running Pester tests (required for -Package)..." -ForegroundColor Yellow
+    $testsPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'tests'
+    if (Test-Path $testsPath) {
+        $pesterResult = Invoke-Pester -Path $testsPath -PassThru -Output Minimal
+        if ($pesterResult.FailedCount -gt 0) {
+            Write-Error "Build aborted: $($pesterResult.FailedCount) Pester test(s) failed. Fix failing tests before packaging."
+            exit 1
+        }
+        Write-Host "  All $($pesterResult.TotalCount) tests passed" -ForegroundColor Green
+    }
+    else {
+        Write-Warning "Tests directory not found at $testsPath — skipping Pester gate"
+    }
 }
 
 # Validate source module structure
@@ -217,6 +291,23 @@ if ($prerelease) {
 }
 Write-Output "  GUID: $($manifest.Guid)"
 
+# Abort if a git tag for this version already exists in the repository
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    throw "Build aborted: git is required to validate tag collisions (tag '$releaseTag')."
+}
+
+# Ensure tags are available in shallow clones (best-effort)
+try { git fetch --tags --quiet 2>$null } catch { }
+
+$existingTag = git tag -l $releaseTag 2>$null
+if ($existingTag) {
+    Write-Error "Build aborted: tag '$releaseTag' already exists in the repository. Bump the version before building."
+    exit 1
+}
+else {
+    Write-Verbose "Tag '$releaseTag' does not exist — safe to build"
+}
+
 if (-not $InstallOnly) {
     # Create versioned build directory
     $BuildPath = Join-Path $BuildRoot "$ModuleName\$artifactVersion"
@@ -230,7 +321,7 @@ if (-not $InstallOnly) {
     Write-Output "Copying module files to build directory..."
     Copy-Item -Path "$SourcePath\*" -Destination $BuildPath -Recurse -Force
     Write-Output "  Copied to: $BuildPath"
-    
+
     Write-Output "Looking for .gitkeep placeholders in $($BuildPath)"
     # Delete any .gitkeep placeholders in $BuildPath
     Get-ChildItem -Path $BuildRoot -Filter '.gitkeep' -Recurse -File -ErrorAction SilentlyContinue |
@@ -315,41 +406,77 @@ if (-not $InstallOnly -and -not $SkipSigning) {
 
     if ($cert) {
         Write-Output "  Found certificate: $($cert.Subject)"
-        Write-Output "Signing built module files..."
 
         # Load Set-CCAuthenticodeSignature if not already available
         if (-not (Get-Command Set-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
             . (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Set-CCAuthenticodeSignature.ps1')
         }
 
-        $filesToSign = Get-ChildItem -Path $BuildPath -Include *.ps1, *.psm1, *.psd1 -Recurse
+        $allFiles = Get-ChildItem -Path $BuildPath -Include *.ps1, *.psm1, *.psd1 -Recurse
+
+        if ($UpdateAllSignatures) {
+            Write-Output "Signing all built module files (-UpdateAllSignatures)..."
+            $filesToSign = $allFiles
+        }
+        else {
+            # Default: only sign files with invalid, missing, or non-timestamped signatures
+            Write-Output "Checking signatures and signing invalid/missing files..."
+            $filesToSign = @()
+            foreach ($file in $allFiles) {
+                $sig = Get-AuthenticodeSignature -FilePath $file.FullName
+                if ($sig.Status -ne 'Valid') {
+                    Write-Verbose "  Needs signing (status: $($sig.Status)): $($file.Name)"
+                    $filesToSign += $file
+                }
+                elseif (-not $sig.TimeStamperCertificate) {
+                    Write-Verbose "  Needs signing (missing timestamp): $($file.Name)"
+                    $filesToSign += $file
+                }
+                else {
+                    Write-Verbose "  Valid signature: $($file.Name)"
+                }
+            }
+
+            $alreadyValid = $allFiles.Count - $filesToSign.Count
+            if ($alreadyValid -gt 0) {
+                Write-Output "  $alreadyValid file(s) already have valid signatures"
+            }
+        }
+
         $signedCount = 0
         $failedCount = 0
 
-        foreach ($file in $filesToSign) {
-            try {
-                $result = Set-CCAuthenticodeSignature -MyCert $cert -Path $file.FullName
-                if ($result.Status -eq 'Valid') {
-                    Write-Output "  Signed: $($file.Name)"
-                    $signedCount++
+        if ($filesToSign.Count -eq 0) {
+            Write-Output "  All files already have valid signatures — nothing to sign"
+            $allFilesSigned = $true
+        }
+        else {
+            Write-Output "  Signing $($filesToSign.Count) file(s)..."
+            foreach ($file in $filesToSign) {
+                try {
+                    $result = Set-CCAuthenticodeSignature -MyCert $cert -Path $file.FullName
+                    if ($result.Status -eq 'Valid') {
+                        Write-Output "  Signed: $($file.Name)"
+                        $signedCount++
+                    }
+                    else {
+                        Write-Warning "Signing failed for $($file.Name): $($result.Status)"
+                        $failedCount++
+                    }
                 }
-                else {
-                    Write-Warning "Signing failed for $($file.Name): $($result.Status)"
+                catch {
+                    Write-Warning "Failed to sign $($file.Name): $_"
                     $failedCount++
                 }
             }
-            catch {
-                Write-Warning "Failed to sign $($file.Name): $_"
-                $failedCount++
-            }
-        }
 
-        if ($failedCount -eq 0 -and $signedCount -eq $filesToSign.Count) {
-            $allFilesSigned = $true
-            Write-Output "  All files signed successfully ($signedCount files)"
-        }
-        else {
-            Write-Warning "Some files failed to sign: $failedCount failed, $signedCount succeeded"
+            if ($failedCount -eq 0) {
+                $allFilesSigned = $true
+                Write-Output "  All files signed successfully ($signedCount signed)"
+            }
+            else {
+                Write-Warning "Some files failed to sign: $failedCount failed, $signedCount succeeded"
+            }
         }
     }
     else {
@@ -406,7 +533,7 @@ if (-not $InstallOnly -and $Package) {
     if (Test-Path $zipPath) {
         Remove-Item $zipPath -Force
     }
-    
+
     Write-Output "Creating package: $zipName"
     Compress-Archive -Path $BuildPath -DestinationPath $zipPath -CompressionLevel Optimal
 
@@ -572,8 +699,8 @@ if (-not $PrepareRelease) {
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBi62+HrUtj84EQ
-# 0CF56N1Zrg3s4DFvraDP3MmJkA51B6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCO35XlXX+iiH1R
+# 8vl6deoP6YAR3aTxxPKiiYv1mzf6y6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -775,33 +902,33 @@ if (-not $PrepareRelease) {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIA4Naa6BOnqt3kEwUEMS+MQme6Br/xokaPMnMx9j8oclMA0GCSqG
-# SIb3DQEBAQUABIICAFe2BQ1wauw4irYsvIjUDcnt6TVSDBiRauBujMKybVYNzHZ6
-# fdIIAoR8vNaLcDy1NIMTJ4QyQxvmpfrPBYLD8n2MAF8Ky20sr+s8By7wP7LTE8Mm
-# TJNHyHiH0KvTzTGSFm28wi0T2PZE+D8KanZFVURLikiEO1iwcLMms8hQznbb26+x
-# r/0gZBQNiOdDhYPfrUJRObBwG7flY/CO9hqpEwMMfMlvrp9G0mDqef49c2NueD8X
-# 6VdjPLTrRJKph18ZF1Y9oqgo6fCPFFsUPXLhhTHQbt5MFJ2rt52qhI29LXF8sgOe
-# XUAwAx62Vk69l993Gc0I0vzZafKMmHHxiUSDCO9kiOun4p2mRI0Bmjaa7uaYzS0W
-# lPtkYwYoDhfP3boIinOKDbppG8D9s7NRk8kPRkoP8u68C5WcAESZYLOLOMRfsEO/
-# 91Q0+nj5K7a4q6LrECJbFEWZreB1stu0T/iI/GPtnmBSK+GXQFkpeGkpTEgkyC9+
-# RfxbYV/iC6p2gIvDYw9dVE8fapH5XtCiEU0t0nAB0FqFkbQQa7htUkdWHW8bgFyk
-# BDJr9fZJa2eNJhLuhT6lbDQZotJ3uple/vyNXJG+ctZRW70/iqokVuLJ8iJArPOO
-# P7yScwcPt8Mz8Djlep4sk39Taoos2kDHJSX4VVmdbtA98fMZe+c+0Aij7YEsoYID
+# hvcNAQkEMSIEIBnAvbRgOGOmhM4IXBC85tHDN2hs2L3ySPNPRLv7k3NtMA0GCSqG
+# SIb3DQEBAQUABIICAIYUQMtEPEQLauHqRkJHIeRK1K4RnX4zWmCd69KQl5jrzHc0
+# 9+mGzWzLRBuKuWr3YRQ/krYmeAuRSrYG3KFdkt/gmWlNAkXDiPvJk0wNZaupdwqs
+# 9kZ0INrZ0RpfA77z1nXc/gtfNMQIOQJpTUzsCDZizL2F2Ovj7ibEHpYnv3AjX+r0
+# ufwNq8mepP0KGj+7PwzxfB4/8W9xA9oc8DF87p2DCS/6L47Ow3LNijXHPXA+mSL7
+# TlOXHQw09xz/DlSWl5qNfKGgMmeaiu/VUP1HHXmxTJ92AOizspte6P92RGnrJZ51
+# JdeEeFSTmeNdLuKAO5hREK1v1oq2a1ZXhVm6LxXzuIIHFMluiHcvGiLUDZLfujb+
+# GsqmD2acy3ef3iAvIWOeEdSnOO/Ei5XHogjgGN9BKXIbXHEgobFq/MbRwMdyMgX4
+# Mae8/45TrLC4NUPjE290RPblNYmCyMWxySCTA8P+m95jGZ2QXD0V7GM+u32DAqtx
+# 7kDKDOiqX2jr2UdGpQyJIlrh3nx6Emlcm7cG3xOOrgLC7cY7mtyV6s6ACS1pkGm3
+# I1TZGUeUArDPCiuMKyxcYBGVLrcuSNpFyd7pWe0NiwfVfY6VePHqzGBErjb/GvfP
+# 032HT4CryZpjdtP4c6CjMrlUmoi72N+O47ohbuYRLceoYAnfxrD8KL4khP4ZoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjEzMDQxNjU2WjA/BgkqhkiG9w0BCQQxMgQwJsVCy8o1bvd3buYcwpI7
-# vYCs2vSYcH+qfNYK3c9QDKLk3S3imwHyE3ssZwxidri7MA0GCSqGSIb3DQEBAQUA
-# BIICACVM7eX7DBJy80Nz6YKoVHyltkm7x/ftMfa8NydHG3AUn3Y46DHkt5pOutz3
-# y9fTh3aUy3I/1QML1Mv27gPdNkbQHLvcDgdnalw5BII3WlfMqCJICEJIfHDQkv5c
-# 4GJ6bo0CvHaUnKHTt24u9PJ02garaFTwF/vxgnAi6C/JpUDPG9BeVhl3yqD+iS/g
-# ZM+ZY0YZPMkvZy+0Uuzct9zX6/AAQlhUUr/5d2v+7zWTalZpxcH9vALXHjvvGTcN
-# 2sqEwkm15gE4j/0EBblM+A24hrV6ooudPqYxZt0qWxpkeH6trrfepPGexnGdEgg5
-# d9tXTuyjAlcD5KQzcu9Wkwh42LFwu+vdYRTNY5uR/om6ATalUcaTyjKrTU+UBtDx
-# ffDDmjDEZco9KFgemomiaBmbgqqan3T9m8iFMpS7j/HEMmDBy90MyN/tkwwHg1Pj
-# scuUKZKLfIn6dkLoOy+2KHYZtZXezTjHcgPDHLFUOx3NMAurxQggDu8XXQZmbQP3
-# 0KICCzT8poyZzWggDgT+wvNijbMTlsxxQdRy6v1Ll1bjAu8wUF/QQtMl6IX5WYCZ
-# s3GE9VptS9C3nZ3xtfNzrrQ8qWbYqz6hHly5p0omjQf9rZ5Bg7capehDgWi+58Jk
-# ZZi0/qyItTeP/Hhofa/RupQU/CcdcsPqjjICuXVkOKPdyY3t
+# DxcNMjYwNjE2MjEwNTU5WjA/BgkqhkiG9w0BCQQxMgQwo46AA5gbXZTqAviY4AVR
+# mYotEqrgUpAMygv6tycvCL4cIgcOOYD38lYSsuKKlCotMA0GCSqGSIb3DQEBAQUA
+# BIICAAtJm8RhpH+J5TcBGHsJgmB1jXBPLbpX78jhc8NvhBgOAvzsdVyqbvJ1bTBr
+# HJIV5oKow7BhrKO7yWHuJj9hrzDO9tqh/U08zLwbLKfw5A0ziyZAKCqI1n1adjt6
+# a+O7Su9H1RXRxHK8BvLwMvqUiIObLDfd8DnvXvRtTiw3HZrPnrYRbsZkigWIp9cy
+# 0V6esP4u2bby3Isa6Ohm7I9qJlLAnY7yVqjRn82BPDDENW4fovH2GDXpHAhMhAe3
+# lU+31/FcoCofTHzuXQvZRrxwl2vzD2eLz0yi3yqJiyjcZ/N+FD+mUsBe6ByXe5Jo
+# pVT4tWGG1bEMEt/iclFAGmUOSFu6HIkqGiAake3fida7Lg1Y+oPrcrUfNJmWceMH
+# P3RIw+whOynxnfJp0om1hjNptvzwa1LYhoqevSnYqXBRSZiwl/s6CCiknZ4MLzDy
+# CfdsezYLBGozpRWbcVbEHsOoPdw3P+FmRrHFUk6eRzT+5BNs1GYDmjLVET6GunVa
+# YYWJ+4kXC4+iysqmniRXvj4nKhfVEkYiqSbLHHhjJ9JD98Ls0ePQWaQMSQWQXoFG
+# eIEvMeMQrJdrsxc0m+vPKyT3IqRWfmcVzvs9dhi0zAGhckCCu3q6OKSKvBY/9uoj
+# griKPujEVRBxEeSbZHUZGTX+E2cdy8wpklJ9YniikEu4QyoJ
 # SIG # End signature block
