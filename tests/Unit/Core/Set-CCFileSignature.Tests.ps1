@@ -30,7 +30,9 @@ Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
     Context 'No valid certificate' {
 
         It 'Throws terminating error when no valid code-signing certificate is found' {
-            # Arrange - pass $null as MyCert to simulate no certificate found
+            # Arrange - mock cert store to return nothing so auto-detection fails
+            Mock Get-ChildItem { @() } -ParameterFilter { $Path -like 'cert:\*' }
+
             # Act & Assert
             { Set-CCAuthenticodeSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
                 Should -Throw '*No valid codesign certificate found*'
