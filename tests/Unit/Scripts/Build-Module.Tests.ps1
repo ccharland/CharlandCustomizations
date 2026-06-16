@@ -34,7 +34,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem { @() }
             Mock Write-Host {}
@@ -87,7 +88,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem { @() }
             Mock Write-Host {}
@@ -161,7 +163,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem { @() }
             Mock Write-Host {}
@@ -203,7 +206,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             # Default: return empty for .gitkeep filter scan and other calls
             Mock Get-ChildItem { @() }
@@ -260,7 +264,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Get-Command {
                 [PSCustomObject]@{ Name = 'Set-CCAuthenticodeSignature' }
             } -ParameterFilter { $Name -eq 'Set-CCAuthenticodeSignature' }
-            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'Set-CCAuthenticodeSignature' -or -not $Name }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CCAuthenticodeSignature' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             # Return mock files for the build path -Include scan
             Mock Get-ChildItem {
@@ -366,7 +371,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Get-Command {
                 [PSCustomObject]@{ Name = 'Set-CCAuthenticodeSignature' }
             } -ParameterFilter { $Name -eq 'Set-CCAuthenticodeSignature' }
-            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'Set-CCAuthenticodeSignature' -or -not $Name }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CCAuthenticodeSignature' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem {
                 @(
@@ -434,7 +440,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem { @() }
             Mock Write-Host {}
@@ -473,7 +480,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem { @() }
             Mock Write-Host {}
@@ -540,7 +548,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem { @() }
             Mock Write-Host {}
@@ -604,7 +613,8 @@ Describe 'Build-Module' -Tag 'Unit' {
             }
             Mock Import-Module {}
             Mock Remove-Module {}
-            Mock Get-Command { @() }
+            Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Write-Host {}
             Mock Write-Output {}

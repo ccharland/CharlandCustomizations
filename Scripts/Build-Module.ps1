@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Build and optionally install the CharlandCustomizations module
 .DESCRIPTION
@@ -145,14 +145,15 @@ $functionDefinitions = @{}
 $sourceFiles = Get-ChildItem -Path $SourcePath -Include *.ps1, *.psm1 -Recurse
 foreach ($srcFile in $sourceFiles) {
     $content = Get-Content -Path $srcFile.FullName -Raw
-    $matches = [regex]::Matches($content, '(?mi)^\s*function\s+([\w-]+)')
-    foreach ($m in $matches) {
+    $matchList = [regex]::Matches($content, '(?mi)^\s*function\s+([\w-]+)')
+    foreach ($m in $matchList) {
         $funcName = $m.Groups[1].Value
-if ($functionDefinitions.ContainsKey($funcName)) {
-    Write-Error "Build aborted: duplicate function '$funcName' defined in both '$($functionDefinitions[$funcName])' and '$($srcFile.FullName)'."
-    exit 1
-}
-$functionDefinitions[$funcName] = $srcFile.FullName
+        if ($functionDefinitions.ContainsKey($funcName)) {
+            Write-Error "Build aborted: duplicate function '$funcName' defined in both '$($functionDefinitions[$funcName])' and '$($srcFile.FullName)'."
+            exit 1
+        }
+        $functionDefinitions[$funcName] = $srcFile.FullName
+    }
 }
 Write-Verbose "  Scanned $($sourceFiles.Count) files, found $($functionDefinitions.Count) unique function definitions"
 
@@ -320,7 +321,7 @@ if (-not $InstallOnly) {
     Write-Output "Copying module files to build directory..."
     Copy-Item -Path "$SourcePath\*" -Destination $BuildPath -Recurse -Force
     Write-Output "  Copied to: $BuildPath"
-    
+
     Write-Output "Looking for .gitkeep placeholders in $($BuildPath)"
     # Delete any .gitkeep placeholders in $BuildPath
     Get-ChildItem -Path $BuildRoot -Filter '.gitkeep' -Recurse -File -ErrorAction SilentlyContinue |
@@ -532,7 +533,7 @@ if (-not $InstallOnly -and $Package) {
     if (Test-Path $zipPath) {
         Remove-Item $zipPath -Force
     }
-    
+
     Write-Output "Creating package: $zipName"
     Compress-Archive -Path $BuildPath -DestinationPath $zipPath -CompressionLevel Optimal
 
@@ -698,8 +699,8 @@ if (-not $PrepareRelease) {
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAoHftqE+2PM1bj
-# g+G4GwLFU8SHReSl1850FPlyygjSRKCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCO35XlXX+iiH1R
+# 8vl6deoP6YAR3aTxxPKiiYv1mzf6y6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -901,33 +902,33 @@ if (-not $PrepareRelease) {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIOvBGCBJyh2SlBpxUlOeE8bJ9Ha7cUR1rUqi/jYc+w5TMA0GCSqG
-# SIb3DQEBAQUABIICAKJdCu7x9e2WeEl7TBD0EZH/sph9EeGafSEPPgdrC8lI8a5Y
-# 6yNU4QJG2kFvgaxOBGJk1Epn3FvGaP9ivKhWSGxas4UpI+Ya4bzOAChVi3eRxxNQ
-# T7vyyVO9rpMl122DeXPxK4w+2MvToSv8r71Fvz+FvwuklKqGfzxmD4m5iI0o0Kkn
-# vGn/JSj8hDcoUtyeY4pJP32c/4UunsfnsUP0TVUuwsBzy7jMrfLHSargegfWcOR8
-# VFF8Ng28a79rutzgVfnm+yBtUmIDCFiCsgVL03sY3/vvFpE/KkZ7FVQpXMAiXoMQ
-# 1vKO5acYobjGAW748D2WoqIs1XEv61Ip8OjuldeNSCZNGdDenJngmzIhptg0Uf65
-# fJjVJXp2SEEFqZa41m2TIORWESDXSkuiqIMSq2jUkyCe9U4HRyfYpGi1TdfGJ3Lz
-# JQdWwRSsD77V+m63OjTOZWjJTWHlJLi5z54nftEff3w+swcfNImylBED/IUwQIrc
-# l3aGaer+xfiK4KKHJvw+KZ5y/Rd45oL3fM5oa8fOmUqfjCOg86VJEdZjvQL2t0Qf
-# REG4OJDuvno3kmVodkzc8vTmvRSVW7AK0TrDQ6HSkzXTyT+a2hjUXyN8ZuAyXnAD
-# 6pnZq0/gjbQozF5CfolWI4jqIqJLdAUpX1iUm9AeFTOkpogHC2vACOJLbMEUoYID
+# hvcNAQkEMSIEIBnAvbRgOGOmhM4IXBC85tHDN2hs2L3ySPNPRLv7k3NtMA0GCSqG
+# SIb3DQEBAQUABIICAIYUQMtEPEQLauHqRkJHIeRK1K4RnX4zWmCd69KQl5jrzHc0
+# 9+mGzWzLRBuKuWr3YRQ/krYmeAuRSrYG3KFdkt/gmWlNAkXDiPvJk0wNZaupdwqs
+# 9kZ0INrZ0RpfA77z1nXc/gtfNMQIOQJpTUzsCDZizL2F2Ovj7ibEHpYnv3AjX+r0
+# ufwNq8mepP0KGj+7PwzxfB4/8W9xA9oc8DF87p2DCS/6L47Ow3LNijXHPXA+mSL7
+# TlOXHQw09xz/DlSWl5qNfKGgMmeaiu/VUP1HHXmxTJ92AOizspte6P92RGnrJZ51
+# JdeEeFSTmeNdLuKAO5hREK1v1oq2a1ZXhVm6LxXzuIIHFMluiHcvGiLUDZLfujb+
+# GsqmD2acy3ef3iAvIWOeEdSnOO/Ei5XHogjgGN9BKXIbXHEgobFq/MbRwMdyMgX4
+# Mae8/45TrLC4NUPjE290RPblNYmCyMWxySCTA8P+m95jGZ2QXD0V7GM+u32DAqtx
+# 7kDKDOiqX2jr2UdGpQyJIlrh3nx6Emlcm7cG3xOOrgLC7cY7mtyV6s6ACS1pkGm3
+# I1TZGUeUArDPCiuMKyxcYBGVLrcuSNpFyd7pWe0NiwfVfY6VePHqzGBErjb/GvfP
+# 032HT4CryZpjdtP4c6CjMrlUmoi72N+O47ohbuYRLceoYAnfxrD8KL4khP4ZoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjE2MTMyMzI1WjA/BgkqhkiG9w0BCQQxMgQwjKtazmLYdAJoM5OgaJBR
-# JdeDp7SyjaujwPHFOaJ5Nop/NFx5wijvAyz6h7llHexrMA0GCSqGSIb3DQEBAQUA
-# BIICAFnOFBapsnj4PQWP/EiOFDgnBqyMCYpJ4BSAJki4foDJmIjC98Zn8CYsI3OT
-# EHrCuHZ2+B2VLYN1VlwWENEds7ErxP9f+GPN2KX4Vds1KLtsi/oD3YECJdLO5PJe
-# 2bGyHtJYFNd/wB2FwlNbU7SluCeXlv84b5b8Q30KPPCbKzesXfJYlsCkNzKW29VX
-# 9eS4VLfDgVDRcsB23ePpSlXXx8vOT4WVBTRzMF40EmuzFLD8kb8MQJ17WqUBPdt2
-# fF04wx9lR2V9e4W7IygFYhOlrVn/MMMuNbRzEAyfP818oDedr+8jrU3tkwtE1DJR
-# 5D5ODp1wVxU/x546EKTHzE5/XlPvYhmzuvnWqInZlSSWIOez8ybwPP4rvgCbZ1jW
-# G5eCGOu1S/oygbwKn7iDqTPa9bJLxzAcjHsf37Kxf5hxWum2WK9SsWVy661Y2AO+
-# O9tVlCVz2hecseDVLoynkGedx8XsUXPRp9TFQ7OTvTUDkdocPnV9Wj7Q63aG6ukz
-# sipg5ggMAJc4bLegj4sPmB5r01TPh29Tl55uKmoH+fRS92BCbHiLmqkfqn+cGdXv
-# vaaDORnPwJ60iw5qRWC/adRDrHRCL7sxa6aG0hsLrw9G032WRtxWpSPoIMtxzNmf
-# fAmUiMeTNj9ey0LOvspBh0ywLrCc+UZrG3beVukkA9vr99Mm
+# DxcNMjYwNjE2MjEwNTU5WjA/BgkqhkiG9w0BCQQxMgQwo46AA5gbXZTqAviY4AVR
+# mYotEqrgUpAMygv6tycvCL4cIgcOOYD38lYSsuKKlCotMA0GCSqGSIb3DQEBAQUA
+# BIICAAtJm8RhpH+J5TcBGHsJgmB1jXBPLbpX78jhc8NvhBgOAvzsdVyqbvJ1bTBr
+# HJIV5oKow7BhrKO7yWHuJj9hrzDO9tqh/U08zLwbLKfw5A0ziyZAKCqI1n1adjt6
+# a+O7Su9H1RXRxHK8BvLwMvqUiIObLDfd8DnvXvRtTiw3HZrPnrYRbsZkigWIp9cy
+# 0V6esP4u2bby3Isa6Ohm7I9qJlLAnY7yVqjRn82BPDDENW4fovH2GDXpHAhMhAe3
+# lU+31/FcoCofTHzuXQvZRrxwl2vzD2eLz0yi3yqJiyjcZ/N+FD+mUsBe6ByXe5Jo
+# pVT4tWGG1bEMEt/iclFAGmUOSFu6HIkqGiAake3fida7Lg1Y+oPrcrUfNJmWceMH
+# P3RIw+whOynxnfJp0om1hjNptvzwa1LYhoqevSnYqXBRSZiwl/s6CCiknZ4MLzDy
+# CfdsezYLBGozpRWbcVbEHsOoPdw3P+FmRrHFUk6eRzT+5BNs1GYDmjLVET6GunVa
+# YYWJ+4kXC4+iysqmniRXvj4nKhfVEkYiqSbLHHhjJ9JD98Ls0ePQWaQMSQWQXoFG
+# eIEvMeMQrJdrsxc0m+vPKyT3IqRWfmcVzvs9dhi0zAGhckCCu3q6OKSKvBY/9uoj
+# griKPujEVRBxEeSbZHUZGTX+E2cdy8wpklJ9YniikEu4QyoJ
 # SIG # End signature block
