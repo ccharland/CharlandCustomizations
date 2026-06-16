@@ -32,7 +32,7 @@ The `.kiro/steering/` directory contains project conventions that Kiro follows a
 
 ## Useful Tasks
 
-From the Command Palette (Cmd+Shift+P → `Tasks: Run Task`):
+From the Command Palette (Cmd+Shift+P on macOS, Ctrl+Shift+P on Windows/Linux → `Tasks: Run Task`):
 
 - **Pester: Run Unit Tests** — Runs the full test suite
 - **Remove Authenticode Signature Block** — Strips the signature from the active PowerShell file (useful before editing signed scripts)

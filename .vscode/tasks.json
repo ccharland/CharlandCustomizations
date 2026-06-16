@@ -32,7 +32,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$file = '${file}'; $content = Get-Content -Path $file -Raw; $cleaned = $content -replace '(?s)\\r?\\n# SIG # Begin signature block.*# SIG # End signature block\\r?\\n?', ''; Set-Content -Path $file -Value $cleaned -NoNewline"
+        "$file = '${file}'; $content = Get-Content -LiteralPath $file -Raw; $cleaned = $content -replace '(?s)(\\r?\\n)?# SIG # Begin signature block.*?# SIG # End signature block(\\r?\\n)?', ''; [System.IO.File]::WriteAllText($file, $cleaned)"
       ],
       "presentation": {
         "reveal": "silent",
