@@ -22,6 +22,24 @@
         "clear": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Remove Authenticode Signature Block",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/Remove-SignatureBlock.ps1",
+        "${file}"
+      ],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     }
   ]
 }

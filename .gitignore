@@ -16,7 +16,6 @@ testResults.xml
 Thumbs.db
 
 temp/
-.vscode/settings.json
 
 # Python artifacts
 __pycache__/
@@ -27,4 +26,6 @@ dist/
 .venv/
 venv/
 .pytest_cache/
+
+# Specific VSCode items - majority are included
 .vscode/launch.json
