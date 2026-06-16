@@ -3,7 +3,7 @@
     "awslabs.aws-documentation-mcp-server": {
       "command": "uvx",
       "args": [
-        "awslabs.aws-documentation-mcp-server@latest"
+        "awslabs.aws-documentation-mcp-server@1.1.24"
       ],
       "env": {
         "FASTMCP_LOG_LEVEL": "ERROR",
@@ -14,32 +14,6 @@
         "read_documentation"
       ],
       "disabledTools": []
-    },
-    "awslabs.cfn-lint-mcp-server": {
-      "command": "uvx",
-      "args": [
-        "awslabs.cfn-lint-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "disabled": false,
-      "autoApprove": [
-        "validate_cloudformation_template"
-      ]
-    },
-    "awslabs.cost-analysis-mcp-server": {
-      "command": "uvx",
-      "args": [
-        "awslabs.cost-analysis-mcp-server@latest"
-      ],
-      "env": {
-        "AWS_PROFILE": "${AWS_PROFILE}",
-        "AWS_REGION": "us-east-1",
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "disabled": false,
-      "autoApprove": []
     }
   }
 }

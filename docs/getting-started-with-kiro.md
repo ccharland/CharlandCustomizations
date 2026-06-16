@@ -3,34 +3,24 @@
 ## Prerequisites
 
 - [Kiro IDE](https://kiro.dev) installed
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) 
-installed (provides `uvx` for running MCP servers)
+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) installed (provides `uvx` for running MCP servers)
+
+  **Important (Windows):** Install `uv` so that `uvx` is on your *system* PATH, not just inside a project `.venv` or a PowerShell-profile-only path. Kiro spawns MCP servers via CMD, which does not inherit per-user profile modifications. Verify with: `cmd /c where uvx` — if that fails, add the `uv` bin directory to your system PATH.
+
 - AWS CLI configured with at least one named profile
 
 ## MCP Server Configuration
 
-This workspace includes MCP server configurations in `.kiro/settings/mcp.json` that provide AWS documentation lookup, CloudFormation linting, and cost analysis capabilities.
-
-### AWS Profile Setup
-
-The cost-analysis MCP server references `${AWS_PROFILE}` from your shell environment. Kiro passes this environment variable to the MCP server process at startup.
-
-Set your AWS profile in your shell before launching Kiro:
-
-```bash
-# Add to ~/.zshrc or ~/.bashrc
-export AWS_PROFILE=YourProfileName
-```
-
-If `AWS_PROFILE` is not set, the MCP server will fall back to the default profile in `~/.aws/config`.
+This workspace includes an MCP server configuration in `.kiro/settings/mcp.json` that provides AWS documentation search and retrieval.
 
 ### Included MCP Servers
 
 | Server | Purpose |
 |--------|---------|
 | `awslabs.aws-documentation-mcp-server` | Search and read AWS documentation inline |
-| `awslabs.cfn-lint-mcp-server` | Validate CloudFormation templates |
-| `awslabs.cost-analysis-mcp-server` | Query AWS cost and usage data |
+
+The server version is pinned in the workspace config. To update, change the version in `.kiro/settings/mcp.json`.
 
 ## Steering Files
 
