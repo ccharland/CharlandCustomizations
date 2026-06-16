@@ -15,9 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Import AWSPowerShell.NetCore
+      - name: Install and import AWSPowerShell.NetCore
         shell: pwsh
         run: |
+          Install-Module -Name AWSPowerShell.NetCore -Scope CurrentUser -Force
           Import-Module AWSPowerShell.NetCore -ErrorAction Stop
           Write-Output "AWSPowerShell.NetCore $(Get-Module AWSPowerShell.NetCore | Select-Object -ExpandProperty Version) loaded"
 
