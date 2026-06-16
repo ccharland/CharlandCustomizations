@@ -98,7 +98,7 @@ FunctionsToExport = @(
     'Get-CCIAMAuditList',
     'Install-CCGitHook',
     'Install-CCProfilesFromSource',
-    'Invoke-CCScriptMultiAccountRegion',
+    'Invoke-CCScriptMultiRegionProfile',
     'New-CCCFNStackDirectory',
     'New-CCCFNStackFromDirectory',
     'Out-CCAWSNetworkingComponent',
