@@ -636,48 +636,52 @@ Describe 'Build-Module' -Tag 'Unit' {
             # Create real temp files using .NET APIs to bypass mocked New-Item/Set-Content
             $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "buildtest_$([guid]::NewGuid().ToString('N').Substring(0,8))"
             [System.IO.Directory]::CreateDirectory($tempDir) | Out-Null
-            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FileA.ps1'), 'function Get-Duplicate { }')
-            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FileB.ps1'), 'function Get-Duplicate { }')
+            try {
+                [System.IO.File]::WriteAllText((Join-Path $tempDir 'FileA.ps1'), 'function Get-Duplicate { }')
+                [System.IO.File]::WriteAllText((Join-Path $tempDir 'FileB.ps1'), 'function Get-Duplicate { }')
 
-            Mock Get-ChildItem {
-                @(
-                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FileA.ps1'); Name = 'FileA.ps1'; Extension = '.ps1' },
-                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FileB.ps1'); Name = 'FileB.ps1'; Extension = '.ps1' }
-                )
-            } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
-            Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
+                Mock Get-ChildItem {
+                    @(
+                        [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FileA.ps1'); Name = 'FileA.ps1'; Extension = '.ps1' },
+                        [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FileB.ps1'); Name = 'FileB.ps1'; Extension = '.ps1' }
+                    )
+                } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
+                Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
 
-            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+                & $script:BuildModulePath -SkipSigning -SkipAnalysis
 
-            Should -Invoke Write-Error -ParameterFilter {
-                $Message -like '*duplicate function*Get-Duplicate*'
+                Should -Invoke Write-Error -ParameterFilter {
+                    $Message -like '*duplicate function*Get-Duplicate*'
+                }
+            } finally {
+                [System.IO.Directory]::Delete($tempDir, $true)
             }
-
-            [System.IO.Directory]::Delete($tempDir, $true)
         }
 
         It 'Proceeds when all function names are unique' {
             # Create real temp files using .NET APIs to bypass mocked New-Item/Set-Content
             $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "buildtest_$([guid]::NewGuid().ToString('N').Substring(0,8))"
             [System.IO.Directory]::CreateDirectory($tempDir) | Out-Null
-            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FuncA.ps1'), 'function Get-FuncA { }')
-            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FuncB.ps1'), 'function Get-FuncB { }')
+            try {
+                [System.IO.File]::WriteAllText((Join-Path $tempDir 'FuncA.ps1'), 'function Get-FuncA { }')
+                [System.IO.File]::WriteAllText((Join-Path $tempDir 'FuncB.ps1'), 'function Get-FuncB { }')
 
-            Mock Get-ChildItem {
-                @(
-                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FuncA.ps1'); Name = 'FuncA.ps1'; Extension = '.ps1' },
-                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FuncB.ps1'); Name = 'FuncB.ps1'; Extension = '.ps1' }
-                )
-            } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
-            Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
+                Mock Get-ChildItem {
+                    @(
+                        [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FuncA.ps1'); Name = 'FuncA.ps1'; Extension = '.ps1' },
+                        [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FuncB.ps1'); Name = 'FuncB.ps1'; Extension = '.ps1' }
+                    )
+                } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
+                Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
 
-            & $script:BuildModulePath -SkipSigning -SkipAnalysis
+                & $script:BuildModulePath -SkipSigning -SkipAnalysis
 
-            Should -Not -Invoke Write-Error -ParameterFilter {
-                $Message -like '*duplicate function*'
+                Should -Not -Invoke Write-Error -ParameterFilter {
+                    $Message -like '*duplicate function*'
+                }
+            } finally {
+                [System.IO.Directory]::Delete($tempDir, $true)
             }
-
-            [System.IO.Directory]::Delete($tempDir, $true)
         }
     }
 }
