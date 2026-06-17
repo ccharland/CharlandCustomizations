@@ -18,19 +18,19 @@ function Test-CHARCommitSignature {
         Branch to check (default: current branch)
 
     .EXAMPLE
-        Test-CHARCommitSignatures
+        Test-CHARCommitSignature
         Checks the last commit
 
     .EXAMPLE
-        Test-CHARCommitSignatures -Count 10
+        Test-CHARCommitSignature -Count 10
         Checks the last 10 commits
 
     .EXAMPLE
-        Test-CHARCommitSignatures -Range "HEAD~5..HEAD"
+        Test-CHARCommitSignature -Range "HEAD~5..HEAD"
         Checks specific commit range
 
     .EXAMPLE
-        Test-CHARCommitSignatures -Branch main
+        Test-CHARCommitSignature -Branch main
         Checks commits on main branch
     #>
     [CmdletBinding()]

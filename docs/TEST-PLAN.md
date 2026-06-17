@@ -96,7 +96,7 @@ These commands can delete resources, modify credentials, publish artifacts, writ
 - `Update-CHARSSOCredentialList`
 - `Remove-CHARExpiredAWSProfile`
 - `Use-CHARAssumedRole`
-- `Invoke-CHARScriptMultiAccountRegion`
+- `Invoke-CHARScriptMultiRegionProfile`
 - `Set-CHARAuthenticodeSignature`
 - `Clear-CHARAuthenticodeSignature`
 - `Install-CHARGitHook`
@@ -115,7 +115,7 @@ Minimum tests:
 
 ### Priority 2: Core Workflows
 
-- `Find-CHARCFNStackErrors`
+- `Find-CHARCFNStackError`
 - `Get-CHARAWSMFASession`
 - `Set-CHARAWSEnv`
 - `Get-CHARAccountListFromProfile`
@@ -169,11 +169,11 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 | Item | Type | Priority | Help | Pester Test | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `Install-CHARProfilesFromSource` | Function | P3 | Pending | Pending | Local profile copy behavior |
-| `Invoke-CHARScriptMultiAccountRegion` | Function | P1 | Pending | Pending | Multi-account execution contract |
+| `Invoke-CHARScriptMultiRegionProfile` | Function | P1 | Pending | Pending | Multi-account execution contract |
 | `Set-CHARAuthenticodeSignature` | Function | P1 | Pending | Pending | Signing side effects |
 | `Update-CHARPowershell7` | Function | P3 | Pending | Pending | External install/update behavior |
 | `Clear-CHARAuthenticodeSignature` | Function | P1 | Pending | Pending | File mutation |
-| `Find-CHARCFNStackErrors` | Function | P2 | Pending | Pending | AWS mocks |
+| `Find-CHARCFNStackError` | Function | P2 | Pending | Pending | AWS mocks |
 | `Set-CHARAWSProfileWithMFA` | Function | P1 | Pending | Pending | Credential mutation |
 | `Get-CHARAWSMFASession` | Function | P2 | Pending | Pending | STS mocks |
 | `Start-CHARMultiStackDriftDetection` | Function | P2 | Pending | Pending | CloudFormation mocks |
@@ -252,7 +252,7 @@ It 'has discoverable comment-based help' -Tag 'Help' {
 It 'passes AWS common parameters to downstream cmdlets' -Tag 'Unit' {
     Mock Get-CFNStack { @() }
 
-    Find-CHARCFNStackErrors -StackName 'app' -Region 'us-east-1' -ProfileName 'test'
+    Find-CHARCFNStackError -StackName 'app' -Region 'us-east-1' -ProfileName 'test'
 
     Should -Invoke Get-CFNStack -ParameterFilter {
         $Region -eq 'us-east-1' -and $ProfileName -eq 'test'
@@ -346,6 +346,6 @@ Start with the release blockers:
 1. Add help tests for all exported functions and `Scripts/*.ps1`.
 2. Add unit tests for `Clear-CHARS3Bucket`.
 3. Add unit tests for `Set-CHARAuthenticodeSignature` and `Clear-CHARAuthenticodeSignature`.
-4. Add unit tests for `Invoke-CHARScriptMultiAccountRegion`.
+4. Add unit tests for `Invoke-CHARScriptMultiRegionProfile`.
 5. Add unit tests for `New-CHARCFNStackFromDirectory` and `Update-CHARCFNStackFromDirectory`.
 6. Add script-level tests for `Scripts/Build-Module.ps1` and `Scripts/Publish-CharlandCustomizations.ps1`.
