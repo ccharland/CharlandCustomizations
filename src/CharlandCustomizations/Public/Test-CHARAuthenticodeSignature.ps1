@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Script wrapper for Test-CCAuthenticodeSignature.
+    Script wrapper for Test-CHARAuthenticodeSignature.
 
 .DESCRIPTION
     Standalone entry point used during module build to validate Authenticode
@@ -17,11 +17,11 @@ param(
     [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
 )
 
-if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:CCIsWindows = $IsWindows
+if (-not (Get-Variable -Name IsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:IsWindows = $IsWindows
 }
 
-function Test-CCAuthenticodeSignature {
+function Test-CHARAuthenticodeSignature {
     <#
     .SYNOPSIS
         Validates Authenticode signatures for release-critical PowerShell files.
@@ -49,7 +49,7 @@ function Test-CCAuthenticodeSignature {
         Authenticode signature status and the file path.
 
     .EXAMPLE
-        PS> Test-CCAuthenticodeSignature
+        PS> Test-CHARAuthenticodeSignature
 
         Shows items that failed signature tests.
 
@@ -61,14 +61,14 @@ function Test-CCAuthenticodeSignature {
             HashMismatch    MyScript
 
     .EXAMPLE
-        PS> Test-CCAuthenticodeSignature
+        PS> Test-CHARAuthenticodeSignature
 
         Signature compliance passed. Validated 24 file(s).
 
         All tested objects have validated Authenticode signatures.
 
     .EXAMPLE
-        Test-CCAuthenticodeSignature | Set-CCAuthenticodeSignature
+        Test-CHARAuthenticodeSignature | Set-CHARAuthenticodeSignature
 
         Updates signatures of invalid items.
 
@@ -88,8 +88,8 @@ function Test-CCAuthenticodeSignature {
         [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
     )
 
-    if (-not $script:CCIsWindows) {
-        throw 'Test-CCAuthenticodeSignature is only supported on Windows systems.'
+    if (-not $script:IsWindows) {
+        throw 'Test-CHARAuthenticodeSignature is only supported on Windows systems.'
     }
 
     if (-not $Path -or $Path.Count -eq 0) {
@@ -169,5 +169,5 @@ function Test-CCAuthenticodeSignature {
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
-    Test-CCAuthenticodeSignature @PSBoundParameters
+    Test-CHARAuthenticodeSignature @PSBoundParameters
 }

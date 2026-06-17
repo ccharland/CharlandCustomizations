@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Script wrapper for Set-CCAuthenticodeSignature.
+    Script wrapper for Set-CHARAuthenticodeSignature.
 
 .DESCRIPTION
     Standalone entry point used during module build to apply Authenticode
@@ -20,11 +20,11 @@ param(
     [string[]]$Path
 )
 
-if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:CCIsWindows = $IsWindows
+if (-not (Get-Variable -Name IsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:IsWindows = $IsWindows
 }
 
-function Set-CCAuthenticodeSignature {
+function Set-CHARAuthenticodeSignature {
     <#
 .SYNOPSIS
     Sets Authenticode signature on PowerShell files.
@@ -54,15 +54,15 @@ function Set-CCAuthenticodeSignature {
     System.Management.Automation.Signature - The signature result for each file.
 
 .EXAMPLE
-    Set-CCAuthenticodeSignature -Path .\MyScript.ps1
+    Set-CHARAuthenticodeSignature -Path .\MyScript.ps1
     Signs a single file using the auto-detected certificate.
 
 .EXAMPLE
-    Get-ChildItem .\Modules\*.psm1 | Set-CCAuthenticodeSignature
+    Get-ChildItem .\Modules\*.psm1 | Set-CHARAuthenticodeSignature
     Signs all .psm1 files in the Modules directory via pipeline.
 
 .EXAMPLE
-    Set-CCAuthenticodeSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
+    Set-CHARAuthenticodeSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
     Signs a file using an explicitly specified timestamp server.
 #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'This helper performs code-signing operations by design and is intentionally explicit.')]
@@ -80,8 +80,8 @@ function Set-CCAuthenticodeSignature {
     )
 
     begin {
-        if (-not $script:CCIsWindows) {
-            throw 'Set-CCAuthenticodeSignature is only supported on Windows systems.'
+        if (-not $script:IsWindows) {
+            throw 'Set-CHARAuthenticodeSignature is only supported on Windows systems.'
         }
 
         if ($null -eq $MyCert) {
@@ -142,8 +142,8 @@ function Set-CCAuthenticodeSignature {
     }
 }
 
-Set-Alias -Name Set-CCFileSignature -Value Set-CCAuthenticodeSignature -Scope Script
+Set-Alias -Name Set-CHARFileSignature -Value Set-CHARAuthenticodeSignature -Scope Script
 
 if ($MyInvocation.InvocationName -ne '.') {
-    Set-CCAuthenticodeSignature @PSBoundParameters
+    Set-CHARAuthenticodeSignature @PSBoundParameters
 }
