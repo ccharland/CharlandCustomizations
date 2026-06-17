@@ -18,28 +18,28 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - _Requirements: 11.1, 11.2_
 
 - [ ] 2. Rename standalone .ps1 files and update function definitions
-  - [-] 2.1 Rename `Public/Clear-CCAuthenticodeSignature.ps1` → `Clear-CHARAuthenticodeSignature.ps1` and update function definition, help examples, and alias references inside
+  - [x] 2.1 Rename `Public/Clear-CCAuthenticodeSignature.ps1` → `Clear-CHARAuthenticodeSignature.ps1` and update function definition, help examples, and alias references inside
     - _Requirements: 1.1, 2.1, 2.2, 4.1, 4.2, 7.1, 7.2_
-  - [-] 2.2 Rename `Public/Set-CCAuthenticodeSignature.ps1` → `Set-CHARAuthenticodeSignature.ps1` and update function definition, help, aliases, and `$script:CCIsWindows` → `$script:IsWindows`
+  - [x] 2.2 Rename `Public/Set-CCAuthenticodeSignature.ps1` → `Set-CHARAuthenticodeSignature.ps1` and update function definition, help, aliases, and `$script:CCIsWindows` → `$script:IsWindows`
     - _Requirements: 1.1, 2.1, 2.2, 4.1, 4.2, 5.1, 5.2, 7.1, 7.2_
-  - [-] 2.3 Rename `Public/Test-CCAuthenticodeSignature.ps1` → `Test-CHARAuthenticodeSignature.ps1` and update function definition, help, and `$script:CCIsWindows` → `$script:IsWindows`
+  - [x] 2.3 Rename `Public/Test-CCAuthenticodeSignature.ps1` → `Test-CHARAuthenticodeSignature.ps1` and update function definition, help, and `$script:CCIsWindows` → `$script:IsWindows`
     - _Requirements: 1.1, 2.1, 2.2, 5.1, 5.2, 7.1, 7.2_
-  - [-] 2.4 Rename `Public/Install-CCProfilesFromSource.ps1` → `Install-CHARProfilesFromSource.ps1` and update function definition and help
+  - [x] 2.4 Rename `Public/Install-CCProfilesFromSource.ps1` → `Install-CHARProfilesFromSource.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
-  - [-] 2.5 Rename `Public/Invoke-CCScriptMultiRegionProfile.ps1` → `Invoke-CHARScriptMultiRegionProfile.ps1` and update function definition, help, and internal cross-references to other CC-prefixed functions
+  - [x] 2.5 Rename `Public/Invoke-CCScriptMultiRegionProfile.ps1` → `Invoke-CHARScriptMultiRegionProfile.ps1` and update function definition, help, and internal cross-references to other CC-prefixed functions
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2, 8.1, 8.2_
-  - [~] 2.6 Rename `Public/Update-CCPowershell7.ps1` → `Update-CHARPowershell7.ps1` and update function definition and help
+  - [-] 2.6 Rename `Public/Update-CCPowershell7.ps1` → `Update-CHARPowershell7.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
-  - [~] 2.7 Rename `Public/Git/Test-CCCommitSignature.ps1` → `Test-CHARCommitSignature.ps1` and update function definition and help
+  - [-] 2.7 Rename `Public/Git/Test-CCCommitSignature.ps1` → `Test-CHARCommitSignature.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
-  - [~] 2.8 Rename `Public/Git/Install-CCGitHook.ps1` → `Install-CHARGitHook.ps1` and update function definition and help
+  - [-] 2.8 Rename `Public/Git/Install-CCGitHook.ps1` → `Install-CHARGitHook.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
 
 - [ ] 3. Update nested module function definitions, exports, and cross-references
-  - [~] 3.1 Update `AWSCustomizations.psm1` — rename all 11 function definitions, update `Export-ModuleMember`, update help examples and internal cross-references between functions
+  - [-] 3.1 Update `AWSCustomizations.psm1` — rename all 11 function definitions, update `Export-ModuleMember`, update help examples and internal cross-references between functions
     - Functions: Get-CCAWSMFASession→Get-CHARAWSMFASession, Find-CCCFNStackError→Find-CHARCFNStackError, Set-CCAWSProfileWithMFA→Set-CHARAWSProfileWithMFA, Set-CCAWSEnv→Set-CHARAWSEnv, Remove-CCExpiredAWSProfile→Remove-CHARExpiredAWSProfile, Get-CCAccountListFromProfile→Get-CHARAccountListFromProfile, Start-CCMultiStackDriftDetection→Start-CHARMultiStackDriftDetection, Get-CCAWSAccountListOfDriftedResource→Get-CHARAWSAccountListOfDriftedResource, Get-CCAWSObjectCount→Get-CHARAWSObjectCount, Use-CCAssumedRole→Use-CHARAssumedRole, Update-CCSSOCredentialList→Update-CHARSSOCredentialList
     - _Requirements: 1.2, 6.1, 7.1, 7.2, 8.1, 8.2_
-  - [~] 3.2 Update `CloudFormation-TemplateProcessing.psm1` — rename all 6 function definitions, update `Export-ModuleMember`, update help and cross-references
+  - [-] 3.2 Update `CloudFormation-TemplateProcessing.psm1` — rename all 6 function definitions, update `Export-ModuleMember`, update help and cross-references
     - Functions: New-CCCFNStackFromDirectory→New-CHARCFNStackFromDirectory, Test-CCCFNStackFromDirectory→Test-CHARCFNStackFromDirectory, Out-CCCFNStackInfo→Out-CHARCFNStackInfo, Update-CCCFNStackFromDirectory→Update-CHARCFNStackFromDirectory, New-CCCFNStackDirectory→New-CHARCFNStackDirectory, Edit-CCCFTTEbsVolume→Edit-CHARCFTTEbsVolume
     - _Requirements: 1.2, 6.1, 7.1, 7.2, 8.1, 8.2_
   - [~] 3.3 Update `S3Customizations.psm1` — rename `Clear-CCS3Bucket` → `Clear-CHARS3Bucket` and update `Export-ModuleMember`

@@ -1,4 +1,4 @@
-function Update-CCPowershell7 {
+function Update-CHARPowershell7 {
 <#
 .SYNOPSIS
     Updates PowerShell 7 to the current stable release (cross-platform).
@@ -23,7 +23,7 @@ function Update-CCPowershell7 {
     Visit https://github.com/PowerShell/PowerShell/releases for manual installation.
 
 .EXAMPLE
-    Update-CCPowershell7
+    Update-CHARPowershell7
     Detects OS and updates using the available package manager.
 #>
   [CmdletBinding()]

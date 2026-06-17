@@ -1,4 +1,4 @@
-function Test-CCCommitSignature {
+function Test-CHARCommitSignature {
 
     <#
     .SYNOPSIS
@@ -18,19 +18,19 @@ function Test-CCCommitSignature {
         Branch to check (default: current branch)
 
     .EXAMPLE
-        Test-CCCommitSignatures
+        Test-CHARCommitSignatures
         Checks the last commit
 
     .EXAMPLE
-        Test-CCCommitSignatures -Count 10
+        Test-CHARCommitSignatures -Count 10
         Checks the last 10 commits
 
     .EXAMPLE
-        Test-CCCommitSignatures -Range "HEAD~5..HEAD"
+        Test-CHARCommitSignatures -Range "HEAD~5..HEAD"
         Checks specific commit range
 
     .EXAMPLE
-        Test-CCCommitSignatures -Branch main
+        Test-CHARCommitSignatures -Branch main
         Checks commits on main branch
     #>
     [CmdletBinding()]

@@ -9,7 +9,7 @@ Write-Verbose  "Loading AWSCustomizations.psm1"
 
 # Module-level cache for SSO tokens to avoid repeated authentication
 $script:SSOTokenCache = @{}
-function  Get-CCAWSMFASession {
+function  Get-CHARAWSMFASession {
   <#
   .SYNOPSIS
     Changes your active AWS connection to a temporary session using MFA Authentiation.
@@ -17,7 +17,7 @@ function  Get-CCAWSMFASession {
     Retrieves temporary STS session credentials by authenticating with a one-time MFA token code.
     Returns credentials that can be passed to Set-AWSCredential.
   .EXAMPLE
-    PS C:\> Set-AWSCredential -Credential (Get-CCAWSMFASession -TokenCode <OTP>)
+    PS C:\> Set-AWSCredential -Credential (Get-CHARAWSMFASession -TokenCode <OTP>)
 
     Changes your active AWS session to one authenticated with MFA.
   #>
@@ -29,14 +29,14 @@ function  Get-CCAWSMFASession {
 }
 
 
-function Find-CCCFNStackError {
+function Find-CHARCFNStackError {
   <#
 .SYNOPSIS
    Finds Stacks and resources in an "error state".
 .DESCRIPTION
     Script reports any stack or resource where "StatusReason" has a non-null value
 .EXAMPLE
-    PS C:\> Find-CCCFNStackError
+    PS C:\> Find-CHARCFNStackError
 
 StackName  StackStatus              StackStatusReason
 ---------  -----------              -----------------
@@ -146,7 +146,7 @@ Stack4    UPDATE_COMPLETE ALambdaFunction   Resource skipped during UpdateRollba
 }
 
 
-function Set-CCAWSProfileWithMFA {
+function Set-CHARAWSProfileWithMFA {
   <#
 .SYNOPSIS
     Retrieves temporary STS session credentials using MFA authentication.
@@ -184,12 +184,12 @@ function Set-CCAWSProfileWithMFA {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    PS C:\> Set-AWSCredential -Credential (Set-CCAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456)
+    PS C:\> Set-AWSCredential -Credential (Set-CHARAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456)
 
     Authenticates with MFA and sets the returned credentials as the active session.
 
 .EXAMPLE
-    PS C:\> Set-CCAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456 -Region us-east-1
+    PS C:\> Set-CHARAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456 -Region us-east-1
 
     Retrieves MFA session credentials for a specific region.
 #>
@@ -247,7 +247,7 @@ function Set-CCAWSProfileWithMFA {
   }
 }
 
-function Set-CCAWSEnv {
+function Set-CHARAWSEnv {
   <#
 .SYNOPSIS
   Sets AWS Credential variables for use with command line tools
@@ -261,15 +261,15 @@ function Set-CCAWSEnv {
   Skip confirmation prompts
 
 .EXAMPLE
-  PS> Set-CCAWSEnv
+  PS> Set-CHARAWSEnv
   Sets AWS environment variables from current credential
 
 .EXAMPLE
-  PS> Set-CCAWSEnv -WhatIf
+  PS> Set-CHARAWSEnv -WhatIf
   Shows what environment variables would be set without actually setting them
 
 .EXAMPLE
-  PS> Set-CCAWSEnv -Confirm:$false
+  PS> Set-CHARAWSEnv -Confirm:$false
   Sets environment variables without confirmation
 
 .NOTES
@@ -348,7 +348,7 @@ function Set-CCAWSEnv {
     Write-Verbose "Operation cancelled by user"
   }
 }
-function Remove-CCExpiredAWSProfile {
+function Remove-CHARExpiredAWSProfile {
   <#
   .SYNOPSIS
     Removes expired temporary credentials stored in local credential stores.
@@ -356,7 +356,7 @@ function Remove-CCExpiredAWSProfile {
     Tests all AWS Profiles by calling Get-STSCallerIdentity. If the call fails with an
     ExpiredToken error, the profile is removed from the credential store.
   .EXAMPLE
-    Remove-CCExpiredAWSProfile
+    Remove-CHARExpiredAWSProfile
     Scans all profiles with a credential file location and removes any with expired tokens.
   #>
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
@@ -381,7 +381,7 @@ function Remove-CCExpiredAWSProfile {
     }
   }
 }
-function Get-CCAccountListFromProfile {
+function Get-CHARAccountListFromProfile {
   <#
   .SYNOPSIS
     Lists  AWS ProfileName, Account, and AccountAlias
@@ -389,7 +389,7 @@ function Get-CCAccountListFromProfile {
     Enumerates all locally stored AWS credential profiles and retrieves the associated
     account ID and account alias for each by calling Get-STSCallerIdentity and Get-IAMAccountAlias.
   .EXAMPLE
-    PS C:\> Get-CCAccountListFromProfile
+    PS C:\> Get-CHARAccountListFromProfile
 
     ProfileName  Account       AccountAlias
     -----------  -------       ------------
@@ -398,20 +398,20 @@ function Get-CCAccountListFromProfile {
   Get-AWSCredential -ListProfileDetail  | ForEach-Object { Select-Object -InputObject $_   Profilename, @{Name = "Account"; Expression = { (Get-STSCallerIdentity -ProfileName  $_.ProfileName).Account } }, @{Name = "AccountAlias"; Expression = { Get-IAMAccountAlias -ProfileName  $_.ProfileName } } }
 }
 
-function Start-CCMultiStackDriftDetection {
+function Start-CHARMultiStackDriftDetection {
   <#
 .SYNOPSIS
   Detects drift on all stacks passed into the function
 .DESCRIPTION
-  Start-CCMultiStackDriftDetection  will detect Stack drift on all stack names passed into it,
+  Start-CHARMultiStackDriftDetection  will detect Stack drift on all stack names passed into it,
   and will bypass the stacks that it doesn't make sense to do the drift detection on.
 
 .EXAMPLE
-  PS C:\> (Get-CFNstack).StackName |Select-Object -first 5  |Start-CCMultiStackDriftDetection
+  PS C:\> (Get-CFNstack).StackName |Select-Object -first 5  |Start-CHARMultiStackDriftDetection
   Starts a drift detection of the first 5 stacks listed.
 
 .EXAMPLE
-PS C:\> Start-CCMultiStackDriftDetection
+PS C:\> Start-CHARMultiStackDriftDetection
 
 Does stack drift detection on all stacks within a region.
 
@@ -534,7 +534,7 @@ Stackname or list of stackNames to start
   }
 }
 
-function Get-CCAWSAccountListOfDriftedResource {
+function Get-CHARAWSAccountListOfDriftedResource {
   <#
 .SYNOPSIS
     Lists all drifted resources across CloudFormation stacks in an AWS account.
@@ -571,10 +571,10 @@ function Get-CCAWSAccountListOfDriftedResource {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Get-CCAWSAccountListOfDriftedResource -Region us-east-1 -ProfileName myprofile
+    Get-CHARAWSAccountListOfDriftedResource -Region us-east-1 -ProfileName myprofile
 
 .EXAMPLE
-    Get-CCAWSAccountListOfDriftedResource -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
+    Get-CHARAWSAccountListOfDriftedResource -StackRootARN 'arn:aws:cloudformation:us-east-1:123456789012:stack/root/guid'
 #>
   [CmdletBinding()]
   param (
@@ -631,7 +631,7 @@ function Get-CCAWSAccountListOfDriftedResource {
   }
 }
 
-function Get-CCAWSObjectCount {
+function Get-CHARAWSObjectCount {
   <#
 .SYNOPSIS
     Quick scan to see if a region is in use.
