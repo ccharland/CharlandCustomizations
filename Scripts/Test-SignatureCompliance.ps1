@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    Wrapper script for Test-CCAuthenticodeSignature.
+    Wrapper script for Test-CHARAuthenticodeSignature.
 .DESCRIPTION
-    Loads Test-CCAuthenticodeSignature from module source when needed and invokes it.
+    Loads Test-CHARAuthenticodeSignature from module source when needed and invokes it.
 .PARAMETER Path
     One or more root paths to scan recursively.
 .PARAMETER IncludeExtension
@@ -18,13 +18,13 @@ param(
     [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
 )
 
-$publicFunctionPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Test-CCAuthenticodeSignature.ps1'
+$publicFunctionPath = Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Test-CHARAuthenticodeSignature.ps1'
 
-if (-not (Get-Command Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command Test-CHARAuthenticodeSignature -ErrorAction SilentlyContinue)) {
     . $publicFunctionPath
 }
 
-$result = Test-CCAuthenticodeSignature @PSBoundParameters
+$result = Test-CHARAuthenticodeSignature @PSBoundParameters
 
 if ($null -ne $result -and @($result).Count -gt 0) {
     $result | Write-Output

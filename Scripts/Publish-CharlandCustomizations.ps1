@@ -42,8 +42,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:CCIsWindows = if ($PSVersionTable.PSVersion.Major -lt 7) {
+if (-not (Get-Variable -Name IsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:IsWindows = if ($PSVersionTable.PSVersion.Major -lt 7) {
         [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
     }
     else {
@@ -51,7 +51,7 @@ if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyCont
     }
 }
 
-if (-not $script:CCIsWindows) {
+if (-not $script:IsWindows) {
     throw 'Publish-CharlandCustomizations is only supported on Windows systems.'
 }
 
@@ -106,13 +106,13 @@ if (-not $filesToValidate) {
     throw "No PowerShell module files were found under $resolvedPath"
 }
 
-$signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue
+$signatureValidationCommand = Get-Command -Name Test-CHARAuthenticodeSignatures -ErrorAction SilentlyContinue
 if (-not $signatureValidationCommand) {
-    $signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue
+    $signatureValidationCommand = Get-Command -Name Test-CHARAuthenticodeSignature -ErrorAction SilentlyContinue
 }
 
 if (-not $signatureValidationCommand) {
-    throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
+    throw 'Publishing requires Test-CHARAuthenticodeSignatures (or Test-CHARAuthenticodeSignature) to be available in the current session.'
 }
 
 $invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension $allowedExtensions)
