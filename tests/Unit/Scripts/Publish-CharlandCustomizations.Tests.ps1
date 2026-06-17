@@ -66,7 +66,7 @@ BeforeAll {
 Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
     BeforeEach {
-        $script:IsWindows = $true
+        $script:CHARIsWindows = $true
 
         # Mock Resolve-Path to return a string path that Join-Path can consume
         Mock Resolve-Path { '/fake/module/path' }
@@ -248,7 +248,7 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
         It 'Throws when not running on Windows' {
             # Arrange
-            $script:IsWindows = $false
+            $script:CHARIsWindows = $false
 
             # Act & Assert
             { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |

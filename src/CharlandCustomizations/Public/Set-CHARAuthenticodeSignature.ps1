@@ -20,8 +20,8 @@ param(
     [string[]]$Path
 )
 
-if (-not (Get-Variable -Name IsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:IsWindows = $IsWindows
+if (-not (Get-Variable -Name CHARIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:CHARIsWindows = $IsWindows
 }
 
 function Set-CHARAuthenticodeSignature {
@@ -80,7 +80,7 @@ function Set-CHARAuthenticodeSignature {
     )
 
     begin {
-        if (-not $script:IsWindows) {
+        if (-not $script:CHARIsWindows) {
             throw 'Set-CHARAuthenticodeSignature is only supported on Windows systems.'
         }
 

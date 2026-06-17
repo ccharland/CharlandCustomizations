@@ -17,8 +17,8 @@ param(
     [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
 )
 
-if (-not (Get-Variable -Name IsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:IsWindows = $IsWindows
+if (-not (Get-Variable -Name CHARIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:CHARIsWindows = $IsWindows
 }
 
 function Test-CHARAuthenticodeSignature {
@@ -88,7 +88,7 @@ function Test-CHARAuthenticodeSignature {
         [string[]]$IncludeExtension = @('.ps1', '.psm1', '.psd1')
     )
 
-    if (-not $script:IsWindows) {
+    if (-not $script:CHARIsWindows) {
         throw 'Test-CHARAuthenticodeSignature is only supported on Windows systems.'
     }
 

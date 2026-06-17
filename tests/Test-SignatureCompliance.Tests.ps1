@@ -3,7 +3,7 @@ BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../Scripts/Test-SignatureCompliance.ps1"
     # Dot-source the function directly so mocks work in the same scope
     . "$PSScriptRoot/../src/CharlandCustomizations/Public/Test-CHARAuthenticodeSignature.ps1"
-    $script:IsWindows = $true
+    $script:CHARIsWindows = $true
 }
 
 Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
