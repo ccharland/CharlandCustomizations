@@ -89,17 +89,17 @@ Every bug fix must include at least one test that fails against the old behavior
 
 These commands can delete resources, modify credentials, publish artifacts, write signatures, or run across accounts. They require stronger testing before release.
 
-- `Clear-CCS3Bucket`
-- `New-CCCFNStackFromDirectory`
-- `Update-CCCFNStackFromDirectory`
-- `Set-CCAWSProfileWithMFA`
-- `Update-CCSSOCredentialList`
-- `Remove-CCExpiredAWSProfile`
-- `Use-CCAssumedRole`
-- `Invoke-CCScriptMultiAccountRegion`
-- `Set-CCAuthenticodeSignature`
-- `Clear-CCAuthenticodeSignature`
-- `Install-CCGitHook`
+- `Clear-CHARS3Bucket`
+- `New-CHARCFNStackFromDirectory`
+- `Update-CHARCFNStackFromDirectory`
+- `Set-CHARAWSProfileWithMFA`
+- `Update-CHARSSOCredentialList`
+- `Remove-CHARExpiredAWSProfile`
+- `Use-CHARAssumedRole`
+- `Invoke-CHARScriptMultiAccountRegion`
+- `Set-CHARAuthenticodeSignature`
+- `Clear-CHARAuthenticodeSignature`
+- `Install-CHARGitHook`
 - `Scripts/Build-Module.ps1`
 - `Scripts/Publish-CharlandCustomizations.ps1`
 - `Scripts/Register-LocalRepository.ps1`
@@ -115,18 +115,18 @@ Minimum tests:
 
 ### Priority 2: Core Workflows
 
-- `Find-CCCFNStackErrors`
-- `Get-CCAWSMFASession`
-- `Set-CCAWSEnv`
-- `Get-CCAccountListFromProfile`
-- `Start-CCMultiStackDriftDetection`
-- `Get-CCAWSAccountListOfDriftedResource`
-- `Get-CCAWSObjectCount`
-- `Test-CCCFNStackFromDirectory`
-- `Out-CCCFNStackInfo`
-- `New-CCCFNStackDirectory`
-- `Edit-CCCFTTEbsVolume`
-- `Test-CCCommitSignature`
+- `Find-CHARCFNStackErrors`
+- `Get-CHARAWSMFASession`
+- `Set-CHARAWSEnv`
+- `Get-CHARAccountListFromProfile`
+- `Start-CHARMultiStackDriftDetection`
+- `Get-CHARAWSAccountListOfDriftedResource`
+- `Get-CHARAWSObjectCount`
+- `Test-CHARCFNStackFromDirectory`
+- `Out-CHARCFNStackInfo`
+- `New-CHARCFNStackDirectory`
+- `Edit-CHARCFTTEbsVolume`
+- `Test-CHARCommitSignature`
 - `Scripts/Test-CodeQuality.ps1`
 
 Minimum tests:
@@ -139,20 +139,20 @@ Minimum tests:
 
 ### Priority 3: Audit And Reporting
 
-- `Get-CCEC2SGInUse`
-- `Get-CCEC2Count`
-- `Find-CCEC2DBSG`
-- `Out-CCAWSSupportingInfo`
-- `Out-CCAWSNetworkingComponent`
-- `Get-CCIAMAuditList`
-- `Get-CCGlobalAuditReportItem`
-- `Get-CCEC2KeyTagNameStatus`
-- `Get-CCEC2SnapshotReport`
-- `Get-CCEC2VolumeReport`
-- `Start-CCEC2RetryLoop`
-- `Find-CCOpenSecurityGroup`
-- `Install-CCProfilesFromSource`
-- `Update-CCPowershell7`
+- `Get-CHAREC2SGInUse`
+- `Get-CHAREC2Count`
+- `Find-CHAREC2DBSG`
+- `Out-CHARAWSSupportingInfo`
+- `Out-CHARAWSNetworkingComponent`
+- `Get-CHARIAMAuditList`
+- `Get-CHARGlobalAuditReportItem`
+- `Get-CHAREC2KeyTagNameStatus`
+- `Get-CHAREC2SnapshotReport`
+- `Get-CHAREC2VolumeReport`
+- `Start-CHAREC2RetryLoop`
+- `Find-CHAROpenSecurityGroup`
+- `Install-CHARProfilesFromSource`
+- `Update-CHARPowershell7`
 
 Minimum tests:
 
@@ -168,43 +168,43 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 
 | Item | Type | Priority | Help | Pester Test | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `Install-CCProfilesFromSource` | Function | P3 | Pending | Pending | Local profile copy behavior |
-| `Invoke-CCScriptMultiAccountRegion` | Function | P1 | Pending | Pending | Multi-account execution contract |
-| `Set-CCAuthenticodeSignature` | Function | P1 | Pending | Pending | Signing side effects |
-| `Update-CCPowershell7` | Function | P3 | Pending | Pending | External install/update behavior |
-| `Clear-CCAuthenticodeSignature` | Function | P1 | Pending | Pending | File mutation |
-| `Find-CCCFNStackErrors` | Function | P2 | Pending | Pending | AWS mocks |
-| `Set-CCAWSProfileWithMFA` | Function | P1 | Pending | Pending | Credential mutation |
-| `Get-CCAWSMFASession` | Function | P2 | Pending | Pending | STS mocks |
-| `Start-CCMultiStackDriftDetection` | Function | P2 | Pending | Pending | CloudFormation mocks |
-| `Get-CCAWSAccountListOfDriftedResource` | Function | P2 | Pending | Pending | CloudFormation mocks |
-| `Get-CCAWSObjectCount` | Function | P2 | Pending | Pending | AWS inventory mocks |
-| `Set-CCAWSEnv` | Function | P2 | Pending | Pending | Environment mutation |
-| `Update-CCSSOCredentialList` | Function | P1 | Pending | Pending | SSO credential file behavior |
-| `Remove-CCExpiredAWSProfile` | Function | P1 | Pending | Pending | Credential file mutation |
-| `Get-CCAccountListFromProfile` | Function | P2 | Pending | Pending | Local credential parsing |
-| `Use-CCAssumedRole` | Function | P1 | Pending | Pending | Credential/environment mutation |
-| `New-CCCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation create flow |
-| `Test-CCCFNStackFromDirectory` | Function | P2 | Pending | Pending | Template validation flow |
-| `Out-CCCFNStackInfo` | Function | P2 | Pending | Pending | Output file/report behavior |
-| `Update-CCCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation update flow |
-| `New-CCCFNStackDirectory` | Function | P2 | Pending | Pending | File creation |
-| `Edit-CCCFTTEbsVolume` | Function | P2 | Pending | Pending | Template transformation |
-| `Clear-CCS3Bucket` | Function | P1 | Pending | Pending | Destructive S3 behavior |
-| `Get-CCEC2SGInUse` | Function | P3 | Pending | Pending | EC2/security group mocks |
-| `Get-CCEC2Count` | Function | P3 | Pending | Pending | EC2 mocks |
-| `Find-CCEC2DBSG` | Function | P3 | Pending | Pending | Security group analysis |
-| `Out-CCAWSSupportingInfo` | Function | P3 | Pending | Pending | Report output |
-| `Out-CCAWSNetworkingComponent` | Function | P3 | Pending | Pending | Report output |
-| `Get-CCIAMAuditList` | Function | P3 | Pending | Pending | IAM mocks |
-| `Get-CCGlobalAuditReportItem` | Function | P3 | Pending | Pending | Report item shape |
-| `Get-CCEC2KeyTagNameStatus` | Function | P3 | Pending | Pending | Tag analysis |
-| `Get-CCEC2SnapshotReport` | Function | P3 | Pending | Pending | Snapshot mocks |
-| `Get-CCEC2VolumeReport` | Function | P3 | Pending | Pending | Volume mocks |
-| `Start-CCEC2RetryLoop` | Function | P3 | Pending | Pending | Retry behavior |
-| `Find-CCOpenSecurityGroup` | Function | P3 | Pending | Pending | Security group rules |
-| `Test-CCCommitSignature` | Function | P2 | Pending | Pending | Temporary git repo |
-| `Install-CCGitHook` | Function | P1 | Pending | Pending | File mutation |
+| `Install-CHARProfilesFromSource` | Function | P3 | Pending | Pending | Local profile copy behavior |
+| `Invoke-CHARScriptMultiAccountRegion` | Function | P1 | Pending | Pending | Multi-account execution contract |
+| `Set-CHARAuthenticodeSignature` | Function | P1 | Pending | Pending | Signing side effects |
+| `Update-CHARPowershell7` | Function | P3 | Pending | Pending | External install/update behavior |
+| `Clear-CHARAuthenticodeSignature` | Function | P1 | Pending | Pending | File mutation |
+| `Find-CHARCFNStackErrors` | Function | P2 | Pending | Pending | AWS mocks |
+| `Set-CHARAWSProfileWithMFA` | Function | P1 | Pending | Pending | Credential mutation |
+| `Get-CHARAWSMFASession` | Function | P2 | Pending | Pending | STS mocks |
+| `Start-CHARMultiStackDriftDetection` | Function | P2 | Pending | Pending | CloudFormation mocks |
+| `Get-CHARAWSAccountListOfDriftedResource` | Function | P2 | Pending | Pending | CloudFormation mocks |
+| `Get-CHARAWSObjectCount` | Function | P2 | Pending | Pending | AWS inventory mocks |
+| `Set-CHARAWSEnv` | Function | P2 | Pending | Pending | Environment mutation |
+| `Update-CHARSSOCredentialList` | Function | P1 | Pending | Pending | SSO credential file behavior |
+| `Remove-CHARExpiredAWSProfile` | Function | P1 | Pending | Pending | Credential file mutation |
+| `Get-CHARAccountListFromProfile` | Function | P2 | Pending | Pending | Local credential parsing |
+| `Use-CHARAssumedRole` | Function | P1 | Pending | Pending | Credential/environment mutation |
+| `New-CHARCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation create flow |
+| `Test-CHARCFNStackFromDirectory` | Function | P2 | Pending | Pending | Template validation flow |
+| `Out-CHARCFNStackInfo` | Function | P2 | Pending | Pending | Output file/report behavior |
+| `Update-CHARCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation update flow |
+| `New-CHARCFNStackDirectory` | Function | P2 | Pending | Pending | File creation |
+| `Edit-CHARCFTTEbsVolume` | Function | P2 | Pending | Pending | Template transformation |
+| `Clear-CHARS3Bucket` | Function | P1 | Pending | Pending | Destructive S3 behavior |
+| `Get-CHAREC2SGInUse` | Function | P3 | Pending | Pending | EC2/security group mocks |
+| `Get-CHAREC2Count` | Function | P3 | Pending | Pending | EC2 mocks |
+| `Find-CHAREC2DBSG` | Function | P3 | Pending | Pending | Security group analysis |
+| `Out-CHARAWSSupportingInfo` | Function | P3 | Pending | Pending | Report output |
+| `Out-CHARAWSNetworkingComponent` | Function | P3 | Pending | Pending | Report output |
+| `Get-CHARIAMAuditList` | Function | P3 | Pending | Pending | IAM mocks |
+| `Get-CHARGlobalAuditReportItem` | Function | P3 | Pending | Pending | Report item shape |
+| `Get-CHAREC2KeyTagNameStatus` | Function | P3 | Pending | Pending | Tag analysis |
+| `Get-CHAREC2SnapshotReport` | Function | P3 | Pending | Pending | Snapshot mocks |
+| `Get-CHAREC2VolumeReport` | Function | P3 | Pending | Pending | Volume mocks |
+| `Start-CHAREC2RetryLoop` | Function | P3 | Pending | Pending | Retry behavior |
+| `Find-CHAROpenSecurityGroup` | Function | P3 | Pending | Pending | Security group rules |
+| `Test-CHARCommitSignature` | Function | P2 | Pending | Pending | Temporary git repo |
+| `Install-CHARGitHook` | Function | P1 | Pending | Pending | File mutation |
 | `New-AWSParamSplat` | Private Helper | P2 | Ready | Ready | Existing tests in `tests/New-AWSParamSplat.Tests.ps1` |
 | `Scripts/Build-Module.ps1` | Script | P1 | Pending | Pending | Build/package gate |
 | `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Pending | Pending | Publish flow with mocks |
@@ -239,7 +239,7 @@ Recommended tags:
 
 ```powershell
 It 'has discoverable comment-based help' -Tag 'Help' {
-    $help = Get-Help Clear-CCS3Bucket -Full
+    $help = Get-Help Clear-CHARS3Bucket -Full
 
     $help.Synopsis | Should -Not -BeNullOrEmpty
     $help.Examples.Example.Count | Should -BeGreaterThan 0
@@ -252,7 +252,7 @@ It 'has discoverable comment-based help' -Tag 'Help' {
 It 'passes AWS common parameters to downstream cmdlets' -Tag 'Unit' {
     Mock Get-CFNStack { @() }
 
-    Find-CCCFNStackErrors -StackName 'app' -Region 'us-east-1' -ProfileName 'test'
+    Find-CHARCFNStackErrors -StackName 'app' -Region 'us-east-1' -ProfileName 'test'
 
     Should -Invoke Get-CFNStack -ParameterFilter {
         $Region -eq 'us-east-1' -and $ProfileName -eq 'test'
@@ -266,7 +266,7 @@ It 'passes AWS common parameters to downstream cmdlets' -Tag 'Unit' {
 It 'does not call destructive commands during WhatIf' -Tag 'Unit' {
     Mock Remove-S3Object {}
 
-    Clear-CCS3Bucket -BucketName 'release-test' -WhatIf
+    Clear-CHARS3Bucket -BucketName 'release-test' -WhatIf
 
     Should -Not -Invoke Remove-S3Object
 }
@@ -278,7 +278,7 @@ It 'does not call destructive commands during WhatIf' -Tag 'Unit' {
 It 'throws a useful error when the downstream operation fails' -Tag 'Unit' {
     Mock Get-S3Object { throw 'AWS failure' }
 
-    { Clear-CCS3Bucket -BucketName 'release-test' -ErrorAction Stop } |
+    { Clear-CHARS3Bucket -BucketName 'release-test' -ErrorAction Stop } |
         Should -Throw '*AWS failure*'
 }
 ```
@@ -344,8 +344,8 @@ A function or script is release-ready when:
 Start with the release blockers:
 
 1. Add help tests for all exported functions and `Scripts/*.ps1`.
-2. Add unit tests for `Clear-CCS3Bucket`.
-3. Add unit tests for `Set-CCAuthenticodeSignature` and `Clear-CCAuthenticodeSignature`.
-4. Add unit tests for `Invoke-CCScriptMultiAccountRegion`.
-5. Add unit tests for `New-CCCFNStackFromDirectory` and `Update-CCCFNStackFromDirectory`.
+2. Add unit tests for `Clear-CHARS3Bucket`.
+3. Add unit tests for `Set-CHARAuthenticodeSignature` and `Clear-CHARAuthenticodeSignature`.
+4. Add unit tests for `Invoke-CHARScriptMultiAccountRegion`.
+5. Add unit tests for `New-CHARCFNStackFromDirectory` and `Update-CHARCFNStackFromDirectory`.
 6. Add script-level tests for `Scripts/Build-Module.ps1` and `Scripts/Publish-CharlandCustomizations.ps1`.

@@ -46,13 +46,13 @@ Import-Module CharlandCustomizations
 
 ## Command Prefix
 
-All exported functions in this module have a `CC` prefix hardcoded into the noun portion of their names. This makes command names explicit and discoverable in source code:
+All exported functions in this module have a `CHAR` prefix hardcoded into the noun portion of their names. This makes command names explicit and discoverable in source code:
 
 ```powershell
-# Function names have CC inserted after the verb
-Find-CCCFNStackError
-Get-CCEC2SGInUse
-Clear-CCS3Bucket
+# Function names have CHAR inserted after the verb
+Find-CHARCFNStackError
+Get-CHAREC2SGInUse
+Clear-CHARS3Bucket
 ```
 
 ## Verify Installation
@@ -65,7 +65,7 @@ Get-Module CharlandCustomizations
 Get-Command -Module CharlandCustomizations
 
 # Test a function
-Get-Help Find-CCCFNStackError -Full
+Get-Help Find-CHARCFNStackError -Full
 ```
 
 ## Auto-Load on Startup

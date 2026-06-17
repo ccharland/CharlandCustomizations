@@ -68,7 +68,7 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
   - Run `(Get-Command -Module CharlandCustomizations).Count` and confirm it equals 40
   - Spot-check a few function names to confirm CHAR prefix is correct
 
-- [ ] 6. Rename and update test files
+- [x] 6. Rename and update test files
   - [x] 6.1 Rename and update AWS test files (9 files in `tests/Unit/AWS/`)
     - `Find-CCCFNStackError.Tests.ps1` → `Find-CHARCFNStackError.Tests.ps1`
     - `Get-CCAWSAccountListOfDriftedResource.Tests.ps1` → `Get-CHARAWSAccountListOfDriftedResource.Tests.ps1`
@@ -100,7 +100,7 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - `Update-CCCFNStackFromDirectory.Tests.ps1` → `Update-CHARCFNStackFromDirectory.Tests.ps1`
     - Update all function references inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [-] 6.6 Rename and update Core test files (5 files)
+  - [x] 6.6 Rename and update Core test files (5 files)
     - `Clear-CCAuthenticodeSignature.Tests.ps1` → `Clear-CHARAuthenticodeSignature.Tests.ps1`
     - `Install-CCProfilesFromSource.Tests.ps1` → `Install-CHARProfilesFromSource.Tests.ps1`
     - `Invoke-CCScriptMultiRegionProfile.Tests.ps1` → `Invoke-CHARScriptMultiRegionProfile.Tests.ps1`
@@ -108,12 +108,12 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - `Update-CCPowershell7.Tests.ps1` → `Update-CHARPowershell7.Tests.ps1`
     - Update all function references and dot-source paths inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [-] 6.7 Rename and update Git test files (2 files)
+  - [x] 6.7 Rename and update Git test files (2 files)
     - `Install-CCGitHook.Tests.ps1` → `Install-CHARGitHook.Tests.ps1`
     - `Test-CCCommitSignature.Tests.ps1` → `Test-CHARCommitSignature.Tests.ps1`
     - Update all function references and dot-source paths inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [-] 6.8 Update remaining test files (content only, no rename needed)
+  - [x] 6.8 Update remaining test files (content only, no rename needed)
     - `tests/Unit/Core/CFNPrivateFunctions.Tests.ps1` — update any references to public CC-prefixed functions
     - `tests/Unit/Core/CharlandCustomizations.Manifest.Tests.ps1` — update function name references
     - `tests/Unit/Help/HelpDiscoverability.Tests.ps1` — update function name references
@@ -123,31 +123,31 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - `tests/Test-SignatureCompliance.Tests.ps1` — check for function name references
     - _Requirements: 9.1, 9.2_
 
-- [ ] 7. Update documentation and script files
-  - [-] 7.1 Update `docs/QUICK-REFERENCE.md` — replace all CC-prefixed function names with CHAR-prefixed
+- [x] 7. Update documentation and script files
+  - [x] 7.1 Update `docs/QUICK-REFERENCE.md` — replace all CC-prefixed function names with CHAR-prefixed
     - _Requirements: 10.1, 10.2_
-  - [-] 7.2 Update `docs/CloudFormation-TemplateProcessing.md` — replace all CC-prefixed function names with CHAR-prefixed
+  - [x] 7.2 Update `docs/CloudFormation-TemplateProcessing.md` — replace all CC-prefixed function names with CHAR-prefixed
     - _Requirements: 10.1, 10.2_
-  - [~] 7.3 Update `docs/AWS-Account-Audit.md` — replace all CC-prefixed function names with CHAR-prefixed
+  - [x] 7.3 Update `docs/AWS-Account-Audit.md` — replace all CC-prefixed function names with CHAR-prefixed
     - _Requirements: 10.1, 10.2_
-  - [~] 7.4 Update `docs/STRUCTURE.md` — update function names and file paths
+  - [x] 7.4 Update `docs/STRUCTURE.md` — update function names and file paths
     - _Requirements: 10.1, 10.2_
-  - [~] 7.5 Update `docs/CHANGELOG.md` — add entry documenting the CC→CHAR prefix change
+  - [x] 7.5 Update `docs/CHANGELOG.md` — add entry documenting the CC→CHAR prefix change
     - _Requirements: 10.1_
-  - [~] 7.6 Update `docs/INSTALLATION.md` — update usage examples
+  - [x] 7.6 Update `docs/INSTALLATION.md` — update usage examples
     - _Requirements: 10.1, 10.2_
-  - [~] 7.7 Update `docs/TEST-PLAN.md` — update function name references
+  - [x] 7.7 Update `docs/TEST-PLAN.md` — update function name references
     - _Requirements: 10.1_
-  - [~] 7.8 Update `docs/parameter-reference.md` — update function name references
+  - [x] 7.8 Update `docs/parameter-reference.md` — update function name references
     - _Requirements: 10.1, 10.2_
-  - [~] 7.9 Update `docs/NEW-FEATURE-PARAMETERS.md` — update function name references
+  - [x] 7.9 Update `docs/NEW-FEATURE-PARAMETERS.md` — update function name references
     - _Requirements: 10.1, 10.2_
-  - [~] 7.10 Update `README.md` — update any function name references
+  - [x] 7.10 Update `README.md` — update any function name references
     - _Requirements: 10.1, 10.2_
-  - [~] 7.11 Update `Scripts/` directory files — check and update any CC-prefixed function references in build/test/publish scripts
+  - [x] 7.11 Update `Scripts/` directory files — check and update any CC-prefixed function references in build/test/publish scripts
     - _Requirements: 10.1_
 
-- [~] 8. Final verification
+- [-] 8. Final verification
   - Run `Import-Module ./src/CharlandCustomizations -Force` — must succeed with no errors
   - Run `Get-Command -Module CharlandCustomizations | Select-Object Name | Sort-Object Name` — confirm all 40 CHAR-prefixed names appear
   - Run `Invoke-Pester ./tests -PassThru` — all tests must pass
