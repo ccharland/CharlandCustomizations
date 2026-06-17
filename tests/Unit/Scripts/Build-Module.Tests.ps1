@@ -5,6 +5,13 @@
 BeforeAll {
     # Build-Module.ps1 is a script with CmdletBinding, so we dot-source it inside mocks
     $script:BuildModulePath = "$PSScriptRoot/../../../Scripts/Build-Module.ps1"
+
+    # Stub Get-AuthenticodeSignature on non-Windows systems where it doesn't exist
+    if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        function global:Get-AuthenticodeSignature {
+            param($FilePath)
+        }
+    }
 }
 
 Describe 'Build-Module' -Tag 'Unit' {
@@ -235,7 +242,7 @@ Describe 'Build-Module' -Tag 'Unit' {
         }
     }
 
-    Context 'Signing behavior — default (sign only invalid/missing)' {
+    Context 'Signing behavior — default (sign only invalid/missing)' -Skip:(-not $IsWindows) {
 
         BeforeAll {
             # Define stub so the build script's Get-Command check finds it and skips dot-sourcing the real file
@@ -267,14 +274,16 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
             Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CHARAuthenticodeSignature' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
-            # Return mock files for the build path -Include scan
+            # Return mock files for the build path -Include scan (build path only, not source scan)
             Mock Get-ChildItem {
                 @(
                     [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\Valid.ps1'; Name = 'Valid.ps1' },
                     [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\Invalid.ps1'; Name = 'Invalid.ps1' },
                     [PSCustomObject]@{ Extension = '.psm1'; FullName = 'C:\fake\build\NoTimestamp.psm1'; Name = 'NoTimestamp.psm1' }
                 )
-            } -ParameterFilter { $Include }
+            } -ParameterFilter { $Include -and $Path -like '*build*' }
+            # Return empty for source path scan (duplicate function detection)
+            Mock Get-ChildItem { @() } -ParameterFilter { $Include -and $Path -notlike '*build*' }
             Mock Get-ChildItem { @() } -ParameterFilter { -not $Include -and $Path -notlike 'Cert:\*' }
             # Mock code signing cert
             Mock Get-ChildItem {
@@ -286,8 +295,7 @@ Describe 'Build-Module' -Tag 'Unit' {
                 })
             } -ParameterFilter { $Path -like 'Cert:\*' }
             # Mock Get-Content for duplicate function scan (returns unique function per file)
-            Mock Get-Content { "function Fake-$([guid]::NewGuid().ToString().Substring(0,8)) { }" } -ParameterFilter { $Raw }
-            # Mock signature validation per file
+            Mock Get-Content { "function Fake-$([guid]::NewGuid().ToString().Substring(0,8)) { }" }            # Mock signature validation per file
             Mock Get-AuthenticodeSignature {
                 $fileName = Split-Path $FilePath -Leaf
                 switch ($fileName) {
@@ -343,7 +351,7 @@ Describe 'Build-Module' -Tag 'Unit' {
         }
     }
 
-    Context 'Signing behavior — UpdateAllSignatures' {
+    Context 'Signing behavior — UpdateAllSignatures' -Skip:(-not $IsWindows) {
 
         BeforeAll {
             function Set-CHARAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
@@ -380,7 +388,8 @@ Describe 'Build-Module' -Tag 'Unit' {
                     [PSCustomObject]@{ Extension = '.ps1'; FullName = 'C:\fake\build\FileB.ps1'; Name = 'FileB.ps1' },
                     [PSCustomObject]@{ Extension = '.psd1'; FullName = 'C:\fake\build\Module.psd1'; Name = 'Module.psd1' }
                 )
-            } -ParameterFilter { $Include }
+            } -ParameterFilter { $Include -and $Path -like '*build*' }
+            Mock Get-ChildItem { @() } -ParameterFilter { $Include -and $Path -notlike '*build*' }
             Mock Get-ChildItem { @() } -ParameterFilter { -not $Include -and $Path -notlike 'Cert:\*' }
             Mock Get-ChildItem {
                 @([PSCustomObject]@{
@@ -390,7 +399,7 @@ Describe 'Build-Module' -Tag 'Unit' {
                     Thumbprint    = 'AABBCCDD'
                 })
             } -ParameterFilter { $Path -like 'Cert:\*' }
-            Mock Get-Content { "function Unique-$([guid]::NewGuid().ToString().Substring(0,8)) { }" } -ParameterFilter { $Raw }
+            Mock Get-Content { "function Unique-$([guid]::NewGuid().ToString().Substring(0,8)) { }" }
             Mock Set-CHARAuthenticodeSignature {
                 [PSCustomObject]@{ Status = 'Valid' }
             }
@@ -624,44 +633,51 @@ Describe 'Build-Module' -Tag 'Unit' {
         }
 
         It 'Aborts when two source files define the same function name' {
+            # Create real temp files using .NET APIs to bypass mocked New-Item/Set-Content
+            $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "buildtest_$([guid]::NewGuid().ToString('N').Substring(0,8))"
+            [System.IO.Directory]::CreateDirectory($tempDir) | Out-Null
+            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FileA.ps1'), 'function Get-Duplicate { }')
+            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FileB.ps1'), 'function Get-Duplicate { }')
+
             Mock Get-ChildItem {
                 @(
-                    [PSCustomObject]@{ FullName = 'C:\fake\src\FileA.ps1'; Name = 'FileA.ps1'; Extension = '.ps1' },
-                    [PSCustomObject]@{ FullName = 'C:\fake\src\FileB.ps1'; Name = 'FileB.ps1'; Extension = '.ps1' }
+                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FileA.ps1'); Name = 'FileA.ps1'; Extension = '.ps1' },
+                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FileB.ps1'); Name = 'FileB.ps1'; Extension = '.ps1' }
                 )
             } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
             Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
-            Mock Get-Content {
-                # Both files define the same function
-                'function Get-Duplicate { }'
-            } -ParameterFilter { $Raw }
 
             & $script:BuildModulePath -SkipSigning -SkipAnalysis
 
             Should -Invoke Write-Error -ParameterFilter {
                 $Message -like '*duplicate function*Get-Duplicate*'
             }
+
+            [System.IO.Directory]::Delete($tempDir, $true)
         }
 
         It 'Proceeds when all function names are unique' {
+            # Create real temp files using .NET APIs to bypass mocked New-Item/Set-Content
+            $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "buildtest_$([guid]::NewGuid().ToString('N').Substring(0,8))"
+            [System.IO.Directory]::CreateDirectory($tempDir) | Out-Null
+            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FuncA.ps1'), 'function Get-FuncA { }')
+            [System.IO.File]::WriteAllText((Join-Path $tempDir 'FuncB.ps1'), 'function Get-FuncB { }')
+
             Mock Get-ChildItem {
                 @(
-                    [PSCustomObject]@{ FullName = 'C:\fake\src\FuncA.ps1'; Name = 'FuncA.ps1'; Extension = '.ps1' },
-                    [PSCustomObject]@{ FullName = 'C:\fake\src\FuncB.ps1'; Name = 'FuncB.ps1'; Extension = '.ps1' }
+                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FuncA.ps1'); Name = 'FuncA.ps1'; Extension = '.ps1' },
+                    [PSCustomObject]@{ FullName = (Join-Path $tempDir 'FuncB.ps1'); Name = 'FuncB.ps1'; Extension = '.ps1' }
                 )
             } -ParameterFilter { $Include -and $Recurse -and $Path -like '*src*' }
             Mock Get-ChildItem { @() } -ParameterFilter { -not ($Include -and $Recurse -and $Path -like '*src*') }
-            Mock Get-Content {
-                if ($Path -like '*FuncA*') { 'function Get-FuncA { }' }
-                elseif ($Path -like '*FuncB*') { 'function Get-FuncB { }' }
-                else { '' }
-            } -ParameterFilter { $Raw }
 
             & $script:BuildModulePath -SkipSigning -SkipAnalysis
 
             Should -Not -Invoke Write-Error -ParameterFilter {
                 $Message -like '*duplicate function*'
             }
+
+            [System.IO.Directory]::Delete($tempDir, $true)
         }
     }
 }

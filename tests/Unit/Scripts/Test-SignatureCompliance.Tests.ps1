@@ -13,7 +13,9 @@ BeforeAll {
     }
 
     . $script:SUTPath
-    $script:IsWindows = $true
+    # Force the script-scoped variable used by the SUT to $true for testing on non-Windows
+    # Cannot overwrite the automatic $IsWindows directly; use New-Variable -Force to bypass read-only
+    New-Variable -Name IsWindows -Value $true -Scope Script -Force
 
     # Wrapper function that executes the script content in the current scope
     # so Pester mocks are visible, and converts 'exit'/'throw' to returns.
@@ -81,9 +83,9 @@ Describe 'Test-CHARAuthenticodeSignature' -Tag 'Unit' {
 
     Context 'Validation failures' {
         It 'Throws when not running on Windows' {
-            $script:IsWindows = $false
+            New-Variable -Name IsWindows -Value $false -Scope Script -Force
             { Invoke-TestCHARAuthenticodeSignature } | Should -Throw '*only supported on Windows systems*'
-            $script:IsWindows = $true
+            New-Variable -Name IsWindows -Value $true -Scope Script -Force
         }
 
         It 'Throws when a configured path does not exist' {
