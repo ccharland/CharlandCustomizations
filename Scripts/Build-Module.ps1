@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Build and optionally install the CharlandCustomizations module
 .DESCRIPTION
@@ -407,9 +407,9 @@ if (-not $InstallOnly -and -not $SkipSigning) {
     if ($cert) {
         Write-Output "  Found certificate: $($cert.Subject)"
 
-        # Load Set-CCAuthenticodeSignature if not already available
-        if (-not (Get-Command Set-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
-            . (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Set-CCAuthenticodeSignature.ps1')
+        # Load Set-CHARAuthenticodeSignature if not already available
+        if (-not (Get-Command Set-CHARAuthenticodeSignature -ErrorAction SilentlyContinue)) {
+            . (Join-Path (Split-Path $PSScriptRoot -Parent) 'src/CharlandCustomizations/Public/Set-CHARAuthenticodeSignature.ps1')
         }
 
         $allFiles = Get-ChildItem -Path $BuildPath -Include *.ps1, *.psm1, *.psd1 -Recurse
@@ -454,7 +454,7 @@ if (-not $InstallOnly -and -not $SkipSigning) {
             Write-Output "  Signing $($filesToSign.Count) file(s)..."
             foreach ($file in $filesToSign) {
                 try {
-                    $result = Set-CCAuthenticodeSignature -MyCert $cert -Path $file.FullName
+                    $result = Set-CHARAuthenticodeSignature -MyCert $cert -Path $file.FullName
                     if ($result.Status -eq 'Valid') {
                         Write-Output "  Signed: $($file.Name)"
                         $signedCount++
@@ -699,8 +699,8 @@ if (-not $PrepareRelease) {
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCO35XlXX+iiH1R
-# 8vl6deoP6YAR3aTxxPKiiYv1mzf6y6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDYivdC+e7OoMHw
+# GsLXsLbxDG7JiIGCaEQ5tDbeb6Oj2qCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -902,33 +902,33 @@ if (-not $PrepareRelease) {
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIBnAvbRgOGOmhM4IXBC85tHDN2hs2L3ySPNPRLv7k3NtMA0GCSqG
-# SIb3DQEBAQUABIICAIYUQMtEPEQLauHqRkJHIeRK1K4RnX4zWmCd69KQl5jrzHc0
-# 9+mGzWzLRBuKuWr3YRQ/krYmeAuRSrYG3KFdkt/gmWlNAkXDiPvJk0wNZaupdwqs
-# 9kZ0INrZ0RpfA77z1nXc/gtfNMQIOQJpTUzsCDZizL2F2Ovj7ibEHpYnv3AjX+r0
-# ufwNq8mepP0KGj+7PwzxfB4/8W9xA9oc8DF87p2DCS/6L47Ow3LNijXHPXA+mSL7
-# TlOXHQw09xz/DlSWl5qNfKGgMmeaiu/VUP1HHXmxTJ92AOizspte6P92RGnrJZ51
-# JdeEeFSTmeNdLuKAO5hREK1v1oq2a1ZXhVm6LxXzuIIHFMluiHcvGiLUDZLfujb+
-# GsqmD2acy3ef3iAvIWOeEdSnOO/Ei5XHogjgGN9BKXIbXHEgobFq/MbRwMdyMgX4
-# Mae8/45TrLC4NUPjE290RPblNYmCyMWxySCTA8P+m95jGZ2QXD0V7GM+u32DAqtx
-# 7kDKDOiqX2jr2UdGpQyJIlrh3nx6Emlcm7cG3xOOrgLC7cY7mtyV6s6ACS1pkGm3
-# I1TZGUeUArDPCiuMKyxcYBGVLrcuSNpFyd7pWe0NiwfVfY6VePHqzGBErjb/GvfP
-# 032HT4CryZpjdtP4c6CjMrlUmoi72N+O47ohbuYRLceoYAnfxrD8KL4khP4ZoYID
+# hvcNAQkEMSIEIHqUwt1TwsWQJdqg7YwITFe/AQbLezT7J428Nx1rCXtMMA0GCSqG
+# SIb3DQEBAQUABIICAIxj9/pbubqoRAHs3i7ZYmRei3ts1nmnDgoG10WdsvrBGmqc
+# HGV/6YGULjoaBRnWeTWqp1+Whr3QRJY2yh9fFgBmWmSZSetxNqUQCXy9w8a9MqDm
+# 2EANh1VnozYpisHBzId5vZIQl+Qz9tKvBfabgY3MMyPsFNk1lHqqDkl9tfXmO7Cy
+# FiqQWzEGBVewha3iYSNEK1KMFcRUFkAgi4951OWxLyS/R4K1xkqCGOFkkscaLLb0
+# gXfvzSQbv+7GtwVYr2X4rqkAPCPjbPeLcujtOVE6nMU76KPHAbqlVoerXXUtpsLH
+# WABCWDfXWgMBaRYHRyghrgJOVHyvqbFo+5lp98RAINWd/jukC6SzpS9g4bFWV/G3
+# zTR+oRgAs/0TO2Wfb174tSfVhiyj9h1cbGOVZUYtPN3GqGWe+AgqtLRfeks9K0nE
+# UTvTEhgN55cIntBsookM24Msiwyk7UBtuH/QkX+bxnu+jL8U79yfvVOaHII3rftH
+# uFvdYAxqMebzb0CjWSNVhuwtusvYPeH/Yg1fe4UZsemyzE4CwraT6SNGEZ7qZxKA
+# x9H3ed3ZJ4VrKTlBCvCQoXCtndSzQAf7SBnvwXUaUzeTwEOD+bszuWK2af8Uy8Si
+# 5V9RazTon71q/SbiUZ6XJOO0X5Tphh1uvP6hjO8AMmx9wI3acgC/vS58geKYoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjE2MjEwNTU5WjA/BgkqhkiG9w0BCQQxMgQwo46AA5gbXZTqAviY4AVR
-# mYotEqrgUpAMygv6tycvCL4cIgcOOYD38lYSsuKKlCotMA0GCSqGSIb3DQEBAQUA
-# BIICAAtJm8RhpH+J5TcBGHsJgmB1jXBPLbpX78jhc8NvhBgOAvzsdVyqbvJ1bTBr
-# HJIV5oKow7BhrKO7yWHuJj9hrzDO9tqh/U08zLwbLKfw5A0ziyZAKCqI1n1adjt6
-# a+O7Su9H1RXRxHK8BvLwMvqUiIObLDfd8DnvXvRtTiw3HZrPnrYRbsZkigWIp9cy
-# 0V6esP4u2bby3Isa6Ohm7I9qJlLAnY7yVqjRn82BPDDENW4fovH2GDXpHAhMhAe3
-# lU+31/FcoCofTHzuXQvZRrxwl2vzD2eLz0yi3yqJiyjcZ/N+FD+mUsBe6ByXe5Jo
-# pVT4tWGG1bEMEt/iclFAGmUOSFu6HIkqGiAake3fida7Lg1Y+oPrcrUfNJmWceMH
-# P3RIw+whOynxnfJp0om1hjNptvzwa1LYhoqevSnYqXBRSZiwl/s6CCiknZ4MLzDy
-# CfdsezYLBGozpRWbcVbEHsOoPdw3P+FmRrHFUk6eRzT+5BNs1GYDmjLVET6GunVa
-# YYWJ+4kXC4+iysqmniRXvj4nKhfVEkYiqSbLHHhjJ9JD98Ls0ePQWaQMSQWQXoFG
-# eIEvMeMQrJdrsxc0m+vPKyT3IqRWfmcVzvs9dhi0zAGhckCCu3q6OKSKvBY/9uoj
-# griKPujEVRBxEeSbZHUZGTX+E2cdy8wpklJ9YniikEu4QyoJ
+# DxcNMjYwNjE3MDIzMDI1WjA/BgkqhkiG9w0BCQQxMgQwsILcJW5CdF65ZpifufPv
+# Ma7zPXtwDi80R87s3YUo66Es4st9QWf2ze/0UUFdmUJdMA0GCSqGSIb3DQEBAQUA
+# BIICACmcH6Pkf+3r5eLvnRGT/K7o9j9BCW5pOxOB0zmgd+JoFEGhuPC/p3ifoDno
+# JZSOREOJPMBxL9yx8Qvm+pEDVBHY576M/XFUcv0tbj7WsvrflJkJObsgeCRKCwLT
+# DBnT6SxUe4TQ2mUIhyVxQXo3DJs0rux3Bzbk+tsi3+glGJviBxgAGhGAoK9idPfb
+# OxD8cMuykRus2ykEOSCRJjboXnzYWrcDMZt3zG+QgG6STWH1QCL6g7SPbGQwVbUF
+# TyRqND3dJ3HxeWAM935nKfX3XB5N6/RmXQLnf6BxNVwr1KdwWE67iq7s+LF5XJBT
+# BDkDfx9k5cUUiJnejl19pJ/lIxu6qk9yvHEg5zDCxo+xZaNDT0cjfQoGvWkY8S1k
+# EiseJUOV0Twkl27TpFYmIIv3oCWI6BQxpnJwQaAwn1+RR9/MD1HHGpJGQUU8L45T
+# oOBKAwu+RumIKd4wPyS4plBJmuOuHRqu+RBL8DmN8elCI3mYn+cy/ohK7hsmBWZS
+# 5bNjx52FbvKDgqu5awobkuFjO9235bmtPLTSFYdex4m7tP4FOBkJZfaS3KVC+ROF
+# b7dKyZyZmT1pK5UFOjsM9lzSglT3hrBFkOJeN2suzD+/qvLOKmqR7IGtzZDiOgIZ
+# sLS5+UXEpMZgPKQiFX7eVF2RhivI2ZY8Op8onRhwwLLrViGS
 # SIG # End signature block

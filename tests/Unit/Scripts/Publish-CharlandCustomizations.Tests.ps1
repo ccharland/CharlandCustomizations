@@ -5,11 +5,11 @@
 BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../../../Scripts/Publish-CharlandCustomizations.ps1"
 
-    if (-not (Get-Command Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue)) {
-        function global:Test-CCAuthenticodeSignatures { param($Path, $IncludeExtension) }
+    if (-not (Get-Command Test-CHARAuthenticodeSignatures -ErrorAction SilentlyContinue)) {
+        function global:Test-CHARAuthenticodeSignatures { param($Path, $IncludeExtension) }
     }
-    if (-not (Get-Command Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue)) {
-        function global:Test-CCAuthenticodeSignature { param($Path, $IncludeExtension) }
+    if (-not (Get-Command Test-CHARAuthenticodeSignature -ErrorAction SilentlyContinue)) {
+        function global:Test-CHARAuthenticodeSignature { param($Path, $IncludeExtension) }
     }
     # Stub Publish-Module if not available
     if (-not (Get-Command Publish-Module -ErrorAction SilentlyContinue)) {
@@ -66,7 +66,7 @@ BeforeAll {
 Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
     BeforeEach {
-        $script:CCIsWindows = $true
+        $script:CHARIsWindows = $true
 
         # Mock Resolve-Path to return a string path that Join-Path can consume
         Mock Resolve-Path { '/fake/module/path' }
@@ -105,13 +105,13 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             )
         }
         Mock Get-Command { return @{ Name = 'git' } } -ParameterFilter { $Name -eq 'git' }
-        Mock Get-Command { return @{ Name = 'Test-CCAuthenticodeSignatures' } } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignatures' }
-        Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignature' }
+        Mock Get-Command { return @{ Name = 'Test-CHARAuthenticodeSignatures' } } -ParameterFilter { $Name -eq 'Test-CHARAuthenticodeSignatures' }
+        Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Test-CHARAuthenticodeSignature' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Publish-PSResource' }
         Mock Get-Command { return @{ Name = 'Publish-Module' } } -ParameterFilter { $Name -eq 'Publish-Module' }
         Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Get-Secret' }
-        Mock Test-CCAuthenticodeSignatures { @() }
-        Mock Test-CCAuthenticodeSignature { @() }
+        Mock Test-CHARAuthenticodeSignatures { @() }
+        Mock Test-CHARAuthenticodeSignature { @() }
         Mock Publish-Module {}
         Mock Publish-PSResource {}
         Mock Read-Host { return 'fake-api-key' }
@@ -241,14 +241,14 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
 
             # Assert
-            Should -Invoke Test-CCAuthenticodeSignatures -Times 1 -Exactly -ParameterFilter {
+            Should -Invoke Test-CHARAuthenticodeSignatures -Times 1 -Exactly -ParameterFilter {
                 $Path -eq '/fake/module/path'
             }
         }
 
         It 'Throws when not running on Windows' {
             # Arrange
-            $script:CCIsWindows = $false
+            $script:CHARIsWindows = $false
 
             # Act & Assert
             { Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet } |
@@ -257,7 +257,7 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
         It 'Throws when a module file signature is invalid' {
             # Arrange
-            Mock Test-CCAuthenticodeSignatures {
+            Mock Test-CHARAuthenticodeSignatures {
                 [PSCustomObject]@{
                     Path = '/fake/module/path/Public/Example.ps1'
                     Status = 'HashMismatch'
@@ -286,15 +286,15 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
 
         It 'Uses singular signature command as fallback when plural command is unavailable' {
             # Arrange
-            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignatures' }
-            Mock Get-Command { return @{ Name = 'Test-CCAuthenticodeSignature' } } -ParameterFilter { $Name -eq 'Test-CCAuthenticodeSignature' }
+            Mock Get-Command { return $null } -ParameterFilter { $Name -eq 'Test-CHARAuthenticodeSignatures' }
+            Mock Get-Command { return @{ Name = 'Test-CHARAuthenticodeSignature' } } -ParameterFilter { $Name -eq 'Test-CHARAuthenticodeSignature' }
 
             # Act
             Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -UseLegacyPowerShellGet
 
             # Assert
-            Should -Invoke Test-CCAuthenticodeSignatures -Times 0 -Exactly
-            Should -Invoke Test-CCAuthenticodeSignature -Times 1 -Exactly -ParameterFilter {
+            Should -Invoke Test-CHARAuthenticodeSignatures -Times 0 -Exactly
+            Should -Invoke Test-CHARAuthenticodeSignature -Times 1 -Exactly -ParameterFilter {
                 $Path -eq '/fake/module/path'
             }
         }
@@ -356,7 +356,7 @@ Describe 'Publish-CharlandCustomizations' -Tag 'Unit' {
             Invoke-PublishScript -Path '/fake/module/path' -Repository 'PSGallery' -ApiKey 'test-api-key' -WhatIfMode
 
             # Assert
-            Should -Invoke Test-CCAuthenticodeSignatures -Times 1 -Exactly
+            Should -Invoke Test-CHARAuthenticodeSignatures -Times 1 -Exactly
             Should -Invoke Publish-PSResource -Times 0 -Exactly
             Should -Invoke Publish-Module -Times 0 -Exactly
         }

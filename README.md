@@ -4,7 +4,7 @@
 
 This is my public release for my PowerShell module and related automation. These functions are primarily for my own use, and are public so I can easily use them in CloudShell, AWS WorkSpaces, and other environments without needing to clone this repository.
 
-All public commands use the "CC" prefix before the noun of the command (e.g., `Find-CCCFNStackError`, `Set-CCAWSEnv`)
+All public commands use the "CHAR" prefix before the noun of the command (e.g., `Find-CHARCFNStackError`, `Set-CHARAWSEnv`)
 
 ## Goals
 
@@ -19,8 +19,8 @@ Install-Module CharlandCustomizations -Scope CurrentUser
 Import-Module CharlandCustomizations
 
 # Examples
-Find-CCCFNStackError
-Set-CCAWSEnv -ProfileName my-sso-profile
+Find-CHARCFNStackError
+Set-CHARAWSEnv -ProfileName my-sso-profile
 ```
 
 ## Repository baseline
