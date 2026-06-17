@@ -239,7 +239,7 @@ Describe 'Build-Module' -Tag 'Unit' {
 
         BeforeAll {
             # Define stub so the build script's Get-Command check finds it and skips dot-sourcing the real file
-            function Set-CCAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
+            function Set-CHARAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
 
             Mock Copy-Item {}
             Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
@@ -262,10 +262,10 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Import-Module {}
             Mock Remove-Module {}
             Mock Get-Command {
-                [PSCustomObject]@{ Name = 'Set-CCAuthenticodeSignature' }
-            } -ParameterFilter { $Name -eq 'Set-CCAuthenticodeSignature' }
+                [PSCustomObject]@{ Name = 'Set-CHARAuthenticodeSignature' }
+            } -ParameterFilter { $Name -eq 'Set-CHARAuthenticodeSignature' }
             Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
-            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CCAuthenticodeSignature' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CHARAuthenticodeSignature' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             # Return mock files for the build path -Include scan
             Mock Get-ChildItem {
@@ -305,7 +305,7 @@ Describe 'Build-Module' -Tag 'Unit' {
                     }
                 }
             }
-            Mock Set-CCAuthenticodeSignature {
+            Mock Set-CHARAuthenticodeSignature {
                 [PSCustomObject]@{ Status = 'Valid' }
             }
             Mock git { $null }
@@ -318,22 +318,22 @@ Describe 'Build-Module' -Tag 'Unit' {
         It 'Only signs files with invalid or missing timestamp signatures' {
             & $script:BuildModulePath -SkipAnalysis
 
-            # Set-CCAuthenticodeSignature called for Invalid.ps1 and NoTimestamp.psm1, but not Valid.ps1
-            Should -Invoke Set-CCAuthenticodeSignature -Times 2 -Exactly
+            # Set-CHARAuthenticodeSignature called for Invalid.ps1 and NoTimestamp.psm1, but not Valid.ps1
+            Should -Invoke Set-CHARAuthenticodeSignature -Times 2 -Exactly
         }
 
         It 'Does not sign files that already have valid timestamped signatures' {
             & $script:BuildModulePath -SkipAnalysis
 
             # Should only be called for Invalid.ps1 and NoTimestamp.psm1
-            Should -Invoke Set-CCAuthenticodeSignature -ParameterFilter {
+            Should -Invoke Set-CHARAuthenticodeSignature -ParameterFilter {
                 $Path -like '*Invalid.ps1'
             }
-            Should -Invoke Set-CCAuthenticodeSignature -ParameterFilter {
+            Should -Invoke Set-CHARAuthenticodeSignature -ParameterFilter {
                 $Path -like '*NoTimestamp.psm1'
             }
             # Total calls should be exactly 2 (not 3), confirming Valid.ps1 was skipped
-            Should -Invoke Set-CCAuthenticodeSignature -Times 2 -Exactly
+            Should -Invoke Set-CHARAuthenticodeSignature -Times 2 -Exactly
         }
 
         It 'Calls Get-AuthenticodeSignature to check each file before signing' {
@@ -346,7 +346,7 @@ Describe 'Build-Module' -Tag 'Unit' {
     Context 'Signing behavior — UpdateAllSignatures' {
 
         BeforeAll {
-            function Set-CCAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
+            function Set-CHARAuthenticodeSignature { param($MyCert, $Path) [PSCustomObject]@{ Status = 'Valid' } }
 
             Mock Copy-Item {}
             Mock New-Item { [PSCustomObject]@{ FullName = $Path } }
@@ -369,10 +369,10 @@ Describe 'Build-Module' -Tag 'Unit' {
             Mock Import-Module {}
             Mock Remove-Module {}
             Mock Get-Command {
-                [PSCustomObject]@{ Name = 'Set-CCAuthenticodeSignature' }
-            } -ParameterFilter { $Name -eq 'Set-CCAuthenticodeSignature' }
+                [PSCustomObject]@{ Name = 'Set-CHARAuthenticodeSignature' }
+            } -ParameterFilter { $Name -eq 'Set-CHARAuthenticodeSignature' }
             Mock Get-Command { [PSCustomObject]@{ Name = 'git'; Source = 'git' } } -ParameterFilter { $Name -eq 'git' }
-            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CCAuthenticodeSignature' }
+            Mock Get-Command { @() } -ParameterFilter { $Name -ne 'git' -and $Name -ne 'Set-CHARAuthenticodeSignature' }
             Mock Get-Module { $null } -ParameterFilter { $ListAvailable -eq $true }
             Mock Get-ChildItem {
                 @(
@@ -391,7 +391,7 @@ Describe 'Build-Module' -Tag 'Unit' {
                 })
             } -ParameterFilter { $Path -like 'Cert:\*' }
             Mock Get-Content { "function Unique-$([guid]::NewGuid().ToString().Substring(0,8)) { }" } -ParameterFilter { $Raw }
-            Mock Set-CCAuthenticodeSignature {
+            Mock Set-CHARAuthenticodeSignature {
                 [PSCustomObject]@{ Status = 'Valid' }
             }
             Mock Get-AuthenticodeSignature {
@@ -407,7 +407,7 @@ Describe 'Build-Module' -Tag 'Unit' {
         It 'Signs all files regardless of current signature status' {
             & $script:BuildModulePath -UpdateAllSignatures -SkipAnalysis
 
-            Should -Invoke Set-CCAuthenticodeSignature -Times 3 -Exactly
+            Should -Invoke Set-CHARAuthenticodeSignature -Times 3 -Exactly
         }
 
         It 'Does not call Get-AuthenticodeSignature to check files first' {

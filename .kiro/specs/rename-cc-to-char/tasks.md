@@ -147,7 +147,7 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
   - [x] 7.11 Update `Scripts/` directory files — check and update any CC-prefixed function references in build/test/publish scripts
     - _Requirements: 10.1_
 
-- [-] 8. Final verification
+- [x] 8. Final verification
   - Run `Import-Module ./src/CharlandCustomizations -Force` — must succeed with no errors
   - Run `Get-Command -Module CharlandCustomizations | Select-Object Name | Sort-Object Name` — confirm all 40 CHAR-prefixed names appear
   - Run `Invoke-Pester ./tests -PassThru` — all tests must pass
