@@ -5,7 +5,7 @@
 
 # Load private helper functions needed by this nested module (added by Kiro, aws-common-params spec)
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
-function Clear-CCS3Bucket {
+function Clear-CHARS3Bucket {
     <#
     .SYNOPSIS
         Empties an S3 bucket by deleting all object versions and delete markers.
@@ -49,10 +49,10 @@ function Clear-CCS3Bucket {
         Custom AWS service endpoint URL.
 
     .EXAMPLE
-        Clear-CCS3Bucket -BucketName "123456789012-staging-us-east-1" -Region "us-east-1" -WhatIf
+        Clear-CHARS3Bucket -BucketName "123456789012-staging-us-east-1" -Region "us-east-1" -WhatIf
 
     .EXAMPLE
-        Clear-CCS3Bucket -BucketName "123456789012-staging-us-east-1" -Region "us-east-1" -Force
+        Clear-CHARS3Bucket -BucketName "123456789012-staging-us-east-1" -Region "us-east-1" -Force
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -162,4 +162,4 @@ function Clear-CCS3Bucket {
     }
 }
 
-Export-ModuleMember -Function 'Clear-CCS3Bucket'
+Export-ModuleMember -Function 'Clear-CHARS3Bucket'

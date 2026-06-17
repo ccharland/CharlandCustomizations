@@ -6,7 +6,7 @@ Write-Verbose "Loading Lambda-Customizations.psm1"
 
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
 
-function Get-CCDeprecatedLMFunctionList {
+function Get-CHARDeprecatedLMFunctionList {
     <#
     .SYNOPSIS
         Lists Lambda functions using deprecated runtimes.
@@ -65,18 +65,18 @@ function Get-CCDeprecatedLMFunctionList {
         deprecated runtimes.
 
     .EXAMPLE
-        Get-CCDeprecatedLMFunctionList -Region us-east-1
+        Get-CHARDeprecatedLMFunctionList -Region us-east-1
 
         Lists all Lambda functions in us-east-1 currently running deprecated runtimes.
 
     .EXAMPLE
-        Get-CCDeprecatedLMFunctionList -Date '2027-01-01' -Region us-west-2
+        Get-CHARDeprecatedLMFunctionList -Date '2027-01-01' -Region us-west-2
 
         Previews which functions in us-west-2 will be on deprecated runtimes by
         January 2027, useful for planning upgrades ahead of schedule.
 
     .EXAMPLE
-        Get-CCDeprecatedLMFunctionList -ProfileName prod | Select-Object FunctionName, Runtime
+        Get-CHARDeprecatedLMFunctionList -ProfileName prod | Select-Object FunctionName, Runtime
 
         Returns just the name and runtime of deprecated functions in the prod profile.
 
@@ -213,3 +213,5 @@ function Get-CCDeprecatedLMFunctionList {
         }
     }
 }
+
+Export-ModuleMember -Function 'Get-CHARDeprecatedLMFunctionList'

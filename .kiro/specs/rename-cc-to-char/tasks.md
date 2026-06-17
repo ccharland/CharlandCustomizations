@@ -17,7 +17,7 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
   - [x] 1.4 Remove signature blocks from private function files (`Private/CFNPrivateFunctions.ps1`, `Private/New-AWSParamSplat.ps1`)
     - _Requirements: 11.1, 11.2_
 
-- [ ] 2. Rename standalone .ps1 files and update function definitions
+- [x] 2. Rename standalone .ps1 files and update function definitions
   - [x] 2.1 Rename `Public/Clear-CCAuthenticodeSignature.ps1` → `Clear-CHARAuthenticodeSignature.ps1` and update function definition, help examples, and alias references inside
     - _Requirements: 1.1, 2.1, 2.2, 4.1, 4.2, 7.1, 7.2_
   - [x] 2.2 Rename `Public/Set-CCAuthenticodeSignature.ps1` → `Set-CHARAuthenticodeSignature.ps1` and update function definition, help, aliases, and `$script:CCIsWindows` → `$script:IsWindows`
@@ -28,42 +28,42 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
   - [x] 2.5 Rename `Public/Invoke-CCScriptMultiRegionProfile.ps1` → `Invoke-CHARScriptMultiRegionProfile.ps1` and update function definition, help, and internal cross-references to other CC-prefixed functions
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2, 8.1, 8.2_
-  - [-] 2.6 Rename `Public/Update-CCPowershell7.ps1` → `Update-CHARPowershell7.ps1` and update function definition and help
+  - [x] 2.6 Rename `Public/Update-CCPowershell7.ps1` → `Update-CHARPowershell7.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
-  - [-] 2.7 Rename `Public/Git/Test-CCCommitSignature.ps1` → `Test-CHARCommitSignature.ps1` and update function definition and help
+  - [x] 2.7 Rename `Public/Git/Test-CCCommitSignature.ps1` → `Test-CHARCommitSignature.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
-  - [-] 2.8 Rename `Public/Git/Install-CCGitHook.ps1` → `Install-CHARGitHook.ps1` and update function definition and help
+  - [x] 2.8 Rename `Public/Git/Install-CCGitHook.ps1` → `Install-CHARGitHook.ps1` and update function definition and help
     - _Requirements: 1.1, 2.1, 2.2, 7.1, 7.2_
 
-- [ ] 3. Update nested module function definitions, exports, and cross-references
-  - [-] 3.1 Update `AWSCustomizations.psm1` — rename all 11 function definitions, update `Export-ModuleMember`, update help examples and internal cross-references between functions
+- [x] 3. Update nested module function definitions, exports, and cross-references
+  - [x] 3.1 Update `AWSCustomizations.psm1` — rename all 11 function definitions, update `Export-ModuleMember`, update help examples and internal cross-references between functions
     - Functions: Get-CCAWSMFASession→Get-CHARAWSMFASession, Find-CCCFNStackError→Find-CHARCFNStackError, Set-CCAWSProfileWithMFA→Set-CHARAWSProfileWithMFA, Set-CCAWSEnv→Set-CHARAWSEnv, Remove-CCExpiredAWSProfile→Remove-CHARExpiredAWSProfile, Get-CCAccountListFromProfile→Get-CHARAccountListFromProfile, Start-CCMultiStackDriftDetection→Start-CHARMultiStackDriftDetection, Get-CCAWSAccountListOfDriftedResource→Get-CHARAWSAccountListOfDriftedResource, Get-CCAWSObjectCount→Get-CHARAWSObjectCount, Use-CCAssumedRole→Use-CHARAssumedRole, Update-CCSSOCredentialList→Update-CHARSSOCredentialList
     - _Requirements: 1.2, 6.1, 7.1, 7.2, 8.1, 8.2_
-  - [-] 3.2 Update `CloudFormation-TemplateProcessing.psm1` — rename all 6 function definitions, update `Export-ModuleMember`, update help and cross-references
+  - [x] 3.2 Update `CloudFormation-TemplateProcessing.psm1` — rename all 6 function definitions, update `Export-ModuleMember`, update help and cross-references
     - Functions: New-CCCFNStackFromDirectory→New-CHARCFNStackFromDirectory, Test-CCCFNStackFromDirectory→Test-CHARCFNStackFromDirectory, Out-CCCFNStackInfo→Out-CHARCFNStackInfo, Update-CCCFNStackFromDirectory→Update-CHARCFNStackFromDirectory, New-CCCFNStackDirectory→New-CHARCFNStackDirectory, Edit-CCCFTTEbsVolume→Edit-CHARCFTTEbsVolume
     - _Requirements: 1.2, 6.1, 7.1, 7.2, 8.1, 8.2_
-  - [~] 3.3 Update `S3Customizations.psm1` — rename `Clear-CCS3Bucket` → `Clear-CHARS3Bucket` and update `Export-ModuleMember`
+  - [x] 3.3 Update `S3Customizations.psm1` — rename `Clear-CCS3Bucket` → `Clear-CHARS3Bucket` and update `Export-ModuleMember`
     - _Requirements: 1.2, 6.1, 7.1_
-  - [~] 3.4 Update `Audit-AWSAccount.psm1` — rename all 13 function definitions, update `Export-ModuleMember`, update help and cross-references
+  - [x] 3.4 Update `Audit-AWSAccount.psm1` — rename all 13 function definitions, update `Export-ModuleMember`, update help and cross-references
     - Functions: Get-CCEC2SGInUse→Get-CHAREC2SGInUse, Get-CCEC2Count→Get-CHAREC2Count, Find-CCEC2DBSG→Find-CHAREC2DBSG, Out-CCAWSSupportingInfo→Out-CHARAWSSupportingInfo, Out-CCAWSNetworkingComponent→Out-CHARAWSNetworkingComponent, Get-CCIAMAuditList→Get-CHARIAMAuditList, Get-CCGlobalAuditReportItem→Get-CHARGlobalAuditReportItem, Get-CCEC2KeyTagNameStatus→Get-CHAREC2KeyTagNameStatus, Get-CCEC2SnapshotReport→Get-CHAREC2SnapshotReport, Get-CCEC2VolumeReport→Get-CHAREC2VolumeReport, Start-CCEC2RetryLoop→Start-CHAREC2RetryLoop, Find-CCOpenSecurityGroup→Find-CHAROpenSecurityGroup, Get-CCAllEC2Patch→Get-CHARAllEC2Patch
     - _Requirements: 1.2, 6.1, 7.1, 7.2, 8.1, 8.2_
-  - [~] 3.5 Update `Lambda-Customizations.psm1` — rename `Get-CCDeprecatedLMFunctionList` → `Get-CHARDeprecatedLMFunctionList` and update `Export-ModuleMember`
+  - [x] 3.5 Update `Lambda-Customizations.psm1` — rename `Get-CCDeprecatedLMFunctionList` → `Get-CHARDeprecatedLMFunctionList` and update `Export-ModuleMember`
     - _Requirements: 1.2, 6.1, 7.1_
-  - [~] 3.6 Update `GitCustomizations.psm1` — update dot-source paths to renamed `.ps1` files and update `Export-ModuleMember` list
+  - [x] 3.6 Update `GitCustomizations.psm1` — update dot-source paths to renamed `.ps1` files and update `Export-ModuleMember` list
     - Change `. $PSScriptRoot/Test-CCCommitSignature.ps1` → `. $PSScriptRoot/Test-CHARCommitSignature.ps1`
     - Change `. $PSScriptRoot/Install-CCGitHook.ps1` → `. $PSScriptRoot/Install-CHARGitHook.ps1`
     - Update Export-ModuleMember: `'Install-CHARGitHook', 'Test-CHARCommitSignature'`
     - _Requirements: 6.1, 8.3_
 
-- [ ] 4. Update module manifest and private function comments
-  - [~] 4.1 Update `CharlandCustomizations.psd1` — replace all 40 entries in `FunctionsToExport` with CHAR-prefixed names and replace both entries in `AliasesToExport` with CHAR-prefixed names
+- [x] 4. Update module manifest and private function comments
+  - [x] 4.1 Update `CharlandCustomizations.psd1` — replace all 40 entries in `FunctionsToExport` with CHAR-prefixed names and replace both entries in `AliasesToExport` with CHAR-prefixed names
     - _Requirements: 1.3, 3.1, 3.2_
-  - [~] 4.2 Update `Private/CFNPrivateFunctions.ps1` — update comment-based help references to public function names (CC→CHAR)
+  - [x] 4.2 Update `Private/CFNPrivateFunctions.ps1` — update comment-based help references to public function names (CC→CHAR)
     - _Requirements: 7.3_
-  - [~] 4.3 Update `Private/New-AWSParamSplat.ps1` — update any comment references to public function names (CC→CHAR) if present
+  - [x] 4.3 Update `Private/New-AWSParamSplat.ps1` — update any comment references to public function names (CC→CHAR) if present
     - _Requirements: 7.3_
 
-- [~] 5. Checkpoint — verify module loads
+- [-] 5. Checkpoint — verify module loads
   - Run `Import-Module ./src/CharlandCustomizations -Force` and confirm no errors
   - Run `(Get-Command -Module CharlandCustomizations).Count` and confirm it equals 40
   - Spot-check a few function names to confirm CHAR prefix is correct

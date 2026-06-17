@@ -20,7 +20,7 @@ in the TemplateProcessing.psm1 module.
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
 
 # ================================================================================================
-# Get-CCEC2SGInUse Function
+# Get-CHAREC2SGInUse Function
 # ================================================================================================
 
 <#
@@ -107,23 +107,23 @@ AssociatedWorkSpaces           :
 AssociatedSageMakerNotebooks   :
 
 .EXAMPLE
-    Get-CCEC2SGInUse
+    Get-CHAREC2SGInUse
     # Gets all security groups in the default region and shows their associated resources.
 
 .EXAMPLE
-    Get-CCEC2SGInUse -Region us-west-2
+    Get-CHAREC2SGInUse -Region us-west-2
     # Gets all security groups in the us-west-2 region and shows their associated resources.
 
 .EXAMPLE
-    Get-CCEC2SGInUse -GroupId sg-12345678
+    Get-CHAREC2SGInUse -GroupId sg-12345678
     # Gets the security group with the ID sg-12345678 and shows its associated resources.
 
 .EXAMPLE
-    Get-EC2SecurityGroup -GroupId sg-12345678 | Get-CCEC2SGInUse
+    Get-EC2SecurityGroup -GroupId sg-12345678 | Get-CHAREC2SGInUse
     # Gets the security group with the ID sg-12345678 using the pipeline and shows its associated resources.
 
 #>
-function Get-CCEC2SGInUse {
+function Get-CHAREC2SGInUse {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
@@ -809,10 +809,10 @@ function Get-CCEC2SGInUse {
 }
 
 # ================================================================================================
-# Out-CCAWSSupportingInfo Function
+# Out-CHARAWSSupportingInfo Function
 # ================================================================================================
 
-function Out-CCAWSSupportingInfo {
+function Out-CHARAWSSupportingInfo {
     <#
     .SYNOPSIS
         Exports AWS account supporting information to text files.
@@ -838,9 +838,9 @@ function Out-CCAWSSupportingInfo {
     .PARAMETER EndpointUrl
         A custom endpoint URL to use for the AWS service.
     .EXAMPLE
-        Out-CCAWSSupportingInfo
+        Out-CHARAWSSupportingInfo
     .EXAMPLE
-        Out-CCAWSSupportingInfo -Region us-west-2 -RootPath C:\AWSInfo
+        Out-CHARAWSSupportingInfo -Region us-west-2 -RootPath C:\AWSInfo
     .OUTPUTS
         Creates files in <RootPath>/<AccountId>/<Region>/:
         - SSMParameters.txt
@@ -906,10 +906,10 @@ function Out-CCAWSSupportingInfo {
 }
 
 # ================================================================================================
-# Out-CCAWSNetworkingComponent Function
+# Out-CHARAWSNetworkingComponent Function
 # ================================================================================================
 
-function Out-CCAWSNetworkingComponent {
+function Out-CHARAWSNetworkingComponent {
     <#
     .SYNOPSIS
         Exports AWS VPC networking configuration to text files.
@@ -936,9 +936,9 @@ function Out-CCAWSNetworkingComponent {
     .PARAMETER EndpointUrl
         A custom endpoint URL to use for the AWS service.
     .EXAMPLE
-        Out-CCAWSNetworkingComponent
+        Out-CHARAWSNetworkingComponent
     .EXAMPLE
-        Out-CCAWSNetworkingComponent -Region us-east-1 -RootPath C:\AWS
+        Out-CHARAWSNetworkingComponent -Region us-east-1 -RootPath C:\AWS
     .OUTPUTS
         Creates files in <RootPath>/<AccountId>/<Region>/:
         - VPNConnections.txt
@@ -1043,7 +1043,7 @@ function Out-CCAWSNetworkingComponent {
 }
 
 # ================================================================================================
-# Get-CCIAMAuditList Function
+# Get-CHARIAMAuditList Function
 # ================================================================================================
 
 <#
@@ -1069,12 +1069,12 @@ function Out-CCAWSNetworkingComponent {
         'Profile2'
     )
 
-    PS> Get-CCIAMAuditList -ProfileName $profile-list  |out-file -Path '\reports\complete-credentails.csv'
+    PS> Get-CHARIAMAuditList -ProfileName $profile-list  |out-file -Path '\reports\complete-credentails.csv'
 
 .NOTES
     https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html?icmpid=docs_iam_help_panel#id_credentials_understanding_the_report_format
 #>
-function Get-CCIAMAuditList {
+function Get-CHARIAMAuditList {
     [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeline = $true)]
@@ -1108,7 +1108,7 @@ function Get-CCIAMAuditList {
 }
 
 # ================================================================================================
-# Get-CCGlobalAuditReportItem Function
+# Get-CHARGlobalAuditReportItem Function
 # ================================================================================================
 
 <#
@@ -1120,10 +1120,10 @@ function Get-CCIAMAuditList {
 .PARAMETER Region
     The AWS region(s) to audit. Defaults to us-east-1 if not specified.
 .EXAMPLE
-    PS C:\> Get-CCGlobalAuditReportItem
+    PS C:\> Get-CHARGlobalAuditReportItem
     Gets a count of AWS resources in the default region (us-east-1)
 .EXAMPLE
-    PS C:\> Get-CCGlobalAuditReportItem -Region @("us-east-1", "us-west-2")
+    PS C:\> Get-CHARGlobalAuditReportItem -Region @("us-east-1", "us-west-2")
     Gets a count of AWS resources in multiple regions
 .INPUTS
     String array of region names
@@ -1132,7 +1132,7 @@ function Get-CCIAMAuditList {
 .NOTES
     General notes - this is a first version to get the basics in place
 #>
-function Get-CCGlobalAuditReportItem {
+function Get-CHARGlobalAuditReportItem {
     [CmdletBinding()]
     param(
         [string[]]$Region = @('us-east-1'),
@@ -1201,7 +1201,7 @@ function Get-CCGlobalAuditReportItem {
 }
 
 # ================================================================================================
-# Get-CCEC2KeyTagNameStatus Function
+# Get-CHAREC2KeyTagNameStatus Function
 # ================================================================================================
 
 <#
@@ -1249,10 +1249,10 @@ PSobject
 ResourceID, KeyPresent
 
 .EXAMPLE
-Get-CCEC2KeyTagNameStatus -TagKey "Name"
+Get-CHAREC2KeyTagNameStatus -TagKey "Name"
 Checks if all EC2 resources have a "Name" tag
 #>
-function Get-CCEC2KeyTagNameStatus {
+function Get-CHAREC2KeyTagNameStatus {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -1331,7 +1331,7 @@ function Get-CCEC2KeyTagNameStatus {
 }
 
 # ================================================================================================
-# Get-CCEC2SnapshotReport Function
+# Get-CHAREC2SnapshotReport Function
 # ================================================================================================
 
 <#
@@ -1374,22 +1374,22 @@ function Get-CCEC2KeyTagNameStatus {
     - Tag:<TagName>: One dynamic property per tag on the snapshot
 
 .EXAMPLE
-    PS> Get-CCEC2SnapshotReport
+    PS> Get-CHAREC2SnapshotReport
     Returns all self-owned snapshots in the current region with default batch size.
 
 .EXAMPLE
-    PS> Get-CCEC2SnapshotReport -MaxResults 500 | Export-Csv -Path snapshots.csv -NoTypeInformation
+    PS> Get-CHAREC2SnapshotReport -MaxResults 500 | Export-Csv -Path snapshots.csv -NoTypeInformation
     Exports all snapshots to CSV using larger batch size for fewer API calls.
 
 .EXAMPLE
-    PS> Get-CCEC2SnapshotReport | Where-Object { $_.State -eq 'completed' } | Measure-Object
+    PS> Get-CHAREC2SnapshotReport | Where-Object { $_.State -eq 'completed' } | Measure-Object
     Counts all completed snapshots in the current region.
 
 .NOTES
     Uses $AWSHistory.LastServiceResponse.NextToken for pagination.
     The -OwnerId 'self' filter ensures only account-owned snapshots are returned.
 #>
-function Get-CCEC2SnapshotReport {
+function Get-CHAREC2SnapshotReport {
     [CmdletBinding()]
     param(
         [int]$MaxResults = 200,
@@ -1457,7 +1457,7 @@ function Get-CCEC2SnapshotReport {
 }
 
 # ================================================================================================
-# Get-CCEC2VolumeReport Function
+# Get-CHAREC2VolumeReport Function
 # ================================================================================================
 
 <#
@@ -1482,10 +1482,10 @@ function Get-CCEC2SnapshotReport {
 .PARAMETER EndpointUrl
     A custom endpoint URL to use for the AWS service.
 .EXAMPLE
-    Get-CCEC2VolumeReport
+    Get-CHAREC2VolumeReport
     Gets all volumes in the current region
 #>
-function Get-CCEC2VolumeReport {
+function Get-CHAREC2VolumeReport {
     [CmdletBinding()]
     param(
         # AWS common parameters
@@ -1542,7 +1542,7 @@ function Get-CCEC2VolumeReport {
 }
 
 # ================================================================================================
-# Start-CCEC2RetryLoop Function
+# Start-CHAREC2RetryLoop Function
 # ================================================================================================
 
 <#
@@ -1557,9 +1557,9 @@ function Get-CCEC2VolumeReport {
 .PARAMETER DelaySeconds
     Delay between retries in seconds (default: 5)
 .EXAMPLE
-    Start-CCEC2RetryLoop -ScriptBlock {Get-EC2Instance} -MaxRetries 5
+    Start-CHAREC2RetryLoop -ScriptBlock {Get-EC2Instance} -MaxRetries 5
 #>
-function Start-CCEC2RetryLoop {
+function Start-CHAREC2RetryLoop {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
@@ -1592,7 +1592,7 @@ function Start-CCEC2RetryLoop {
 }
 
 # ================================================================================================
-# Find-CCOpenSecurityGroup Function
+# Find-CHAROpenSecurityGroup Function
 # ================================================================================================
 
 <#
@@ -1632,14 +1632,14 @@ function Start-CCEC2RetryLoop {
     Ports that are acceptable to have open to the internet. Defaults to 80 and 443.
 
 .EXAMPLE
-    Find-CCOpenSecurityGroup
+    Find-CHAROpenSecurityGroup
     Scans the current region for overly permissive security groups.
 
 .EXAMPLE
-    Find-CCOpenSecurityGroup -Region us-west-2 -AllowedPorts 80,443,8080
+    Find-CHAROpenSecurityGroup -Region us-west-2 -AllowedPorts 80,443,8080
     Scans us-west-2, treating ports 80, 443, and 8080 as acceptable.
 #>
-function Find-CCOpenSecurityGroup {
+function Find-CHAROpenSecurityGroup {
     [CmdletBinding()]
     param(
         [Parameter()]
@@ -1797,19 +1797,19 @@ function Find-CCOpenSecurityGroup {
     - AWS.Tools.EC2 or AWSPowerShell
 
 .EXAMPLE
-    PS> Find-CCEC2DBSG.ps1
+    PS> Find-CHAREC2DBSG.ps1
     Lists all security groups allowing inbound DB connections on default ports.
 
 .EXAMPLE
-    PS> Find-CCEC2DBSG.ps1 -DatabasePorts 3306, 5432
+    PS> Find-CHAREC2DBSG.ps1 -DatabasePorts 3306, 5432
     Checks only MySQL and PostgreSQL ports.
 
 .EXAMPLE
-    PS> Find-CCEC2DBSG.ps1 -Region us-west-2
+    PS> Find-CHAREC2DBSG.ps1 -Region us-west-2
     Scans security groups in us-west-2.
 #>
 
-function Find-CCEC2DBSG {
+function Find-CHAREC2DBSG {
     [CmdletBinding()]
     param(
         [Parameter()]
@@ -1964,12 +1964,12 @@ function Find-CCEC2DBSG {
     A custom endpoint URL to use for the AWS service.
 
 .EXAMPLE
-    PS C:\> .\Get-CCEC2Count.ps1 | Format-Table
+    PS C:\> .\Get-CHAREC2Count.ps1 | Format-Table
 
 .EXAMPLE
-    PS C:\> .\Get-CCEC2Count.ps1 -Region us-east-1, us-west-2 -ProfileName MyProfile
+    PS C:\> .\Get-CHAREC2Count.ps1 -Region us-east-1, us-west-2 -ProfileName MyProfile
 #>
-function Get-CCEC2Count {
+function Get-CHAREC2Count {
     [CmdletBinding()]
     param(
         [Parameter()]
@@ -2063,10 +2063,10 @@ function Get-CCEC2Count {
 
 
 # ================================================================================================
-# Get-CCAllEC2Patch Function
+# Get-CHARAllEC2Patch Function
 # ================================================================================================
 
-function Get-CCAllEC2Patch {
+function Get-CHARAllEC2Patch {
     <#
     .SYNOPSIS
         Retrieves patch compliance data for all EC2 instances.
@@ -2106,17 +2106,17 @@ function Get-CCAllEC2Patch {
         The endpoint to make the call against.
 
     .EXAMPLE
-        Get-CCAllEC2Patch -ProfileName 'production' -Region 'us-east-1'
+        Get-CHARAllEC2Patch -ProfileName 'production' -Region 'us-east-1'
 
         Retrieves patch data for all instances in the production account, us-east-1.
 
     .EXAMPLE
-        Get-CCAllEC2Patch -AccessKey $ak -SecretKey $sk -SessionToken $st -Region 'eu-west-1'
+        Get-CHARAllEC2Patch -AccessKey $ak -SecretKey $sk -SessionToken $st -Region 'eu-west-1'
 
         Retrieves patch data using explicit temporary credentials.
 
     .EXAMPLE
-        Get-CCAllEC2Patch -Region 'us-east-1' | Export-Csv -Path 'patches.csv' -NoTypeInformation
+        Get-CHARAllEC2Patch -Region 'us-east-1' | Export-Csv -Path 'patches.csv' -NoTypeInformation
 
         Exports patch compliance report to CSV.
 
@@ -2233,17 +2233,17 @@ function Get-CCAllEC2Patch {
 
 # Export all functions
 Export-ModuleMember -Function @(
-    'Find-CCEC2DBSG',
-    'Find-CCOpenSecurityGroup',
-    'Get-CCAllEC2Patch',
-    'Get-CCEC2Count',
-    'Get-CCEC2KeyTagNameStatus',
-    'Get-CCEC2SGInUse',
-    'Get-CCEC2SnapshotReport',
-    'Get-CCEC2VolumeReport',
-    'Get-CCGlobalAuditReportItem',
-    'Get-CCIAMAuditList',
-    'Out-CCAWSNetworkingComponent',
-    'Out-CCAWSSupportingInfo',
-    'Start-CCEC2RetryLoop'
+    'Find-CHAREC2DBSG',
+    'Find-CHAROpenSecurityGroup',
+    'Get-CHARAllEC2Patch',
+    'Get-CHAREC2Count',
+    'Get-CHAREC2KeyTagNameStatus',
+    'Get-CHAREC2SGInUse',
+    'Get-CHAREC2SnapshotReport',
+    'Get-CHAREC2VolumeReport',
+    'Get-CHARGlobalAuditReportItem',
+    'Get-CHARIAMAuditList',
+    'Out-CHARAWSNetworkingComponent',
+    'Out-CHARAWSSupportingInfo',
+    'Start-CHAREC2RetryLoop'
 )

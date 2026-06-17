@@ -664,7 +664,7 @@ function Get-CHARAWSObjectCount {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    PS C:\> .\Get-CCAWSObjectCount.ps1 |Format-Table
+    PS C:\> .\Get-CHARAWSObjectCount.ps1 |Format-Table
 
 
 
@@ -688,7 +688,7 @@ us-west-1               0        1        0           0           0   True
 us-west-2               0        1        0           0           0   True
 
 .EXAMPLE
-PS C:\> .\Get-CCAWSObjectCount.ps1 -Region us-east-1
+PS C:\> .\Get-CHARAWSObjectCount.ps1 -Region us-east-1
 
 
 Region      : us-east-1
@@ -700,7 +700,7 @@ LambdaCount : 36
 ScanOk      : True
 
 .EXAMPLE
-.\Get-CCAWSObjectCount.ps1 -Region @('us-east-1','us-east-2') |Format-Table
+.\Get-CHARAWSObjectCount.ps1 -Region @('us-east-1','us-east-2') |Format-Table
 
 
 Region    StackCount VPCCount EC2Count BucketCount LambdaCount ScanOk
@@ -823,11 +823,11 @@ us-east-2          0        1        1           2           0   True
 .PARAMETER Role
 	The name of the role you want to assume,
 .EXAMPLE
-	PS C:\> Use-CCAssumedRole -Role MyAdminRole
+	PS C:\> Use-CHARAssumedRole -Role MyAdminRole
 
 	Assumes the specified role and stores the temporary credentials in ~/.aws/credentials.
 #>
-function Use-CCAssumedRole($Role) {
+function Use-CHARAssumedRole($Role) {
   $RoleSessionName = (Get-STSCallerIdentity).UserId.Split(':')[-1]
   $RoleArnToAssume = (Get-IAMRole -RoleName $Role).Arn
   try {
@@ -853,10 +853,10 @@ function Use-CCAssumedRole($Role) {
 
 
 # ================================================================================================
-# Update-CCSSOCredentialList Function
+# Update-CHARSSOCredentialList Function
 # ================================================================================================
 
-function Update-CCSSOCredentialList {
+function Update-CHARSSOCredentialList {
   <#
 .SYNOPSIS
     Retrieves SSO credentials for all accounts/roles and updates ~/.aws/credentials.
@@ -909,10 +909,10 @@ function Update-CCSSOCredentialList {
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Update-CCSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' -Region 'us-east-1'
+    Update-CHARSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' -Region 'us-east-1'
 
 .EXAMPLE
-    Update-CCSSOCredentialList -StartUrl 'https://mycompany.awsapps.com/start' -Region 'us-east-1' `
+    Update-CHARSSOCredentialList -StartUrl 'https://mycompany.awsapps.com/start' -Region 'us-east-1' `
         -RoleFilter 'Admin*' -ProfilePrefix 'sso-'
 #>
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
