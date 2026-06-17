@@ -12,8 +12,7 @@ BeforeAll {
 
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CHARAuthenticodeSignature.ps1"
     # Force the script-scoped variable used by the SUT to $true for testing on non-Windows
-    # Cannot overwrite the automatic $IsWindows directly; use New-Variable -Force to bypass read-only
-    New-Variable -Name IsWindows -Value $true -Scope Script -Force
+    $script:CHARIsWindows = $true
 }
 
 AfterAll {
@@ -95,10 +94,10 @@ Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
     Context 'Windows requirement' {
 
         It 'Throws when not running on Windows' {
-            New-Variable -Name IsWindows -Value $false -Scope Script -Force
+            $script:CHARIsWindows = $false
             { Set-CHARAuthenticodeSignature -MyCert ([PSCustomObject]@{ Issuer='CN=Digicert'; NotAfter=(Get-Date).AddYears(1); HasPrivateKey=$true }) -Path 'TestDrive:\script.ps1' } |
                 Should -Throw '*only supported on Windows systems*'
-            New-Variable -Name IsWindows -Value $true -Scope Script -Force
+            $script:CHARIsWindows = $true
         }
     }
 
