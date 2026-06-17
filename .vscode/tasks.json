@@ -10,7 +10,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "Invoke-Pester -Configuration (& './tests/pester.config.ps1')"
+        "Invoke-Pester -Configuration (& \"${workspaceFolder}/tests/pester.config.ps1\")"
       ],
       "group": {
         "kind": "test",
