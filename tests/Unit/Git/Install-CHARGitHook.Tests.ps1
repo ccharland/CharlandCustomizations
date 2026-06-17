@@ -13,7 +13,7 @@ BeforeAll {
         function global:gpg { }
     }
 
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Git/Install-CCGitHook.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Git/Install-CHARGitHook.ps1"
 }
 
 AfterAll {
@@ -25,7 +25,7 @@ AfterAll {
     }
 }
 
-Describe 'Install-CCGitHook' -Tag 'Unit' {
+Describe 'Install-CHARGitHook' -Tag 'Unit' {
 
     BeforeEach {
         # Set up temporary git directory structure in TestDrive
@@ -79,7 +79,7 @@ Describe 'Install-CCGitHook' -Tag 'Unit' {
             $global:LASTEXITCODE = 0
 
             # Act
-            Install-CCGitHook
+            Install-CHARGitHook
 
             # Assert - destination file exists with matching content
             $destPath = Join-Path $TestDrive 'repo\.git\hooks\pre-commit'
@@ -115,7 +115,7 @@ Describe 'Install-CCGitHook' -Tag 'Unit' {
             Mock Read-Host { return 'y' }
 
             # Act
-            Install-CCGitHook
+            Install-CHARGitHook
 
             # Assert - Read-Host was called
             Should -Invoke Read-Host -Times 1 -Exactly
@@ -146,7 +146,7 @@ Describe 'Install-CCGitHook' -Tag 'Unit' {
             Mock Read-Host { return 'n' }
 
             # Act
-            Install-CCGitHook -Force
+            Install-CHARGitHook -Force
 
             # Assert - Read-Host was NOT called and file was overwritten
             Should -Invoke Read-Host -Times 0 -Exactly
@@ -182,7 +182,7 @@ Describe 'Install-CCGitHook' -Tag 'Unit' {
             Mock Read-Host { return 'N' }
 
             # Act
-            Install-CCGitHook
+            Install-CHARGitHook
 
             # Assert - existing hook content is preserved unchanged
             $destPath = Join-Path $TestDrive 'repo\.git\hooks\pre-commit'
@@ -207,7 +207,7 @@ Describe 'Install-CCGitHook' -Tag 'Unit' {
             $global:LASTEXITCODE = 0
 
             # Act & Assert - function writes error (terminating due to ErrorActionPreference = Stop)
-            { Install-CCGitHook } | Should -Throw '*Source hook not found*'
+            { Install-CHARGitHook } | Should -Throw '*Source hook not found*'
 
             # Assert - destination was not created
             $destPath = Join-Path $TestDrive 'repo\.git\hooks\pre-commit'

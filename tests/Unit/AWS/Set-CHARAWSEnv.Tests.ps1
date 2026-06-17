@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Set-CCAWSEnv' -Tag 'Unit' {
+Describe 'Set-CHARAWSEnv' -Tag 'Unit' {
 
     BeforeAll {
         $moduleName = 'AWSCustomizations'
@@ -54,7 +54,7 @@ Describe 'Set-CCAWSEnv' -Tag 'Unit' {
             $originalSessionToken = $env:AWS_SESSION_TOKEN
 
             # Act — call with -WhatIf
-            Set-CCAWSEnv -WhatIf
+            Set-CHARAWSEnv -WhatIf
 
             # Assert — env vars should remain unchanged
             $env:AWS_ACCESS_KEY_ID | Should -Be $originalAccessKey

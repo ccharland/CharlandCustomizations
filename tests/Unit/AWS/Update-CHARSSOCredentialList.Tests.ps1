@@ -12,7 +12,7 @@ BeforeAll {
     Import-Module $modulePath -Force
 }
 
-Describe 'Update-CCSSOCredentialList' -Tag 'Unit' {
+Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
 
     BeforeAll {
         $moduleName = 'AWSCustomizations'
@@ -113,25 +113,25 @@ Describe 'Update-CCSSOCredentialList' -Tag 'Unit' {
     Context 'SSO OIDC authentication flow' {
 
         It 'Calls Register-SSOOIDCClient to register the OIDC client' {
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Register-SSOOIDCClient -ModuleName $moduleName -Times 1 -Exactly
         }
 
         It 'Calls Start-SSOOIDCDeviceAuthorization to initiate device auth' {
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Start-SSOOIDCDeviceAuthorization -ModuleName $moduleName -Times 1 -Exactly
         }
 
         It 'Calls New-SSOOIDCToken to obtain the access token' {
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke New-SSOOIDCToken -ModuleName $moduleName -Times 1 -Exactly
         }
 
         It 'Opens the browser with the verification URI' {
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Start-Process -ModuleName $moduleName -Times 1 -Exactly
         }
@@ -169,7 +169,7 @@ Describe 'Update-CCSSOCredentialList' -Tag 'Unit' {
                 }
             }
 
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             $callOrder[0] | Should -Be 'Register'
             $callOrder[1] | Should -Be 'Authorize'
@@ -180,19 +180,19 @@ Describe 'Update-CCSSOCredentialList' -Tag 'Unit' {
     Context 'Credential writing' {
 
         It 'Retrieves credentials via Get-SSORoleCredential' {
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Get-SSORoleCredential -ModuleName $moduleName -Times 1 -Exactly
         }
 
         It 'Writes credentials using Set-AWSCredential' {
-            Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Set-AWSCredential -ModuleName $moduleName -Times 1 -Exactly
         }
 
         It 'Returns a summary object with ProfilesUpdated count' {
-            $result = Update-CCSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             $result.ProfilesUpdated | Should -Be 1
         }

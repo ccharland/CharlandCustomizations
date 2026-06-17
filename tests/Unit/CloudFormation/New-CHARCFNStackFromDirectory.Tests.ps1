@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
-Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
+Describe 'New-CHARCFNStackFromDirectory' -Tag 'Unit' {
 
     BeforeAll {
         # Mock AWS cmdlets used in the begin block
@@ -61,7 +61,7 @@ Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Uploads template to S3 via Write-S3Object' {
             # Act
-            New-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'my-stack' -Confirm:$false
+            New-CHARCFNStackFromDirectory -Path "TestDrive:\" -StackName 'my-stack' -Confirm:$false
 
             # Assert
             Should -Invoke Write-S3Object -ModuleName 'CloudFormation-TemplateProcessing' -Times 1
@@ -69,7 +69,7 @@ Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Calls Test-CFNTemplate for template validation' {
             # Act
-            New-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'my-stack' -Confirm:$false
+            New-CHARCFNStackFromDirectory -Path "TestDrive:\" -StackName 'my-stack' -Confirm:$false
 
             # Assert
             Should -Invoke Test-CFNTemplate -ModuleName 'CloudFormation-TemplateProcessing' -Times 1
@@ -77,7 +77,7 @@ Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Calls New-CFNStack with correct StackName and TemplateURL' {
             # Act
-            New-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'my-stack' -Confirm:$false
+            New-CHARCFNStackFromDirectory -Path "TestDrive:\" -StackName 'my-stack' -Confirm:$false
 
             # Assert
             Should -Invoke New-CFNStack -ModuleName 'CloudFormation-TemplateProcessing' -Times 1 -ParameterFilter {
@@ -97,7 +97,7 @@ Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Writes error when template.template is missing' {
             # Act / Assert
-            New-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'no-template-stack' -Confirm:$false -ErrorVariable err -ErrorAction SilentlyContinue 2>&1 | Out-Null
+            New-CHARCFNStackFromDirectory -Path "TestDrive:\" -StackName 'no-template-stack' -Confirm:$false -ErrorVariable err -ErrorAction SilentlyContinue 2>&1 | Out-Null
 
             # The error stream should contain the missing template message
             $err | Should -Not -BeNullOrEmpty
@@ -106,7 +106,7 @@ Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Does not call Write-S3Object when template is missing' {
             # Act
-            New-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'no-template-stack' -Confirm:$false -ErrorAction SilentlyContinue
+            New-CHARCFNStackFromDirectory -Path "TestDrive:\" -StackName 'no-template-stack' -Confirm:$false -ErrorAction SilentlyContinue
 
             # Assert
             Should -Not -Invoke Write-S3Object -ModuleName 'CloudFormation-TemplateProcessing'
@@ -125,7 +125,7 @@ Describe 'New-CCCFNStackFromDirectory' -Tag 'Unit' {
 
         It 'Throws error when template parameter count does not match parameters.json' {
             # Act / Assert
-            { New-CCCFNStackFromDirectory -Path "TestDrive:\" -StackName 'mismatch-stack' -Confirm:$false } |
+            { New-CHARCFNStackFromDirectory -Path "TestDrive:\" -StackName 'mismatch-stack' -Confirm:$false } |
                 Should -Throw '*parameter counts do not match*'
         }
     }

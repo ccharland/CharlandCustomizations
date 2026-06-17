@@ -28,7 +28,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-CCAWSObjectCount' -Tag 'Unit' {
+Describe 'Get-CHARAWSObjectCount' -Tag 'Unit' {
 
     Context 'Output contains required properties' {
 
@@ -41,7 +41,7 @@ Describe 'Get-CCAWSObjectCount' -Tag 'Unit' {
             Mock Get-S3BucketLocation { [PSCustomObject]@{ Value = 'us-east-1' } } -ModuleName AWSCustomizations
             Mock Get-LMFunctionList { @(1, 2, 3, 4) } -ModuleName AWSCustomizations
 
-            $script:result = Get-CCAWSObjectCount -Region 'us-east-1'
+            $script:result = Get-CHARAWSObjectCount -Region 'us-east-1'
         }
 
         It 'Output has Region property (Req 3.9)' {
@@ -85,7 +85,7 @@ Describe 'Get-CCAWSObjectCount' -Tag 'Unit' {
             Mock Get-S3BucketLocation { [PSCustomObject]@{ Value = 'us-east-1' } } -ModuleName AWSCustomizations
             Mock Get-LMFunctionList { @(1, 2, 3, 4) } -ModuleName AWSCustomizations
 
-            $script:errorResult = Get-CCAWSObjectCount -Region 'us-east-1'
+            $script:errorResult = Get-CHARAWSObjectCount -Region 'us-east-1'
         }
 
         It 'Sets ScanOk to $false on API error (Req 8.6)' {

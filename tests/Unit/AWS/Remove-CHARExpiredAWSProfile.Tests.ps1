@@ -27,7 +27,7 @@ AfterAll {
     }
 }
 
-Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
+Describe 'Remove-CHARExpiredAWSProfile' -Tag 'Unit' {
 
     Context 'Expired profile (ExpiredToken error)' {
 
@@ -48,7 +48,7 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
-            Remove-CCExpiredAWSProfile -Confirm:$false
+            Remove-CHARExpiredAWSProfile -Confirm:$false
 
             # Assert (Req 3.5)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 1 -Exactly
@@ -74,7 +74,7 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
-            Remove-CCExpiredAWSProfile
+            Remove-CHARExpiredAWSProfile
 
             # Assert (Req 3.13)
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 0 -Exactly
@@ -98,7 +98,7 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act
-            Remove-CCExpiredAWSProfile -WhatIf
+            Remove-CHARExpiredAWSProfile -WhatIf
 
             # Assert
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 0 -Exactly
@@ -124,7 +124,7 @@ Describe 'Remove-CCExpiredAWSProfile' -Tag 'Unit' {
             Mock Remove-AWSCredentialProfile {} -ModuleName AWSCustomizations
 
             # Act - Force bypasses ShouldProcess confirmation
-            Remove-CCExpiredAWSProfile -Confirm:$false
+            Remove-CHARExpiredAWSProfile -Confirm:$false
 
             # Assert
             Should -Invoke Remove-AWSCredentialProfile -ModuleName AWSCustomizations -Times 1 -Exactly

@@ -8,7 +8,7 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
 }
 
-Describe 'Find-CCCFNStackError' -Tag 'Unit' {
+Describe 'Find-CHARCFNStackError' -Tag 'Unit' {
 
     BeforeAll {
         $moduleName = 'AWSCustomizations'
@@ -77,7 +77,7 @@ Describe 'Find-CCCFNStackError' -Tag 'Unit' {
 
         It 'Includes stacks with non-null StackStatusReason in output' {
             # Act — capture all output including formatted objects
-            $output = Find-CCCFNStackError *>&1 | Out-String
+            $output = Find-CHARCFNStackError *>&1 | Out-String
 
             # Assert — stacks with errors appear in output
             $output | Should -Match 'FailingStack1'
@@ -86,7 +86,7 @@ Describe 'Find-CCCFNStackError' -Tag 'Unit' {
 
         It 'Excludes stacks with null StackStatusReason from error output' {
             # Act
-            $output = Find-CCCFNStackError *>&1 | Out-String
+            $output = Find-CHARCFNStackError *>&1 | Out-String
 
             # Assert — healthy stacks do not appear anywhere in the output
             $output | Should -Not -Match 'HealthyStack1'
@@ -95,7 +95,7 @@ Describe 'Find-CCCFNStackError' -Tag 'Unit' {
 
         It 'Calls Get-CFNStackResourceSummary only for stacks with errors' {
             # Act
-            Find-CCCFNStackError *>&1 | Out-Null
+            Find-CHARCFNStackError *>&1 | Out-Null
 
             # Assert — Get-CFNStackResourceSummary called for each error stack
             Should -Invoke Get-CFNStackResourceSummary -ModuleName $moduleName -Times 2 -Exactly
@@ -143,7 +143,7 @@ Describe 'Find-CCCFNStackError' -Tag 'Unit' {
                 Mock Get-CFNStackResourceSummary { @() } -ModuleName $moduleName
 
                 # Act — capture all output
-                $output = Find-CCCFNStackError *>&1 | Out-String
+                $output = Find-CHARCFNStackError *>&1 | Out-String
 
                 # Assert — each stack with non-null reason appears in output
                 foreach ($name in $expectedErrorStacks) {

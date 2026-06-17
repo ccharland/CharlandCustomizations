@@ -26,7 +26,7 @@ BeforeAll {
     }
 }
 
-Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
+Describe 'Get-CHARDeprecatedLMFunctionList' -Tag 'Unit' {
     It 'Returns only functions with deprecated runtimes for the comparison date' {
         Mock Get-LMFunctionList {
             @(
@@ -37,7 +37,7 @@ Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
             )
         } -ModuleName 'Lambda-Customizations'
 
-        $result = Get-CCDeprecatedLMFunctionList -Date ([datetime]'2025-01-01')
+        $result = Get-CHARDeprecatedLMFunctionList -Date ([datetime]'2025-01-01')
 
         $result.FunctionName | Should -Be @('old-node', 'future-node', 'old-python')
     }
@@ -51,7 +51,7 @@ Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
             )
         } -ModuleName 'Lambda-Customizations'
 
-        $result = Get-CCDeprecatedLMFunctionList -Date ([datetime]'2022-01-01')
+        $result = Get-CHARDeprecatedLMFunctionList -Date ([datetime]'2022-01-01')
 
         $result.FunctionName | Should -Be @('very-old')
     }
@@ -65,7 +65,7 @@ Describe 'Get-CCDeprecatedLMFunctionList' -Tag 'Unit' {
         } -ModuleName 'Lambda-Customizations'
         Mock Get-LMFunctionList { @() } -ModuleName 'Lambda-Customizations'
 
-        Get-CCDeprecatedLMFunctionList -Date ([datetime]'2024-01-01') -Region 'us-east-1' -ProfileName 'dev' -Marker 'm1' -MaxItem 25 -NoAutoIteration
+        Get-CHARDeprecatedLMFunctionList -Date ([datetime]'2024-01-01') -Region 'us-east-1' -ProfileName 'dev' -Marker 'm1' -MaxItem 25 -NoAutoIteration
 
         Assert-MockCalled New-AWSParamSplat -ModuleName 'Lambda-Customizations' -Exactly 1 -Scope It -ParameterFilter {
             $BoundParameters.ContainsKey('Region') -and

@@ -2,8 +2,8 @@
 BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../Scripts/Test-SignatureCompliance.ps1"
     # Dot-source the function directly so mocks work in the same scope
-    . "$PSScriptRoot/../src/CharlandCustomizations/Public/Test-CCAuthenticodeSignature.ps1"
-    $script:CCIsWindows = $true
+    . "$PSScriptRoot/../src/CharlandCustomizations/Public/Test-CHARAuthenticodeSignature.ps1"
+    $script:IsWindows = $true
 }
 
 Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
@@ -26,14 +26,14 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
     Context 'Path validation' {
 
         It 'Throws when a provided path does not exist' {
-            { Test-CCAuthenticodeSignature -Path 'C:\NonExistent\FakePath' } | Should -Throw '*does not exist*'
+            { Test-CHARAuthenticodeSignature -Path 'C:\NonExistent\FakePath' } | Should -Throw '*does not exist*'
         }
 
         It 'Throws when no matching files are found in a valid but empty directory' {
             $emptyDir = Join-Path $script:TestDir 'EmptySubdir'
             New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
 
-            { Test-CCAuthenticodeSignature -Path $emptyDir } | Should -Throw '*No files were found*'
+            { Test-CHARAuthenticodeSignature -Path $emptyDir } | Should -Throw '*No files were found*'
         }
     }
 
@@ -49,7 +49,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
         }
 
         It 'Passes when all signatures are valid and timestamped' {
-            $result = Test-CCAuthenticodeSignature -Path $script:TestDir
+            $result = Test-CHARAuthenticodeSignature -Path $script:TestDir
             $result | Should -BeNullOrEmpty
         }
     }
@@ -66,7 +66,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
         }
 
         It 'Returns objects with NotSigned status when files have invalid signatures' {
-            $results = @(Test-CCAuthenticodeSignature -Path $script:TestDir)
+            $results = @(Test-CHARAuthenticodeSignature -Path $script:TestDir)
             $results | Should -Not -BeNullOrEmpty
             $results[0].Status | Should -Be 'NotSigned'
         }
@@ -84,7 +84,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
         }
 
         It 'Returns objects with MissingTimestamp status when timestamp certificate is absent' {
-            $results = @(Test-CCAuthenticodeSignature -Path $script:TestDir)
+            $results = @(Test-CHARAuthenticodeSignature -Path $script:TestDir)
             $results | Should -Not -BeNullOrEmpty
             $results[0].Status | Should -Be 'MissingTimestamp'
         }
@@ -102,7 +102,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
         }
 
         It 'Emits PSCustomObjects with Path and Status properties' {
-            $results = @(Test-CCAuthenticodeSignature -Path $script:TestDir)
+            $results = @(Test-CHARAuthenticodeSignature -Path $script:TestDir)
             $results | Should -Not -BeNullOrEmpty
             $results[0].Path | Should -Not -BeNullOrEmpty
             $results[0].Status | Should -Be 'HashMismatch'
@@ -135,7 +135,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
         }
 
         It 'Reports failures when at least one file is missing a timestamp even if others pass' {
-            $results = @(Test-CCAuthenticodeSignature -Path $script:TestDir)
+            $results = @(Test-CHARAuthenticodeSignature -Path $script:TestDir)
             $results | Should -Not -BeNullOrEmpty
             $results.Status | Should -Contain 'MissingTimestamp'
         }
@@ -156,7 +156,7 @@ Describe 'Test-SignatureCompliance' -Tag 'Windows' -Skip:(-not $IsWindows) {
                 }
             }
 
-            $result = Test-CCAuthenticodeSignature -Path $script:TestDir -IncludeExtension '.ps1'
+            $result = Test-CHARAuthenticodeSignature -Path $script:TestDir -IncludeExtension '.ps1'
             $result | Should -BeNullOrEmpty
 
             # Only the single .ps1 file should have been checked

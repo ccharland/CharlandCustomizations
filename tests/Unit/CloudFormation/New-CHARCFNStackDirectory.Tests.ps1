@@ -7,10 +7,10 @@ BeforeAll {
     Import-Module "$PSScriptRoot/../../../src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1" -Force
 }
 
-Describe 'New-CCCFNStackDirectory' -Tag 'Unit' {
+Describe 'New-CHARCFNStackDirectory' -Tag 'Unit' {
 
     BeforeAll {
-        # Mock AWS cmdlets called by Test-CCCFNStackFromDirectory (invoked at end of New-CCCFNStackDirectory)
+        # Mock AWS cmdlets called by Test-CHARCFNStackFromDirectory (invoked at end of New-CHARCFNStackDirectory)
         Mock Get-STSCallerIdentity {
             [PSCustomObject]@{ Account = '123456789012' }
         } -ModuleName 'CloudFormation-TemplateProcessing'
@@ -33,7 +33,7 @@ Describe 'New-CCCFNStackDirectory' -Tag 'Unit' {
         It 'Creates subdirectory named after StackName with template.template containing TemplateBody' {
             $templateContent = '{"AWSTemplateFormatVersion":"2010-09-09","Description":"Test stack"}'
 
-            New-CCCFNStackDirectory -Path "TestDrive:\" -StackName 'my-new-stack' -TemplateBody $templateContent -Confirm:$false
+            New-CHARCFNStackDirectory -Path "TestDrive:\" -StackName 'my-new-stack' -TemplateBody $templateContent -Confirm:$false
 
             # Verify subdirectory was created
             "TestDrive:\my-new-stack" | Should -Exist

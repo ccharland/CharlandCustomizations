@@ -28,7 +28,7 @@ AfterAll {
     }
 }
 
-Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
+Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
 
     Context 'Returns patch data for instances with patches' {
 
@@ -79,7 +79,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
                 }
             } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
+            $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Returns results for all instances' {
@@ -135,7 +135,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { @() } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
+            $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Returns empty output when no patches exist' {
@@ -180,7 +180,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
             } -ModuleName Audit-AWSAccount
             Mock Start-Sleep { } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
+            $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Retries and eventually returns patches' {
@@ -211,7 +211,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
             Mock Get-SSMInstancePatch { throw 'Rate exceeded' } -ModuleName Audit-AWSAccount
             Mock Start-Sleep { } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
+            $script:result = Get-CHARAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
             $script:warnings = $warnOut
         }
 
@@ -241,7 +241,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { throw 'AccessDeniedException: User is not authorized' } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
+            $script:result = Get-CHARAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
             $script:warnings = $warnOut
         }
 
@@ -271,7 +271,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { @() } -ModuleName Audit-AWSAccount
 
-            Get-CCAllEC2Patch -Region 'eu-west-1' -ProfileName 'testprofile'
+            Get-CHARAllEC2Patch -Region 'eu-west-1' -ProfileName 'testprofile'
         }
 
         It 'Passes Region to Get-EC2Instance' {
@@ -309,7 +309,7 @@ Describe 'Get-CCAllEC2Patch' -Tag 'Unit' {
             Mock Get-EC2Instance { $mockInstances } -ModuleName Audit-AWSAccount
             Mock Get-SSMInstancePatch { } -ModuleName Audit-AWSAccount
 
-            $script:result = Get-CCAllEC2Patch -Region 'us-east-1'
+            $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
         }
 
         It 'Returns empty output when no instances exist' {

@@ -10,15 +10,15 @@ BeforeAll {
         param($FilePath, $TimestampServer, $Certificate)
     }
 
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CCAuthenticodeSignature.ps1"
-    $script:CCIsWindows = $true
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CHARAuthenticodeSignature.ps1"
+    $script:IsWindows = $true
 }
 
 AfterAll {
     Remove-Item "function:global:Set-AuthenticodeSignature" -ErrorAction SilentlyContinue
 }
 
-Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
+Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
 
     BeforeAll {
         # Mock Set-AuthenticodeSignature to prevent actual signing
@@ -34,7 +34,7 @@ Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
             Mock Get-ChildItem { @() } -ParameterFilter { $Path -like 'cert:\*' }
 
             # Act & Assert
-            { Set-CCAuthenticodeSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
+            { Set-CHARAuthenticodeSignature -MyCert $null -Path 'TestDrive:\test.ps1' } |
                 Should -Throw '*No valid codesign certificate found*'
         }
     }
@@ -52,7 +52,7 @@ Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 
             # Act
-            Set-CCAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+            Set-CHARAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
 
             # Assert
             Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
@@ -74,7 +74,7 @@ Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 
             # Act
-            Set-CCAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+            Set-CHARAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
 
             # Assert
             Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
@@ -85,18 +85,18 @@ Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
 
     Context 'Alias compatibility' {
 
-        It 'Alias Set-CCFileSignature resolves to Set-CCAuthenticodeSignature' {
-            (Get-Alias Set-CCFileSignature).Definition | Should -Be 'Set-CCAuthenticodeSignature'
+        It 'Alias Set-CHARFileSignature resolves to Set-CHARAuthenticodeSignature' {
+            (Get-Alias Set-CHARFileSignature).Definition | Should -Be 'Set-CHARAuthenticodeSignature'
         }
     }
 
     Context 'Windows requirement' {
 
         It 'Throws when not running on Windows' {
-            $script:CCIsWindows = $false
-            { Set-CCAuthenticodeSignature -MyCert ([PSCustomObject]@{ Issuer='CN=Digicert'; NotAfter=(Get-Date).AddYears(1); HasPrivateKey=$true }) -Path 'TestDrive:\script.ps1' } |
+            $script:IsWindows = $false
+            { Set-CHARAuthenticodeSignature -MyCert ([PSCustomObject]@{ Issuer='CN=Digicert'; NotAfter=(Get-Date).AddYears(1); HasPrivateKey=$true }) -Path 'TestDrive:\script.ps1' } |
                 Should -Throw '*only supported on Windows systems*'
-            $script:CCIsWindows = $true
+            $script:IsWindows = $true
         }
     }
 
@@ -112,7 +112,7 @@ Describe 'Set-CCAuthenticodeSignature' -Tag 'Unit' {
             }
 
             # Act & Assert
-            { Set-CCAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1' } |
+            { Set-CHARAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1' } |
                 Should -Throw '*No Timestamp server could be set, aborting.*'
         }
     }

@@ -63,13 +63,13 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
   - [x] 4.3 Update `Private/New-AWSParamSplat.ps1` — update any comment references to public function names (CC→CHAR) if present
     - _Requirements: 7.3_
 
-- [-] 5. Checkpoint — verify module loads
+- [x] 5. Checkpoint — verify module loads
   - Run `Import-Module ./src/CharlandCustomizations -Force` and confirm no errors
   - Run `(Get-Command -Module CharlandCustomizations).Count` and confirm it equals 40
   - Spot-check a few function names to confirm CHAR prefix is correct
 
 - [ ] 6. Rename and update test files
-  - [~] 6.1 Rename and update AWS test files (9 files in `tests/Unit/AWS/`)
+  - [x] 6.1 Rename and update AWS test files (9 files in `tests/Unit/AWS/`)
     - `Find-CCCFNStackError.Tests.ps1` → `Find-CHARCFNStackError.Tests.ps1`
     - `Get-CCAWSAccountListOfDriftedResource.Tests.ps1` → `Get-CHARAWSAccountListOfDriftedResource.Tests.ps1`
     - `Get-CCAWSObjectCount.Tests.ps1` → `Get-CHARAWSObjectCount.Tests.ps1`
@@ -81,17 +81,17 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - `Use-CCAssumedRole.Tests.ps1` → `Use-CHARAssumedRole.Tests.ps1`
     - Update all function references and dot-source paths inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [~] 6.2 Rename and update S3 test file
+  - [x] 6.2 Rename and update S3 test file
     - `tests/Unit/AWS/S3/Clear-CCS3Bucket.Tests.ps1` → `Clear-CHARS3Bucket.Tests.ps1`
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [~] 6.3 Rename and update Lambda test file
+  - [x] 6.3 Rename and update Lambda test file
     - `tests/Unit/AWS/Lambda/Get-CCDeprecatedLMFunctionList.Tests.ps1` → `Get-CHARDeprecatedLMFunctionList.Tests.ps1`
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [~] 6.4 Update Audit test files (content + rename where applicable)
+  - [x] 6.4 Update Audit test files (content + rename where applicable)
     - `tests/Unit/AWS/Audit/Audit-Functions.Tests.ps1` — update all function name references (content only)
     - `tests/Unit/AWS/Audit/Get-CCAllEC2Patch.Tests.ps1` → `Get-CHARAllEC2Patch.Tests.ps1`
     - _Requirements: 9.1, 9.2, 9.4_
-  - [~] 6.5 Rename and update CloudFormation test files (6 files)
+  - [x] 6.5 Rename and update CloudFormation test files (6 files)
     - `Edit-CCCFTTEbsVolume.Tests.ps1` → `Edit-CHARCFTTEbsVolume.Tests.ps1`
     - `New-CCCFNStackDirectory.Tests.ps1` → `New-CHARCFNStackDirectory.Tests.ps1`
     - `New-CCCFNStackFromDirectory.Tests.ps1` → `New-CHARCFNStackFromDirectory.Tests.ps1`
@@ -100,7 +100,7 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - `Update-CCCFNStackFromDirectory.Tests.ps1` → `Update-CHARCFNStackFromDirectory.Tests.ps1`
     - Update all function references inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [~] 6.6 Rename and update Core test files (5 files)
+  - [-] 6.6 Rename and update Core test files (5 files)
     - `Clear-CCAuthenticodeSignature.Tests.ps1` → `Clear-CHARAuthenticodeSignature.Tests.ps1`
     - `Install-CCProfilesFromSource.Tests.ps1` → `Install-CHARProfilesFromSource.Tests.ps1`
     - `Invoke-CCScriptMultiRegionProfile.Tests.ps1` → `Invoke-CHARScriptMultiRegionProfile.Tests.ps1`
@@ -108,12 +108,12 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - `Update-CCPowershell7.Tests.ps1` → `Update-CHARPowershell7.Tests.ps1`
     - Update all function references and dot-source paths inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [~] 6.7 Rename and update Git test files (2 files)
+  - [-] 6.7 Rename and update Git test files (2 files)
     - `Install-CCGitHook.Tests.ps1` → `Install-CHARGitHook.Tests.ps1`
     - `Test-CCCommitSignature.Tests.ps1` → `Test-CHARCommitSignature.Tests.ps1`
     - Update all function references and dot-source paths inside each file
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [~] 6.8 Update remaining test files (content only, no rename needed)
+  - [-] 6.8 Update remaining test files (content only, no rename needed)
     - `tests/Unit/Core/CFNPrivateFunctions.Tests.ps1` — update any references to public CC-prefixed functions
     - `tests/Unit/Core/CharlandCustomizations.Manifest.Tests.ps1` — update function name references
     - `tests/Unit/Help/HelpDiscoverability.Tests.ps1` — update function name references
@@ -124,9 +124,9 @@ Rename all 40 public functions from "CC" prefix to "CHAR" prefix, strip all Auth
     - _Requirements: 9.1, 9.2_
 
 - [ ] 7. Update documentation and script files
-  - [~] 7.1 Update `docs/QUICK-REFERENCE.md` — replace all CC-prefixed function names with CHAR-prefixed
+  - [-] 7.1 Update `docs/QUICK-REFERENCE.md` — replace all CC-prefixed function names with CHAR-prefixed
     - _Requirements: 10.1, 10.2_
-  - [~] 7.2 Update `docs/CloudFormation-TemplateProcessing.md` — replace all CC-prefixed function names with CHAR-prefixed
+  - [-] 7.2 Update `docs/CloudFormation-TemplateProcessing.md` — replace all CC-prefixed function names with CHAR-prefixed
     - _Requirements: 10.1, 10.2_
   - [~] 7.3 Update `docs/AWS-Account-Audit.md` — replace all CC-prefixed function names with CHAR-prefixed
     - _Requirements: 10.1, 10.2_

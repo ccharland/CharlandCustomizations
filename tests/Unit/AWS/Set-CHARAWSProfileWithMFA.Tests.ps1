@@ -11,7 +11,7 @@ BeforeAll {
     Import-Module $modulePath -Force
 }
 
-Describe 'Set-CCAWSProfileWithMFA' -Tag 'Unit' {
+Describe 'Set-CHARAWSProfileWithMFA' -Tag 'Unit' {
 
     BeforeAll {
         $moduleName = 'AWSCustomizations'
@@ -46,7 +46,7 @@ Describe 'Set-CCAWSProfileWithMFA' -Tag 'Unit' {
             $expectedToken = '123456'
 
             # Act
-            $result = Set-CCAWSProfileWithMFA -ProfileName 'myprofile' -TokenCode $expectedToken
+            $result = Set-CHARAWSProfileWithMFA -ProfileName 'myprofile' -TokenCode $expectedToken
 
             # Assert — verify Get-STSSessionToken was called with the correct parameters
             Should -Invoke Get-STSSessionToken -ModuleName $moduleName -Times 1 -Exactly -ParameterFilter {
@@ -59,7 +59,7 @@ Describe 'Set-CCAWSProfileWithMFA' -Tag 'Unit' {
 
         It 'Calls Set-AWSCredential with ProfileName as AWS bug workaround' {
             # Act
-            Set-CCAWSProfileWithMFA -ProfileName 'testprofile' -TokenCode '654321'
+            Set-CHARAWSProfileWithMFA -ProfileName 'testprofile' -TokenCode '654321'
 
             # Assert — verify Set-AWSCredential is called with the profile name
             Should -Invoke Set-AWSCredential -ModuleName $moduleName -Times 1 -Exactly -ParameterFilter {
@@ -69,7 +69,7 @@ Describe 'Set-CCAWSProfileWithMFA' -Tag 'Unit' {
 
         It 'Uses Get-DefaultAWSRegion when Region is not specified' {
             # Act
-            Set-CCAWSProfileWithMFA -ProfileName 'myprofile' -TokenCode '111111'
+            Set-CHARAWSProfileWithMFA -ProfileName 'myprofile' -TokenCode '111111'
 
             # Assert — verify Get-DefaultAWSRegion was called for fallback
             Should -Invoke Get-DefaultAWSRegion -ModuleName $moduleName -Times 1

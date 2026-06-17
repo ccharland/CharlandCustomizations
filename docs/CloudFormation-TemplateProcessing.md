@@ -11,17 +11,17 @@ The CloudFormation command set was created by extracting and consolidating Cloud
 ## Functions Included
 
 ### Stack Management Functions
-- **`New-CCCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
-- **`Update-CCCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
-- **`Test-CCCFNStackFromDirectory`** - Validates CloudFormation templates from directories
-- **`Out-CCCFNStackInfo`** - Exports stack information for backup and redeployment
-- **`New-CCCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
-- **`Update-CCCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
-- **`Test-CCCFNStackFromDirectory`** - Validates CloudFormation templates from directories
-- **`Out-CCCFNStackInfo`** - Exports stack information for backup and redeployment
+- **`New-CHARCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
+- **`Update-CHARCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
+- **`Test-CHARCFNStackFromDirectory`** - Validates CloudFormation templates from directories
+- **`Out-CHARCFNStackInfo`** - Exports stack information for backup and redeployment
+- **`New-CHARCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
+- **`Update-CHARCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
+- **`Test-CHARCFNStackFromDirectory`** - Validates CloudFormation templates from directories
+- **`Out-CHARCFNStackInfo`** - Exports stack information for backup and redeployment
 
 ### Template and Directory Utilities
-- **`New-CCCFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
+- **`New-CHARCFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
 
 
 ## Directory Structure Convention
@@ -36,7 +36,7 @@ This module uses a standardized directory structure for CloudFormation stack man
       ├── parameters.json        # Stack parameters
       ├── capabilities.json      # Required capabilities (e.g., CAPABILITY_IAM)
       ├── tags.json              # Stack tags
-      └── outputs.json           # Stack outputs (created by Out-CCCFNStackInfo)
+      └── outputs.json           # Stack outputs (created by Out-CHARCFNStackInfo)
 ```
 
 ## Prerequisites
@@ -74,59 +74,59 @@ StackName: directory name to put stack specific information into.
 ### Stack Creation
 ```powershell
 # Create a single stack from directory structure
-New-CCCFNStackFromDirectory -StackName "MyStack" -Path "C:\CloudFormation"
+New-CHARCFNStackFromDirectory -StackName "MyStack" -Path "C:\CloudFormation"
 
 # Verify template without creating stack
-New-CCCFNStackFromDirectory -StackName "MyStack" -VerifyOnly
+New-CHARCFNStackFromDirectory -StackName "MyStack" -VerifyOnly
 
 # Create all stacks in a directory
-New-CCCFNStackFromDirectory -Path "C:\CloudFormation"
+New-CHARCFNStackFromDirectory -Path "C:\CloudFormation"
 ```
 
 ### Stack Updates with Change Sets
 ```powershell
 # Create change set for review
-Update-CCCFNStackFromDirectory -StackName "MyStack"
+Update-CHARCFNStackFromDirectory -StackName "MyStack"
 
 # Create and immediately execute change set
-Update-CCCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
+Update-CHARCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
 
 # Verify what would change without creating change set
-Update-CCCFNStackFromDirectory -StackName "MyStack" -VerifyOnly
+Update-CHARCFNStackFromDirectory -StackName "MyStack" -VerifyOnly
 ```
 
 ### Template Validation
 ```powershell
 # Validate single template
-Test-CCCFNStackFromDirectory -StackName "MyStack"
+Test-CHARCFNStackFromDirectory -StackName "MyStack"
 
 # Validate multiple templates via pipeline
-"Stack1", "Stack2", "Stack3" | Test-CCCFNStackFromDirectory -Region us-west-2
+"Stack1", "Stack2", "Stack3" | Test-CHARCFNStackFromDirectory -Region us-west-2
 
 # Use custom template filename
-Test-CCCFNStackFromDirectory -StackName "MyStack" -TemplateName "custom-template.yaml"
+Test-CHARCFNStackFromDirectory -StackName "MyStack" -TemplateName "custom-template.yaml"
 ```
 
 ### Stack Information Export
 ```powershell
 # Export single stack information
-Out-CCCFNStackInfo -StackName "MyStack" -RootPath "C:\Backups"
+Out-CHARCFNStackInfo -StackName "MyStack" -RootPath "C:\Backups"
 
 # Export all stacks via pipeline
-Get-CFNStack | Out-CCCFNStackInfo -RootPath "C:\Backups"
+Get-CFNStack | Out-CHARCFNStackInfo -RootPath "C:\Backups"
 
 # Export to specific region directory
-"Stack1", "Stack2" | Out-CCCFNStackInfo -Region us-west-2 -RootPath "C:\Backups"
+"Stack1", "Stack2" | Out-CHARCFNStackInfo -Region us-west-2 -RootPath "C:\Backups"
 ```
 
 ### Directory Setup
 ```powershell
 # Create new stack directory with template
 $templateContent = Get-Content "template.yaml" -Raw
-New-CCCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent
+New-CHARCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent
 
 # Create directory and validate template
-New-CCCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Path "C:\Stacks"
+New-CHARCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Path "C:\Stacks"
 ```
 
 
@@ -136,7 +136,7 @@ New-CCCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Pa
 ```powershell
 # 1. Create directory structure
 $template = Get-Content "my-template.yaml" -Raw
-New-CCCFNStackDirectory -StackName "ProductionStack" -TemplateBody $template
+New-CHARCFNStackDirectory -StackName "ProductionStack" -TemplateBody $template
 
 # 2. Add parameters and tags (manually edit JSON files)
 # Edit: ProductionStack/parameters.json
@@ -144,16 +144,16 @@ New-CCCFNStackDirectory -StackName "ProductionStack" -TemplateBody $template
 # Edit: ProductionStack/capabilities.json
 
 # 3. Validate template
-Test-CCCFNStackFromDirectory -StackName "ProductionStack"
+Test-CHARCFNStackFromDirectory -StackName "ProductionStack"
 
 # 4. Create stack
-New-CCCFNStackFromDirectory -StackName "ProductionStack"
+New-CHARCFNStackFromDirectory -StackName "ProductionStack"
 
 # 5. Later, update stack with change set
-Update-CCCFNStackFromDirectory -StackName "ProductionStack"
+Update-CHARCFNStackFromDirectory -StackName "ProductionStack"
 
 # 6. Export stack info for backup
-Out-CCCFNStackInfo -StackName "ProductionStack" -RootPath "C:\StackBackups"
+Out-CHARCFNStackInfo -StackName "ProductionStack" -RootPath "C:\StackBackups"
 ```
 
 ### Multi-Region Deployment
@@ -163,7 +163,7 @@ $stackName = "GlobalStack"
 
 foreach ($region in $regions) {
     Write-Host "Deploying to $region..."
-    New-CCCFNStackFromDirectory -StackName $stackName -Region $region
+    New-CHARCFNStackFromDirectory -StackName $stackName -Region $region
 }
 ```
 
@@ -172,20 +172,20 @@ foreach ($region in $regions) {
 Each function includes comprehensive help documentation. Use `Get-Help` to learn more:
 
 ```powershell
-Get-Help New-CCCFNStackFromDirectory -Detailed
-Get-Help Update-CCCFNStackFromDirectory -Examples
-Get-Help Test-CCCFNStackFromDirectory -Full
+Get-Help New-CHARCFNStackFromDirectory -Detailed
+Get-Help Update-CHARCFNStackFromDirectory -Examples
+Get-Help Test-CHARCFNStackFromDirectory -Full
 ```
 
 ## Source Scripts
 
 This module consolidates the following CloudFormation-related scripts:
-- `New-CCCFNStackFromDirectory.ps1`
-- `Verify-CFNStackFromDirectory.ps1` (renamed to `Test-CCCFNStackFromDirectory`)
-- `Update-CCCFNStackFromDirectory.ps1`
-- `Out-CCCFNStackInfo.ps1`
-- `New-CCCFNStackDirectory.ps1`
-- `Edit-CCCFTTEbsVolume.ps1`
+- `New-CHARCFNStackFromDirectory.ps1`
+- `Verify-CFNStackFromDirectory.ps1` (renamed to `Test-CHARCFNStackFromDirectory`)
+- `Update-CHARCFNStackFromDirectory.ps1`
+- `Out-CHARCFNStackInfo.ps1`
+- `New-CHARCFNStackDirectory.ps1`
+- `Edit-CHARCFTTEbsVolume.ps1`
 
 ## Error Handling and Best Practices
 
@@ -229,7 +229,7 @@ The module automatically uploads templates to S3 for CloudFormation operations. 
    ```
    Error: Stack does not exist in region
    ```
-   Solution: Use `New-CCCFNStackFromDirectory` to create new stacks, not `Update-CCCFNStackFromDirectory`.
+   Solution: Use `New-CHARCFNStackFromDirectory` to create new stacks, not `Update-CHARCFNStackFromDirectory`.
 
 
 ## Version History

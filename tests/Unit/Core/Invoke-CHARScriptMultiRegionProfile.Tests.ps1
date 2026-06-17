@@ -4,10 +4,10 @@
 #>
 BeforeAll {
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Invoke-CCScriptMultiRegionProfile.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Invoke-CHARScriptMultiRegionProfile.ps1"
 }
 
-Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
+Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
 
     BeforeEach {
         # Default mocks for AWS cmdlets
@@ -26,7 +26,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'profile1', 'profile2' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'profile1', 'profile2' `
                 -Region 'us-east-1', 'us-west-2', 'eu-west-1' `
                 -ScriptBlock $sb
 
@@ -37,7 +37,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'dev', 'staging', 'prod' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'dev', 'staging', 'prod' `
                 -Region 'us-east-1', 'eu-west-1' `
                 -ScriptBlock $sb
 
@@ -48,7 +48,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'single' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'single' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -65,7 +65,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Name = 'TestResource' } }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -IncludeAccountId
@@ -87,7 +87,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Name = 'Resource' } }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'dev', 'prod' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'dev', 'prod' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -IncludeAccountId
@@ -103,7 +103,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Writes warning containing profile, region, and exception message when ScriptBlock throws' {
             $sb = { throw 'Access Denied' }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'failprofile' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'failprofile' `
                 -Region 'us-west-2' `
                 -ScriptBlock $sb `
                 -WarningVariable capturedWarnings 3>&1 | Out-Null
@@ -133,7 +133,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $sb = { [PSCustomObject]@{ Name = 'test' } }
 
             try {
-                Invoke-CCScriptMultiRegionProfile -Region 'us-east-1' `
+                Invoke-CHARScriptMultiRegionProfile -Region 'us-east-1' `
                     -ScriptBlock $sb `
                     -ErrorVariable capturedErrors `
                     -ErrorAction SilentlyContinue 2>&1 | Out-Null
@@ -167,7 +167,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++; [PSCustomObject]@{ Name = 'Result' } }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'badprofile', 'goodprofile' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'badprofile', 'goodprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -WarningVariable capturedWarnings 3>&1 | Out-Null
@@ -192,7 +192,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $script:callCount = 0
             $sb = { $script:callCount++ }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'first', 'middle', 'last' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'first', 'middle', 'last' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb 3>&1 | Out-Null
 
@@ -209,7 +209,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $sb = { $script:callCount++ }
 
             {
-                Invoke-CCScriptMultiRegionProfile -ProfileName 'first', 'second' `
+                Invoke-CHARScriptMultiRegionProfile -ProfileName 'first', 'second' `
                     -Region 'us-east-1' `
                     -ScriptBlock $sb
             } | Should -Throw
@@ -226,7 +226,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $sb = { $script:callCount++; [PSCustomObject]@{ Name = 'result' } }
 
             {
-                Invoke-CCScriptMultiRegionProfile -ProfileName 'first' `
+                Invoke-CHARScriptMultiRegionProfile -ProfileName 'first' `
                     -Region 'us-east-1' `
                     -ScriptBlock $sb
             } | Should -Throw
@@ -251,7 +251,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
                 $script:callCount = 0
                 $sb = { $script:callCount++ }
 
-                Invoke-CCScriptMultiRegionProfile -ProfileName $profiles `
+                Invoke-CHARScriptMultiRegionProfile -ProfileName $profiles `
                     -Region $regions `
                     -ScriptBlock $sb
 
@@ -276,7 +276,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
                 $sb = { [PSCustomObject]@{ Name = "Resource-$([guid]::NewGuid().ToString().Substring(0,8))" } }
 
-                $results = Invoke-CCScriptMultiRegionProfile -ProfileName $profiles `
+                $results = Invoke-CHARScriptMultiRegionProfile -ProfileName $profiles `
                     -Region $regions `
                     -ScriptBlock $sb `
                     -IncludeAccountId
@@ -294,7 +294,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'ScriptBlock sees StoredAWSRegion set to the current iteration region' {
             $sb = { [PSCustomObject]@{ SeenRegion = $global:StoredAWSRegion } }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'eu-west-1' `
                 -ScriptBlock $sb
 
@@ -304,7 +304,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'ScriptBlock sees StoredAWSCredentials set to the current profile name' {
             $sb = { [PSCustomObject]@{ SeenCreds = $global:StoredAWSCredentials } }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'prod-account' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'prod-account' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -316,7 +316,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Done = $true } }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'testprofile' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'testprofile' `
                 -Region 'us-west-2' `
                 -ScriptBlock $sb | Out-Null
 
@@ -328,7 +328,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
             $sb = { [PSCustomObject]@{ Done = $true } }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'different-profile' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'different-profile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb | Out-Null
 
@@ -340,7 +340,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
             $sb = { throw 'something broke' }
 
-            Invoke-CCScriptMultiRegionProfile -ProfileName 'failprofile' `
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'failprofile' `
                 -Region 'eu-central-1' `
                 -ScriptBlock $sb `
                 -WarningVariable w 3>&1 | Out-Null
@@ -351,7 +351,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Updates StoredAWSRegion per region iteration' {
             $sb = { [PSCustomObject]@{ SeenRegion = $global:StoredAWSRegion } }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1', 'eu-west-1' `
                 -ScriptBlock $sb
 
@@ -366,7 +366,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Wraps string results with a Value property' {
             $sb = { 'https://sqs.us-east-1.amazonaws.com/123456789012/my-queue' }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -377,7 +377,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Does not produce a Length property for string results' {
             $sb = { 'some-string-value' }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -388,7 +388,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Enriches string results with AccountId and Region when switches specified' {
             $sb = { 'queue-url-1'; 'queue-url-2' }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb `
                 -IncludeAccountId -IncludeRegion
@@ -403,7 +403,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Wraps integer results with a Value property' {
             $sb = { 42 }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -413,7 +413,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         It 'Does not wrap PSCustomObject results — preserves original properties' {
             $sb = { [PSCustomObject]@{ Name = 'MyFunc'; Runtime = 'dotnet6' } }
 
-            $results = Invoke-CCScriptMultiRegionProfile -ProfileName 'myprofile' `
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
                 -Region 'us-east-1' `
                 -ScriptBlock $sb
 
@@ -426,32 +426,32 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
     Context 'OutputSubTemplate parameter set' {
 
         It 'Returns a non-empty string without requiring ScriptBlock' {
-            $output = Invoke-CCScriptMultiRegionProfile -OutputSubTemplate
+            $output = Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
 
             $output | Should -Not -BeNullOrEmpty
             $output | Should -BeOfType [string]
         }
 
         It 'Output contains a ScriptBlock opening brace' {
-            $output = Invoke-CCScriptMultiRegionProfile -OutputSubTemplate
+            $output = Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
 
             $output | Should -BeLike '{*'
         }
 
         It 'Output contains CmdletBinding attribute' {
-            $output = Invoke-CCScriptMultiRegionProfile -OutputSubTemplate
+            $output = Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
 
             $output | Should -BeLike '*[CmdletBinding()]*'
         }
 
         It 'Output contains param block' {
-            $output = Invoke-CCScriptMultiRegionProfile -OutputSubTemplate
+            $output = Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
 
             $output | Should -BeLike '*param(*'
         }
 
         It 'Output contains begin, process, and end blocks' {
-            $output = Invoke-CCScriptMultiRegionProfile -OutputSubTemplate
+            $output = Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
 
             $output | Should -BeLike '*begin {*'
             $output | Should -BeLike '*process {*'
@@ -459,7 +459,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         }
 
         It 'Output is a valid ScriptBlock that can be parsed' {
-            $output = Invoke-CCScriptMultiRegionProfile -OutputSubTemplate
+            $output = Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
 
             $sb = [scriptblock]::Create($output)
             $sb | Should -Not -BeNullOrEmpty
@@ -470,7 +470,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
             $script:stsCalled = $false
             Mock Get-STSCallerIdentity { $script:stsCalled = $true }
 
-            Invoke-CCScriptMultiRegionProfile -OutputSubTemplate | Out-Null
+            Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate | Out-Null
 
             $script:stsCalled | Should -BeFalse
         }
@@ -480,13 +480,13 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
 
         It 'Rejects -OutputSubTemplate combined with -ScriptBlock' {
             {
-                Invoke-CCScriptMultiRegionProfile -OutputSubTemplate `
+                Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate `
                     -ScriptBlock { Get-STSCallerIdentity }
             } | Should -Throw -ErrorId 'AmbiguousParameterSet*'
         }
 
         It 'Execute parameter set requires ScriptBlock as mandatory' {
-            $cmd = Get-Command Invoke-CCScriptMultiRegionProfile
+            $cmd = Get-Command Invoke-CHARScriptMultiRegionProfile
             $sbParam = $cmd.Parameters['ScriptBlock']
 
             $executeAttrs = $sbParam.Attributes |
@@ -497,7 +497,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         }
 
         It 'SubTemplate parameter set does not include ScriptBlock' {
-            $cmd = Get-Command Invoke-CCScriptMultiRegionProfile
+            $cmd = Get-Command Invoke-CHARScriptMultiRegionProfile
             $sbParam = $cmd.Parameters['ScriptBlock']
 
             $subTemplateAttrs = $sbParam.Attributes |
@@ -507,7 +507,7 @@ Describe 'Invoke-CCScriptMultiRegionProfile' -Tag 'Unit' {
         }
 
         It 'Default parameter set is Execute' {
-            $cmd = Get-Command Invoke-CCScriptMultiRegionProfile
+            $cmd = Get-Command Invoke-CHARScriptMultiRegionProfile
             $cmd.DefaultParameterSet | Should -Be 'Execute'
         }
     }
