@@ -9,8 +9,8 @@
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
-        "-Command",
-        "Invoke-Pester -Configuration (& './tests/pester.config.ps1')"
+        "-File",
+        "${workspaceFolder}/tests/Run-PesterTests.ps1"
       ],
       "group": {
         "kind": "test",

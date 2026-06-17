@@ -42,8 +42,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
-    $script:CCIsWindows = if ($PSVersionTable.PSVersion.Major -lt 7) {
+if (-not (Get-Variable -Name CHARIsWindows -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:CHARIsWindows = if ($PSVersionTable.PSVersion.Major -lt 7) {
         [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
     }
     else {
@@ -51,7 +51,7 @@ if (-not (Get-Variable -Name CCIsWindows -Scope Script -ErrorAction SilentlyCont
     }
 }
 
-if (-not $script:CCIsWindows) {
+if (-not $script:CHARIsWindows) {
     throw 'Publish-CharlandCustomizations is only supported on Windows systems.'
 }
 
@@ -106,13 +106,13 @@ if (-not $filesToValidate) {
     throw "No PowerShell module files were found under $resolvedPath"
 }
 
-$signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignatures -ErrorAction SilentlyContinue
+$signatureValidationCommand = Get-Command -Name Test-CHARAuthenticodeSignatures -ErrorAction SilentlyContinue
 if (-not $signatureValidationCommand) {
-    $signatureValidationCommand = Get-Command -Name Test-CCAuthenticodeSignature -ErrorAction SilentlyContinue
+    $signatureValidationCommand = Get-Command -Name Test-CHARAuthenticodeSignature -ErrorAction SilentlyContinue
 }
 
 if (-not $signatureValidationCommand) {
-    throw 'Publishing requires Test-CCAuthenticodeSignatures (or Test-CCAuthenticodeSignature) to be available in the current session.'
+    throw 'Publishing requires Test-CHARAuthenticodeSignatures (or Test-CHARAuthenticodeSignature) to be available in the current session.'
 }
 
 $invalidSignatures = @(& $signatureValidationCommand.Name -Path $resolvedPath -IncludeExtension $allowedExtensions)
@@ -174,13 +174,11 @@ if ($PSCmdlet.ShouldProcess("module path '$resolvedPath'", "Publish to '$Reposit
     Write-Output "Successfully published CharlandCustomizations to '$Repository' using PowerShellGet."
 }
 exit 0
-
-
 # SIG # Begin signature block
 # MIIr0AYJKoZIhvcNAQcCoIIrwTCCK70CAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDIp/43lLnhVHYM
-# aPR9NYxZxzIr56c63S5HH2ciVFLLA6CCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB/ZZfSNGDmK3SM
+# 2UkOirkK+kMlCqrD2Am3vf2JNqoLSaCCJOUwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -382,33 +380,33 @@ exit 0
 # b2RlIFNpZ25pbmcgQ0EgUjM2AhAVVO/doV4MRRGuXmkecKnEMA0GCWCGSAFlAwQC
 # AQUAoIGEMBgGCisGAQQBgjcCAQwxCjAIoAKAAKECgAAwGQYJKoZIhvcNAQkDMQwG
 # CisGAQQBgjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwLwYJKoZI
-# hvcNAQkEMSIEIL/5LHv5HTAlr6Pe+nGaAmfCLjHwwMid5/kxr4WM8eLYMA0GCSqG
-# SIb3DQEBAQUABIICAHHbK0SMV1wXUKkJQtj18OOuK48k897Ybg5+YKYr519Bpaw3
-# Q5ArNbJRjgg0otlhHXIaqpXUCVIp1ZakFSUDF7gEEubzbKi5lXG97hjDIXnfz7mn
-# Iy4jICgXkUlG0vGCecgXOaS0sVGAgsthjZCyFtxkBRvB3+RWCSjbaG81LZiOz/EK
-# 75xWe4t25GGqfZZjfDmXERifOCUF0VEoxK5JES/t7yBkflePeKbCCSq6huJDD7KL
-# e6skcqQfPWKodB5BEJ6Xnz0+FOCtHWrQYSrNbqcsMHbeprzZMcDbScdFFRvvnAfJ
-# 1o1dE3vKX9YBicKhsbPmcM0X7OyfhuB0jgNCe+f4nsCXsvwFtR4sNkfI6JgpXgBX
-# YwkHshvi3Dl2ZVHCccfE+D/WLtgicWHjCgBtVY+Y/whJ7DQt0hzwxoz7bXhorf/l
-# m4c+hxf3CvYEGE2vA0NqW4CiD9UeHnuR2LjkEvviU3sKK7ehpf46pDnNLUyDEZnc
-# 2JgXLA1hCm3pVFdN+mwfVbje9jiydNqTEJXeEJSxndsJqkjIDMSejP03uVEAbqJz
-# V5KeiWZ2UOgim7dw/Tt6tyoVQvRWwO1Sq9OoNqMuoHlko0QEoa1hmRUTUSr8WbDx
-# qZ+kXbPKC+jT7kEXHuwcZUVHMk525lbq1v9JN4oKD+E3FMBHnvlJ9aUjsc8joYID
+# hvcNAQkEMSIEIPAT7w+13HZ/noeWucBTd6Y10ew+MSXpSDAl6KAL/JW9MA0GCSqG
+# SIb3DQEBAQUABIICAExzaBwHq0KtFc46E6q9cF8z0ZFbl4OJLH1JJ0/Kt0zFuTRh
+# 9aElxi1b5C6ph/RQ6rvsgwAfD7GmMaH6rLoF4HC0eiR2dU6TzDv4pRh6sz/m2mMd
+# fQjq8A6ZzhEpPDqtPWESEMkZxuof4J85tqbMTtJd5oN4d6XFQtpF8uRox7WOXwqY
+# 1QX8E/p/YY28lNrOiTCbxcasV7qS1A8f1c/pNEqCACePD77JSsFtwDsn3Bu+c/KO
+# n4+yyBK0+L1oZAf2McEC+HUyQ0UYAZZ01hWRXDm79QtQEDerGpwGONEoQgfrk3J0
+# ZpqUUchD4hx0+zPf8u7YNI/sH2MePWUk7UuhsusYoquJgi511SvOzIfsprm8OQ/j
+# qlb/G5JEGl/Z7kL51YXizvsBtpmx23NQCBPEsx13Rmwa8MkfjLgovGGDtBYggcxd
+# 8QwXGLs65HhGNoCajNlXFFlB9J3Cjje61gG0z7naDRIyzargW5mDKFGy8J1gjJeW
+# XZ2EGmmZqhOgGiFaPr7AFoHvcIAwpRzWml+cvjQdhhl87QvCwtMOTBA0rCWU0jN+
+# 3r0h0OL38/OYgBfKJuccQX2MvJ5siRUegGkexTDXElNm2fas1qfapknNwGwYA28j
+# HwynidBXtWpG8Hdl3Ss8kXGt/aNBm+CVdHol2C26NgyZm4Bf5gyQDn4gAcLBoYID
 # IzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkGA1UEBhMCR0IxGDAW
 # BgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2VjdGlnbyBQdWJsaWMg
 # VGltZSBTdGFtcGluZyBDQSBSMzYCEQCkKTtuHt3XpzQIh616TrckMA0GCWCGSAFl
 # AwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
-# DxcNMjYwNjEzMjA0MTU5WjA/BgkqhkiG9w0BCQQxMgQwtWDbtoYP3rqqr8uYCyIP
-# yI2etZcCgygdWAnrRcT8UjC8Be6Fvar3F63wr5jN77ilMA0GCSqGSIb3DQEBAQUA
-# BIICAHXqiNgAwPvZce9ejkDjuJMg2EYowlgHIM2tBsN6T15ZwF7yDftkyiV3iHr3
-# WI2oirBFEpxOevyZw91IX9q0taPR0hWZu/MwCHSIkF6VB6cx8la5TeBUe7d9VRg5
-# +s7weGHNqIgiCkpjzzfkLYVW6UYpNCGRn+Ek4Na1roS2bWnCLPdnWMV3h0hcbVzV
-# YGiT8y+pu2OjT+6RiAn+VdLMbtb1pwnoX4Y25sPNSzKAiG4i3QeQMFlYr/zhitRw
-# gw3vH8YrSTOQqoZ48Xk1c7MAVIDXzaVtN+vdunFa5eAnJPP52NGv9HPje1nObbVo
-# SiFsMtsZFZyn7rllq/u4qvOAKJNkcD7EwgIJ3Dk+VVlNIIth9QPqXO87Pkp8uJTi
-# cP5xN3azuAlkIdyqBG5s36orLcl+idKrRNPjb+bCUHauTr3A0PqSzdADK1E/0sQA
-# 8UT1U0DM/BnOTcFIeVpUXmh8rvpA9Ywt5mvEPIKUjXCA9M/7LmUXi66JIfw/d81Z
-# Ny4sm3Ue+hAqNbEROpOICV7bjr7qnwh4IGymWlOU+FBCItAwMGoG8k31jnZr0vQu
-# bjghC1wHm1J5XbKU7TljaOuxT807O4jEFAqGF7xJzKznnswFT4LY+QHzrktw1eMs
-# aO0nAKEvg1fWsHI0aaOD89RA2bpvb8mg6TyjSL5FU866cZAj
+# DxcNMjYwNjE3MDMxMjAxWjA/BgkqhkiG9w0BCQQxMgQwzK4aXvcp573pRGpeQ4AX
+# LKE1zn+QrabxNMRQ1yONyKKDkdYKyEonnFJGY15f2jj4MA0GCSqGSIb3DQEBAQUA
+# BIICAKfHZnbqiebymVqN8CNm/NSUak6huof3wNN1L2Ia5K1kJH9WwfJbSCKcQzMR
+# heLiFThzYFoucFhyltAxkegh1fIqWffCNbTqpgV6g3P4S7SLozfcPnVnEaGaTOpw
+# lHc+fWQx+A+/qFHaJ8tixIXDQs58lFg7lqaQ3R/QgNCLUGAxWUH+Y0ZtzDFvBoI9
+# k7Co73GnvgYPPrnNBvipuevih9dKnM1pqixR07RWDbDB+NeMb+kW7gQb3Oh1jWsz
+# NzfUjJfp7JddNRqVKcmvf84JZZ1TuXOHO4ihCxhjGAYv1C2FTvWbnDuRveY5kYBi
+# U2x0Fqi8MANPIKGCZ7Rlk/vb/o0WbTbAcHFYH4l4+6KIutxdjMQdXy00SuWbtr9B
+# dIu4DAFpaj7zaGKllVSZxhiT7XCRyX2+tomFWqYFH19DUv6Qk+OuQLktgKQM3j1T
+# 6zztDAKi6UcaLQvsGV35DZ6uVdwoT8SNjc7qYhol/7SCM6Wq5ConcrrcjsZfHJAb
+# ea2IK44uobG86AZsBsae2xFBCw0Gmt9Uh3AvqXwBio3/C0+PA4TjxZRBSxhttdeO
+# mLxcg6M/6wzqOzqp0iUvQK7Yuvzomt68U0piFP5ey3jUyy09ZtdQ2YUNo5+hMupg
+# zohLxGnFrPxYTUA3wSCTBU1fwq1tR0MhoPToCMei2nCurzZq
 # SIG # End signature block

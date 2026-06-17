@@ -18,12 +18,12 @@ CharlandCustomizations/
 │       │   ├── New-AWSParamSplat.ps1
 │       │   └── CFNPrivateFunctions.ps1
 │       └── Public/                      # Exported functions
-│           ├── Clear-CCAuthenticodeSignature.ps1
-│           ├── Install-CCProfilesFromSource.ps1
-│           ├── Invoke-CCScriptMultiAccountRegion.ps1
-│           ├── Test-CCAuthenticodeSignature.ps1
-│           ├── Set-CCAuthenticodeSignature.ps1
-│           ├── Update-CCPowershell7.ps1
+│           ├── Clear-CHARAuthenticodeSignature.ps1
+│           ├── Install-CHARProfilesFromSource.ps1
+│           ├── Invoke-CHARScriptMultiRegionProfile.ps1
+│           ├── Test-CHARAuthenticodeSignature.ps1
+│           ├── Set-CHARAuthenticodeSignature.ps1
+│           ├── Update-CHARPowershell7.ps1
 │           ├── AWS/
 │           │   ├── AWSCustomizations.psm1
 │           │   ├── Audit/Audit-AWSAccount.psm1
@@ -31,8 +31,8 @@ CharlandCustomizations/
 │           │   └── S3/S3Customizations.psm1
 │           └── Git/
 │               ├── GitCustomizations.psm1
-│               ├── Install-CCGitHook.ps1
-│               └── Test-CCCommitSignature.ps1
+│               ├── Install-CHARGitHook.ps1
+│               └── Test-CHARCommitSignature.ps1
 ├── tests/                         # Pester tests
 ├── build/                         # Build output (gitignored)
 ├── docs/                          # Documentation
@@ -93,13 +93,13 @@ The module loader (`CharlandCustomizations.psm1`) initializes script-based funct
 
 ## Command Prefix
 
-The CC prefix is hardcoded directly into every public function name. The source code function names match exactly what users type at the command line:
+The CHAR prefix is hardcoded directly into every public function name. The source code function names match exactly what users type at the command line:
 
 ```powershell
 # Function name in source and at the command line are identical
-Find-CCCFNStackError
-Get-CCEC2SGInUse
-Clear-CCAuthenticodeSignature
+Find-CHARCFNStackError
+Get-CHAREC2SGInUse
+Clear-CHARAuthenticodeSignature
 ```
 
 No `DefaultCommandPrefix` is used. This makes function names explicit and discoverable without relying on PowerShell's implicit prefix mechanism.

@@ -6,137 +6,137 @@
 
 ```powershell
 # Get MFA session
-$creds = Get-CCAWSMFASession -TokenCode 123456
-$creds = Get-CCAWSMFASession -TokenCode 123456
+$creds = Get-CHARAWSMFASession -TokenCode 123456
+$creds = Get-CHARAWSMFASession -TokenCode 123456
 Set-AWSCredential -Credential $creds
 
 # Set profile with MFA
-Set-CCAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456
-Set-CCAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456
+Set-CHARAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456
+Set-CHARAWSProfileWithMFA -ProfileName myprofile -TokenCode 123456
 
 # Export to environment variables
-Set-CCAWSEnv
-Set-CCAWSEnv
+Set-CHARAWSEnv
+Set-CHARAWSEnv
 
 # Assume a role
-Use-CCAssumedRole -Role "MyRoleName"
-Use-CCAssumedRole -Role "MyRoleName"
+Use-CHARAssumedRole -Role "MyRoleName"
+Use-CHARAssumedRole -Role "MyRoleName"
 ```
 
 ### CloudFormation
 
 ```powershell
 # Create a stack working directory from a template body
-New-CCCFNStackDirectory -StackName "MyStack" -TemplateBody (Get-Content ./template.yaml -Raw)
-New-CCCFNStackDirectory -StackName "MyStack" -TemplateBody (Get-Content ./template.yaml -Raw)
+New-CHARCFNStackDirectory -StackName "MyStack" -TemplateBody (Get-Content ./template.yaml -Raw)
+New-CHARCFNStackDirectory -StackName "MyStack" -TemplateBody (Get-Content ./template.yaml -Raw)
 
 # Validate a stack directory
-Test-CCCFNStackFromDirectory -StackName "MyStack"
-Test-CCCFNStackFromDirectory -StackName "MyStack"
+Test-CHARCFNStackFromDirectory -StackName "MyStack"
+Test-CHARCFNStackFromDirectory -StackName "MyStack"
 
 # Create a stack from a directory containing template.template, parameters.json, tags.json, and capabilities.json
-New-CCCFNStackFromDirectory -StackName "MyStack"
-New-CCCFNStackFromDirectory -StackName "MyStack"
+New-CHARCFNStackFromDirectory -StackName "MyStack"
+New-CHARCFNStackFromDirectory -StackName "MyStack"
 
 # Create a change set from a stack directory
-Update-CCCFNStackFromDirectory -StackName "MyStack"
-Update-CCCFNStackFromDirectory -StackName "MyStack"
+Update-CHARCFNStackFromDirectory -StackName "MyStack"
+Update-CHARCFNStackFromDirectory -StackName "MyStack"
 
 # Create and execute the change set
-Update-CCCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
-Update-CCCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
+Update-CHARCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
+Update-CHARCFNStackFromDirectory -StackName "MyStack" -ExecuteChangeSet
 
 # Export an existing stack to an account/region/stack directory
-Out-CCCFNStackInfo -StackName "MyStack" -RootPath ./accounts
-Out-CCCFNStackInfo -StackName "MyStack" -RootPath ./accounts
+Out-CHARCFNStackInfo -StackName "MyStack" -RootPath ./accounts
+Out-CHARCFNStackInfo -StackName "MyStack" -RootPath ./accounts
 
 # Find stacks with errors
-Find-CCCFNStackError
-Find-CCCFNStackError
+Find-CHARCFNStackError
+Find-CHARCFNStackError
 
 # Find errors in specific stack tree
-Find-CCCFNStackError -RootStackName "MyStack"
-Find-CCCFNStackError -RootStackName "MyStack"
+Find-CHARCFNStackError -RootStackName "MyStack"
+Find-CHARCFNStackError -RootStackName "MyStack"
 
 # Validate template
 Test-CFNTemplateFromFile -Path ./template.yaml
 
 # Detect drift on all stacks
-Get-CFNStack | Start-CCMultiStackDriftDetection
-Get-CFNStack | Start-CCMultiStackDriftDetection
+Get-CFNStack | Start-CHARMultiStackDriftDetection
+Get-CFNStack | Start-CHARMultiStackDriftDetection
 
 # List drifted resources
-Get-CCAWSAccountListOfDriftedResource
+Get-CHARAWSAccountListOfDriftedResource
 ```
 
 ### AWS Account Audit
 
 ```powershell
 # Show security groups and associated resources
-Get-CCEC2SGInUse -Region us-east-1
-Get-CCEC2SGInUse -Region us-east-1
+Get-CHAREC2SGInUse -Region us-east-1
+Get-CHAREC2SGInUse -Region us-east-1
 
 # Report unattached and attached EBS volumes
-Get-CCEC2VolumeReport
-Get-CCEC2VolumeReport
+Get-CHAREC2VolumeReport
+Get-CHAREC2VolumeReport
 
 # Report snapshots owned by the account
-Get-CCEC2SnapshotReport
-Get-CCEC2SnapshotReport
+Get-CHAREC2SnapshotReport
+Get-CHAREC2SnapshotReport
 
 # Check required EC2 resource tags
-Get-CCEC2KeyTagNameStatus -TagKey "Name"
-Get-CCEC2KeyTagNameStatus -TagKey "Name"
+Get-CHAREC2KeyTagNameStatus -TagKey "Name"
+Get-CHAREC2KeyTagNameStatus -TagKey "Name"
 
 # Export account supporting information
-Out-CCAWSSupportingInfo -Region us-east-1 -RootPath ./accounts
-Out-CCAWSSupportingInfo -Region us-east-1 -RootPath ./accounts
+Out-CHARAWSSupportingInfo -Region us-east-1 -RootPath ./accounts
+Out-CHARAWSSupportingInfo -Region us-east-1 -RootPath ./accounts
 
 # Export VPC/networking inventory
-Out-CCAWSNetworkingComponent -Region us-east-1 -RootPath ./accounts
-Out-CCAWSNetworkingComponent -Region us-east-1 -RootPath ./accounts
+Out-CHARAWSNetworkingComponent -Region us-east-1 -RootPath ./accounts
+Out-CHARAWSNetworkingComponent -Region us-east-1 -RootPath ./accounts
 ```
 
 ### Account Management
 
 ```powershell
 # List accounts from profiles
-Get-CCAccountListFromProfile
+Get-CHARAccountListFromProfile
 
 # Clean up expired credentials
-Remove-CCExpiredAWSProfile
+Remove-CHARExpiredAWSProfile
 
 # Quick resource scan by region
-Get-CCAWSObjectCount
-Get-CCAWSObjectCount -Region us-east-1
-Get-CCAWSObjectCount
-Get-CCAWSObjectCount -Region us-east-1
+Get-CHARAWSObjectCount
+Get-CHARAWSObjectCount -Region us-east-1
+Get-CHARAWSObjectCount
+Get-CHARAWSObjectCount -Region us-east-1
 ```
 
 ### S3
 
 ```powershell
 # Preview emptying a versioned bucket
-Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1 -WhatIf
-Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1 -WhatIf
+Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1 -WhatIf
+Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1 -WhatIf
 
 # Empty a bucket after typed confirmation
-Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1
-Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1
+Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1
+Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1
 
 # Empty and delete the bucket
-Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
-Clear-CCS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
+Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
+Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
 ```
 
 ### Git Utilities
 
 ```powershell
 # Validate commit signatures
-Test-CCCommitSignature
+Test-CHARCommitSignature
 
 # Check last 10 commits
-Test-CCCommitSignature -Count 10
+Test-CHARCommitSignature -Count 10
 ```
 
 ## Module Management
@@ -154,8 +154,8 @@ Get-Command -Module CharlandCustomizations
 
 # Get help
 Get-Help <FunctionName> -Full
-Get-Help Get-CCAWSMFASession -Examples
-Get-Help Get-CCAWSMFASession -Examples
+Get-Help Get-CHARAWSMFASession -Examples
+Get-Help Get-CHARAWSMFASession -Examples
 ```
 
 ## Build and Deploy
@@ -190,8 +190,8 @@ build/                              # Build output (gitignored)
 ## Environment Variables
 
 ```powershell
-# AWS credentials (set by Set-CCAWSEnv)
-# AWS credentials (set by Set-CCAWSEnv)
+# AWS credentials (set by Set-CHARAWSEnv)
+# AWS credentials (set by Set-CHARAWSEnv)
 $env:AWS_ACCESS_KEY_ID
 $env:AWS_SECRET_ACCESS_KEY
 $env:AWS_SESSION_TOKEN
@@ -208,10 +208,10 @@ Add to your profile for quick access:
 
 ```powershell
 # AWS shortcuts
-Set-Alias -Name mfa -Value Get-CCAWSMFASession
-Set-Alias -Name awsenv -Value Set-CCAWSEnv
-Set-Alias -Name mfa -Value Get-CCAWSMFASession
-Set-Alias -Name awsenv -Value Set-CCAWSEnv
+Set-Alias -Name mfa -Value Get-CHARAWSMFASession
+Set-Alias -Name awsenv -Value Set-CHARAWSEnv
+Set-Alias -Name mfa -Value Get-CHARAWSMFASession
+Set-Alias -Name awsenv -Value Set-CHARAWSEnv
 
 # Module shortcuts
 Set-Alias -Name reload-module -Value {
