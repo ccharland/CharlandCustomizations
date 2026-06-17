@@ -291,6 +291,15 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
 
     Context 'Sets StoredAWSRegion and StoredAWSCredentials during ScriptBlock execution' {
 
+        BeforeEach {
+            # Override default mocks so Set-DefaultAWSRegion and Set-AWSCredential
+            # actually update the global variables the ScriptBlock reads
+            Mock Set-DefaultAWSRegion { $global:StoredAWSRegion = $Region }
+            Mock Set-AWSCredential {
+                if ($ProfileName) { $global:StoredAWSCredentials = $ProfileName }
+            }
+        }
+
         It 'ScriptBlock sees StoredAWSRegion set to the current iteration region' {
             $sb = { [PSCustomObject]@{ SeenRegion = $global:StoredAWSRegion } }
 
