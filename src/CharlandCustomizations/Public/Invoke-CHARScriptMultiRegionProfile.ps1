@@ -1,4 +1,4 @@
-function Invoke-CHARScriptMultiRegionProfile {
+﻿function Invoke-CHARScriptMultiRegionProfile {
   <#
 .SYNOPSIS
     Invokes AWS commands across multiple AWS Profiles and regions to gather data.
@@ -122,7 +122,7 @@ function Invoke-CHARScriptMultiRegionProfile {
     [string]$SessionToken,
 
     [Parameter(ParameterSetName = 'Execute')]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter(ParameterSetName = 'Execute')]
     [string]$ProfileLocation,
@@ -247,8 +247,10 @@ function Invoke-CHARScriptMultiRegionProfile {
 
       # Validate credentials before doing any work for this profile
       # Override ProfileName per iteration; base awsParams carries other credential params
+      # Use the first region from the list for validation since Region was removed from awsParams
       $iterParams = $awsParams.Clone()
       $iterParams['ProfileName'] = $prof
+      $iterParams['Region'] = $Region[0]
       try {
         $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
         $accountId = $identity.Account
@@ -313,6 +315,10 @@ function Invoke-CHARScriptMultiRegionProfile {
           # Save current AWS session state
           $origStoredRegion = $global:StoredAWSRegion
           $origStoredCreds = $global:StoredAWSCredentials
+          $origEnvRegion = $env:AWS_DEFAULT_REGION
+          $origEnvAccessKey = $env:AWS_ACCESS_KEY_ID
+          $origEnvSecretKey = $env:AWS_SECRET_ACCESS_KEY
+          $origEnvSessionToken = $env:AWS_SESSION_TOKEN
 
           if ($resolvedCreds -and $resolvedCreds.AccessKey) {
             # Use Set-AWSCredential to properly register credentials in the SDK session cache
@@ -324,14 +330,37 @@ function Invoke-CHARScriptMultiRegionProfile {
               $setCmdParams['SessionToken'] = $resolvedCreds.Token
             }
             Set-AWSCredential @setCmdParams
+
+            # Also set environment variables so the SDK resolves region/creds
+            # consistently even when module-level globals are not picked up
+            $env:AWS_ACCESS_KEY_ID = $resolvedCreds.AccessKey
+            $env:AWS_SECRET_ACCESS_KEY = $resolvedCreds.SecretKey
+            if ($resolvedCreds.Token) {
+              $env:AWS_SESSION_TOKEN = $resolvedCreds.Token
+            }
+            else {
+              $env:AWS_SESSION_TOKEN = $null
+            }
           }
           else {
             Set-AWSCredential -ProfileName $prof
           }
           Set-DefaultAWSRegion -Region $r
+          # Set env var as a fallback for SDK region resolution
+          $env:AWS_DEFAULT_REGION = $r
 
           Write-Verbose "Invoking scriptblock for Profile='$prof', Region='$r'"
-          $results = & $ScriptBlock
+          # Force non-terminating errors (e.g., SCP access denied) to become
+          # terminating so they hit the catch block and don't return results
+          # from a fallback region
+          $origErrorAction = $ErrorActionPreference
+          $ErrorActionPreference = 'Stop'
+          try {
+            $results = & $ScriptBlock
+          }
+          finally {
+            $ErrorActionPreference = $origErrorAction
+          }
 
           if ($results) {
             foreach ($item in $results) {
@@ -386,6 +415,11 @@ function Invoke-CHARScriptMultiRegionProfile {
           else {
             Clear-DefaultAWSRegion
           }
+          # Restore environment variables
+          $env:AWS_DEFAULT_REGION = $origEnvRegion
+          $env:AWS_ACCESS_KEY_ID = $origEnvAccessKey
+          $env:AWS_SECRET_ACCESS_KEY = $origEnvSecretKey
+          $env:AWS_SESSION_TOKEN = $origEnvSessionToken
         }
 
       }
