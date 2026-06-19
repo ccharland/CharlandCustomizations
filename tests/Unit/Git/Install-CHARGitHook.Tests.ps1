@@ -261,17 +261,21 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
                 [string]$StagedPath
             )
 
-            Push-Location $script:HookRepo
-            & $script:PathPolicyGit checkout -q -b $BranchName
+            try {
+                Push-Location $script:HookRepo
+                & $script:PathPolicyGit checkout -q -b $BranchName
 
-            $fullPath = Join-Path $script:HookRepo $StagedPath
-            New-Item -Path (Split-Path $fullPath -Parent) -ItemType Directory -Force | Out-Null
-            Set-Content -Path $fullPath -Value 'test content'
-            & $script:PathPolicyGit add $StagedPath
+                $fullPath = Join-Path $script:HookRepo $StagedPath
+                New-Item -Path (Split-Path $fullPath -Parent) -ItemType Directory -Force | Out-Null
+                Set-Content -Path $fullPath -Value 'test content'
+                & $script:PathPolicyGit add $StagedPath
 
-            $output = & sh $script:PathPolicyHook 2>&1
-            $exitCode = $LASTEXITCODE
-            Pop-Location
+                $output = & sh $script:PathPolicyHook 2>&1
+                $exitCode = $LASTEXITCODE
+            }
+            finally {
+                Pop-Location
+            }
 
             [PSCustomObject]@{
                 ExitCode = $exitCode
