@@ -74,10 +74,8 @@ Branches are scoped to specific areas of the codebase. The branch path policy (e
 
 To bypass the policy for exceptional cases, set the environment variable before committing:
 
-```bash
-CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit -m "mixed change with justification"
-```
-
+Bash/sh:     CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit -m "mixed change with justification"
+PowerShell:  $env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1; git commit -m "mixed change with justification"
 ## Release safety
 
 ### Version tags

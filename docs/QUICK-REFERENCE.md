@@ -28,7 +28,7 @@ New-CHARCFNStackDirectory -StackName "MyStack" -TemplateBody (Get-Content ./temp
 # Validate a stack directory
 Test-CHARCFNStackFromDirectory -StackName "MyStack"
 
-# Create a stack from a directory containing template, parameters.json, tags.json, and capabilities.json
+# Create a stack from a directory containing template.template, parameters.json, tags.json, and capabilities.json
 New-CHARCFNStackFromDirectory -StackName "MyStack"
 
 # Create a change set from a stack directory

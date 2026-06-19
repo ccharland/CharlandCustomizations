@@ -69,12 +69,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install and import AWSPowerShell.NetCore
+      - name: Install and import AWS.Tools.Common
         shell: pwsh
         run: |
-          Install-Module -Name AWSPowerShell.NetCore -Scope CurrentUser -Force
-          Import-Module AWSPowerShell.NetCore -ErrorAction Stop
-
+          Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force -AllowClobber
+          Import-Module AWS.Tools.Common -ErrorAction Stop
       - name: Verify Test-HelpCompliance.ps1 signature
         shell: pwsh
         run: |
