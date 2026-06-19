@@ -19,6 +19,15 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
+      - name: Verify Test-BranchPathPolicy.ps1 signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath './Scripts/Test-BranchPathPolicy.ps1'
+          if ($sig.Status -ne 'Valid') {
+              throw "Test-BranchPathPolicy.ps1 signature status: $($sig.Status). Script must be Authenticode-signed."
+          }
+          Write-Host "Signature valid: $($sig.SignerCertificate.Subject)"
+
       - name: Validate changed paths for branch type
         shell: pwsh
         env:
