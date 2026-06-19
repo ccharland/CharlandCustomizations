@@ -222,7 +222,8 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
 
         BeforeAll {
             $script:PathPolicyHook = Join-Path $PSScriptRoot '../../../.githooks/pre-commit'
-            $script:PathPolicyGit = (Get-Command git -CommandType Application -ErrorAction SilentlyContinue).Source
+            $gitCommand = Get-Command git -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+            $script:PathPolicyGit = $gitCommand?.Source
         }
 
         BeforeEach {
@@ -233,11 +234,15 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             $script:HookRepo = Join-Path $TestDrive "hook-repo-$([guid]::NewGuid().ToString('N'))"
             New-Item -Path $script:HookRepo -ItemType Directory -Force | Out-Null
 
-            Push-Location $script:HookRepo
-            & $script:PathPolicyGit init -q
-            & $script:PathPolicyGit config user.email 'test@example.com'
-            & $script:PathPolicyGit config user.name 'Pester Test'
-            Pop-Location
+            try {
+                Push-Location $script:HookRepo
+                & $script:PathPolicyGit init -q
+                & $script:PathPolicyGit config user.email 'test@example.com'
+                & $script:PathPolicyGit config user.name 'Pester Test'
+            }
+            finally {
+                Pop-Location
+            }
         }
 
         AfterEach {
@@ -256,17 +261,21 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
                 [string]$StagedPath
             )
 
-            Push-Location $script:HookRepo
-            & $script:PathPolicyGit checkout -q -b $BranchName
+            try {
+                Push-Location $script:HookRepo
+                & $script:PathPolicyGit checkout -q -b $BranchName
 
-            $fullPath = Join-Path $script:HookRepo $StagedPath
-            New-Item -Path (Split-Path $fullPath -Parent) -ItemType Directory -Force | Out-Null
-            Set-Content -Path $fullPath -Value 'test content'
-            & $script:PathPolicyGit add $StagedPath
+                $fullPath = Join-Path $script:HookRepo $StagedPath
+                New-Item -Path (Split-Path $fullPath -Parent) -ItemType Directory -Force | Out-Null
+                Set-Content -Path $fullPath -Value 'test content'
+                & $script:PathPolicyGit add $StagedPath
 
-            $output = & sh $script:PathPolicyHook 2>&1
-            $exitCode = $LASTEXITCODE
-            Pop-Location
+                $output = & sh $script:PathPolicyHook 2>&1
+                $exitCode = $LASTEXITCODE
+            }
+            finally {
+                Pop-Location
+            }
 
             [PSCustomObject]@{
                 ExitCode = $exitCode
