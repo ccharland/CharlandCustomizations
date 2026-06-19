@@ -352,20 +352,50 @@ This project uses [Pester](https://pester.dev/) (v5+) for unit testing. Tests li
 
 #### Test File Location and Naming
 
-- All test files go in `tests/` at the repository root
-- Name test files `<FunctionName>.Tests.ps1`
+Tests must mirror the repository source structure:
+
+```text
+/tests/src/...     → mirrors /src/
+/tests/scripts/... → mirrors /Scripts/
+```
+
+Mapping rules:
+
+- **`.ps1` files** — 1:1 mapping to a `.Tests.ps1` file:
+  ```text
+  src/CharlandCustomizations/Public/Get-Thing.ps1
+  → tests/src/CharlandCustomizations/Public/Get-Thing.Tests.ps1
+
+  Scripts/Build-Module.ps1
+  → tests/scripts/Build-Module.Tests.ps1
+  ```
+
+- **`.psm1` with multiple functions** — maps to a subdirectory of per-function test files:
+  ```text
+  src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1
+  → tests/src/CharlandCustomizations/Public/AWS/AWSCustomizations/Get-Something.Tests.ps1
+  → tests/src/CharlandCustomizations/Public/AWS/AWSCustomizations/Set-Something.Tests.ps1
+  ```
+
+- **`.psm1` with 0 or 1 functions** (loader/re-exporter) — direct `.Tests.ps1` file:
+  ```text
+  src/CharlandCustomizations/Public/Git/GitCustomizations.psm1
+  → tests/src/CharlandCustomizations/Public/Git/GitCustomizations.Tests.ps1
+  ```
+
+Every `.Tests.ps1` file must contain at least one Pester `It` block. The CI `src-test-coverage` job enforces this by running `Scripts/Test-SrcTestCoverage.ps1`.
 
 #### Running Tests
 
 ```powershell
 # Run all tests
-Invoke-Pester -Path ./tests/ -Output Detailed
+Invoke-Pester -Path ./tests/src/, ./tests/scripts/ -Output Detailed
 
 # Run a specific test file
-Invoke-Pester -Path ./tests/Get-Something.Tests.ps1 -Output Detailed
+Invoke-Pester -Path ./tests/src/CharlandCustomizations/Public/Get-Something.Tests.ps1 -Output Detailed
 
 # Run with code coverage
-Invoke-Pester -Path ./tests/ -Output Detailed -CodeCoverage ./src/CharlandCustomizations/**/*.ps1
+Invoke-Pester -Path ./tests/src/, ./tests/scripts/ -Output Detailed -CodeCoverage ./src/CharlandCustomizations/**/*.ps1
 ```
 
 #### Test Structure
@@ -376,7 +406,8 @@ Tests use Pester v5 syntax with `BeforeAll`, `Describe`, and `It` blocks:
 #Requires -Modules Pester
 
 BeforeAll {
-    . "$PSScriptRoot/../src/CharlandCustomizations/Public/Get-Something.ps1"
+    # Path is relative to the test file's location mirroring the src tree
+    . "$PSScriptRoot/../../../../src/CharlandCustomizations/Public/Get-Something.ps1"
 }
 
 Describe 'Get-Something' {
@@ -411,6 +442,7 @@ Mock Get-EC2SecurityGroup { return @($mockSecurityGroup) }
 
 #### When to Write Tests
 
+- Every function in the module **must** have a corresponding `.Tests.ps1` file — the CI enforces this
 - New public functions added to the module should have tests
 - Bug fixes should include a regression test
 - Tests are not required for trivial one-liner helpers or interactive-only functions

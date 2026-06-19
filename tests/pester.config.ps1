@@ -6,12 +6,19 @@
 .DESCRIPTION
     Returns a PesterConfiguration object with run path, tag filtering,
     code coverage targeting 80%, and JaCoCo XML output.
+
+    Tests are organized under:
+    - tests/src/    — mirrors src/, owned by code branches
+    - tests/scripts/ — mirrors Scripts/, owned by infrastructure branches
 #>
 
 $config = New-PesterConfiguration
 
-# Run settings
-$config.Run.Path = "$PSScriptRoot/Unit"
+# Run settings — scan both test trees
+$config.Run.Path = @(
+    "$PSScriptRoot/src"
+    "$PSScriptRoot/scripts"
+)
 $config.Run.Exit = $true
 
 # Filter settings — exclude Integration by default
