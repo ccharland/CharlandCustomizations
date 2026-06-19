@@ -223,7 +223,7 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
         BeforeAll {
             $script:PathPolicyHook = Join-Path $PSScriptRoot '../../../.githooks/pre-commit'
             $gitCommand = Get-Command git -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-            $script:PathPolicyGit = $gitCommand?.Source
+            $script:PathPolicyGit = if ($gitCommand) { $gitCommand.Source } else { $null }
         }
 
         BeforeEach {
