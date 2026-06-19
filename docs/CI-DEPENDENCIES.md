@@ -46,15 +46,19 @@ The monolithic `AWSPowerShell.NetCore` module provides all of the following (and
 | Auto Scaling         | `Get-ASAutoScalingGroup`                                         |
 | CloudWatch           | `Get-CWAlarm`, `Get-CWMetricStatistic`                           |
 
-### Help and Manifest Validation Jobs
+### Help Validation Job
 
-The `help-validation` and `manifest-validation` jobs install `AWS.Tools.Common` (modular) rather than the full monolithic module. They only need enough for `Import-Module CharlandCustomizations` to succeed — they don't run AWS commands or mock AWS cmdlets.
+The `help-validation` job installs `AWS.Tools.Common` (modular) rather than the full monolithic module. It only needs enough for `Import-Module CharlandCustomizations` to succeed — the module loader checks for `Set-AWSCredential` at import time. The job doesn't run AWS commands or mock AWS cmdlets.
 
 ```yaml
 - name: Install AWS.Tools.Common
   shell: pwsh
   run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force
 ```
+
+### Manifest Validation Job
+
+The `manifest-validation` job does **not** require any AWS module. `Test-ManifestCompliance.ps1` uses AST parsing on the source files and reads the `.psd1` directly — it never imports the module.
 
 ### Local Development
 
