@@ -10,26 +10,40 @@ These files serve as documentation so the team can review, version-track, and re
 
 | File | Description |
 |------|-------------|
+| `Branch-Name-Ruleset.json` | Blocks branch creation unless the name uses one of the approved prefixes. |
+| `Block-Malformed-Tags.json` | Blocks tag creation outside the version, start, and feature tag namespaces. |
+| `Feature-Tag-Rules.json` | Makes `feature/*` tags immutable after creation. |
 | `protect-deployment-tags.json` | Protects version tags (`v*.*.*`) used to trigger module publishing. Requires GPG-signed tags, prevents force-pushes, and enforces that all PR quality gate checks have passed before a release tag is accepted. |
+| `Start-tag-rule.json` | Requires signed, immutable `start/v*.*.*` tags. |
+| `require-branch-path-policy.json` | Requires pull requests into `main` to pass the Branch Path Policy status check before merge. The workflow blocks mixed code/infrastructure branch scopes. |
 
-## Applying Changes
+## Reimporting Rulesets
 
-To update the live ruleset from this file:
+Delete the existing repository rulesets in GitHub, then import the active definitions:
 
 ```bash
-# Update an existing ruleset via the GitHub API
-gh api --method PUT /repos/ccharland/CharlandCustomizations/rulesets/17577728 \
-  --input .github/rulesets/protect-deployment-tags.json
+for ruleset in \
+  .github/rulesets/Branch-Name-Ruleset.json \
+  .github/rulesets/Block-Malformed-Tags.json \
+  .github/rulesets/Feature-Tag-Rules.json \
+  .github/rulesets/protect-deployment-tags.json \
+  .github/rulesets/Start-tag-rule.json
+do
+  gh api --method POST /repos/ccharland/CharlandCustomizations/rulesets \
+    --input "$ruleset"
+done
 ```
 
-To import a new ruleset:
+The branch path policy is intentionally disabled while it is being tested. Import it separately when desired:
 
 ```bash
 gh api --method POST /repos/ccharland/CharlandCustomizations/rulesets \
-  --input .github/rulesets/protect-deployment-tags.json
+  --input .github/rulesets/require-branch-path-policy.json
 ```
 
 ## Notes
 
-- The `enforcement` field is set to `"disabled"` for testing. Change to `"active"` when ready to enforce.
+- `require-branch-path-policy.json` is set to `"disabled"`. Change it to `"active"` only after its workflow has run successfully on `main`.
 - `bypass_actors` is empty, meaning no one (including admins) can bypass these rules. Add actors if a hotfix escape hatch is needed.
+- The existing legacy branch protection for `main` is configured separately and is not replaced by these ruleset files.
+- GitHub ruleset ref-name conditions use glob patterns, not full semantic-version regular expressions. Workflows must perform strict version validation.

@@ -12,7 +12,7 @@
 RootModule = 'CharlandCustomizations.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.3.1'
+ModuleVersion = '0.4.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -77,46 +77,46 @@ NestedModules = @(
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
-    'Clear-CCAuthenticodeSignature',
-    'Clear-CCS3Bucket',
-    'Edit-CCCFTTEbsVolume',
-    'Find-CCCFNStackError',
-    'Find-CCEC2DBSG',
-    'Find-CCOpenSecurityGroup',
-    'Get-CCAccountListFromProfile',
-    'Get-CCAllEC2Patch',
-    'Get-CCAWSAccountListOfDriftedResource',
-    'Get-CCAWSMFASession',
-    'Get-CCAWSObjectCount',
-    'Get-CCDeprecatedLMFunctionList',
-    'Get-CCEC2Count',
-    'Get-CCEC2KeyTagNameStatus',
-    'Get-CCEC2SGInUse',
-    'Get-CCEC2SnapshotReport',
-    'Get-CCEC2VolumeReport',
-    'Get-CCGlobalAuditReportItem',
-    'Get-CCIAMAuditList',
-    'Install-CCGitHook',
-    'Install-CCProfilesFromSource',
-    'Invoke-CCScriptMultiRegionProfile',
-    'New-CCCFNStackDirectory',
-    'New-CCCFNStackFromDirectory',
-    'Out-CCAWSNetworkingComponent',
-    'Out-CCAWSSupportingInfo',
-    'Out-CCCFNStackInfo',
-    'Remove-CCExpiredAWSProfile',
-    'Set-CCAuthenticodeSignature',
-    'Set-CCAWSEnv',
-    'Set-CCAWSProfileWithMFA',
-    'Start-CCEC2RetryLoop',
-    'Start-CCMultiStackDriftDetection',
-    'Test-CCAuthenticodeSignature',
-    'Test-CCCFNStackFromDirectory',
-    'Test-CCCommitSignature',
-    'Update-CCCFNStackFromDirectory',
-    'Update-CCPowershell7',
-    'Update-CCSSOCredentialList',
-    'Use-CCAssumedRole'
+    'Clear-CHARAuthenticodeSignature',
+    'Clear-CHARS3Bucket',
+    'Edit-CHARCFTTEbsVolume',
+    'Find-CHARCFNStackError',
+    'Find-CHAREC2DBSG',
+    'Find-CHAROpenSecurityGroup',
+    'Get-CHARAccountListFromProfile',
+    'Get-CHARAllEC2Patch',
+    'Get-CHARAWSAccountListOfDriftedResource',
+    'Get-CHARAWSMFASession',
+    'Get-CHARAWSObjectCount',
+    'Get-CHARDeprecatedLMFunctionList',
+    'Get-CHAREC2Count',
+    'Get-CHAREC2KeyTagNameStatus',
+    'Get-CHAREC2SGInUse',
+    'Get-CHAREC2SnapshotReport',
+    'Get-CHAREC2VolumeReport',
+    'Get-CHARGlobalAuditReportItem',
+    'Get-CHARIAMAuditList',
+    'Install-CHARGitHook',
+    'Install-CHARProfilesFromSource',
+    'Invoke-CHARScriptMultiRegionProfile',
+    'New-CHARCFNStackDirectory',
+    'New-CHARCFNStackFromDirectory',
+    'Out-CHARAWSNetworkingComponent',
+    'Out-CHARAWSSupportingInfo',
+    'Out-CHARCFNStackInfo',
+    'Remove-CHARExpiredAWSProfile',
+    'Set-CHARAuthenticodeSignature',
+    'Set-CHARAWSEnv',
+    'Set-CHARAWSProfileWithMFA',
+    'Start-CHAREC2RetryLoop',
+    'Start-CHARMultiStackDriftDetection',
+    'Test-CHARAuthenticodeSignature',
+    'Test-CHARCFNStackFromDirectory',
+    'Test-CHARCommitSignature',
+    'Update-CHARCFNStackFromDirectory',
+    'Update-CHARPowershell7',
+    'Update-CHARSSOCredentialList',
+    'Use-CHARAssumedRole'
 )
               
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -127,8 +127,8 @@ CmdletsToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
 AliasesToExport = @(
-    'Set-CCFileSignature',
-    'Test-CCAuthenticodeSignatures'
+    'Set-CHARFileSignature',
+    'Test-CHARAuthenticodeSignatures'
 )
 
 # DSC resources to export from this module

@@ -8,6 +8,26 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - Manifest compliance now enforces sorted `.psd1` arrays and `.psm1` `Export-ModuleMember -Function` arrays with one element per line to reduce merge conflicts in frequently edited export lists.
 
+## [0.4.0] - 2026-06-16
+
+### Changed
+
+- **Breaking:** Renamed all 40 public functions from `CC` prefix to `CHAR` prefix (e.g., `Get-CCAWSMFASession` → `Get-CHARAWSMFASession`, `Find-CCCFNStackError` → `Find-CHARCFNStackError`, `Clear-CCS3Bucket` → `Clear-CHARS3Bucket`)
+- Renamed all standalone `.ps1` files to match new CHAR-prefixed function names (8 files)
+- Updated all nested module `Export-ModuleMember` declarations to export CHAR-prefixed names
+- Updated module manifest `FunctionsToExport` and `AliasesToExport` to use CHAR-prefixed names (`Set-CHARFileSignature`, `Test-CHARAuthenticodeSignatures`)
+- Renamed all unit test files and updated internal references to use CHAR-prefixed function names (24 test files)
+- Updated all documentation to reflect new function names
+- Simplified `$script:CCIsWindows` to `$script:IsWindows` in applicable scripts
+- Stripped all Authenticode signature blocks from source files (to be re-signed in a future release)
+
+### Notes
+
+- **Breaking change for end users** — all exported command names now use the `CHAR` prefix instead of `CC`. Users must update scripts that reference the old names.
+- Private/internal functions (`New-AWSParamSplat`, `CFNPrivateFunctions`) were not renamed; only their comment references were updated.
+- The `CHAR` prefix was chosen to be more unique, clearly identifying these as Charland's custom functions, and avoiding potential naming conflicts with other modules.
+- Files will be re-signed with Authenticode certificates in a subsequent release.
+
 ## [0.3.1] - 2026-06-13
 
 ### Added

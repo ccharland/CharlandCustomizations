@@ -1,0 +1,65 @@
+name: Branch Path Policy
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  branch-path-policy:
+    name: Branch Path Policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Validate changed paths for branch type
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BRANCH: ${{ github.head_ref }}
+          REF_BRANCH: ${{ github.ref_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        run: |
+          $branchName = if ($env:PR_BRANCH) { $env:PR_BRANCH } else { $env:REF_BRANCH }
+
+          if ($env:EVENT_NAME -eq 'pull_request') {
+              $baseSha = $env:PR_BASE_SHA
+              $headSha = $env:PR_HEAD_SHA
+          }
+          elseif ($env:PUSH_BEFORE_SHA -and $env:PUSH_BEFORE_SHA -notmatch '^0+$') {
+              $baseSha = $env:PUSH_BEFORE_SHA
+              $headSha = $env:PUSH_HEAD_SHA
+          }
+          else {
+              $baseSha = "$($env:PUSH_HEAD_SHA)^"
+              $headSha = $env:PUSH_HEAD_SHA
+          }
+
+          Write-Host "Branch: $branchName"
+          Write-Host "Diff: $baseSha..$headSha"
+
+          $changedPaths = @(git diff --name-only --diff-filter=ACMRD $baseSha $headSha)
+
+          if ($LASTEXITCODE -ne 0) {
+              throw "Unable to determine changed paths for $baseSha..$headSha."
+          }
+
+          if ($changedPaths.Count -eq 0) {
+              Write-Host 'No matching added, copied, modified, or renamed paths to validate.'
+              return
+          }
+
+          Write-Host 'Changed paths:'
+          $changedPaths | ForEach-Object { Write-Host "  $_" }
+
+          ./Scripts/Test-BranchPathPolicy.ps1 -BranchName $branchName -ChangedPath $changedPaths

@@ -30,4 +30,8 @@ $config.CodeCoverage.OutputPath = "$PSScriptRoot/coverage/coverage.xml"
 # Output
 $config.Output.Verbosity = 'Detailed'
 
+$config.TestResult.Enabled = $true
+$config.TestResult.OutputFormat = 'NUnitXml'
+$config.TestResult.OutputPath = "$PSScriptRoot/coverage/testResults.xml"
+
 $config
