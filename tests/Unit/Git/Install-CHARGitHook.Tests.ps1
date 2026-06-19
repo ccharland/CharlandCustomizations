@@ -234,11 +234,15 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             $script:HookRepo = Join-Path $TestDrive "hook-repo-$([guid]::NewGuid().ToString('N'))"
             New-Item -Path $script:HookRepo -ItemType Directory -Force | Out-Null
 
-            Push-Location $script:HookRepo
-            & $script:PathPolicyGit init -q
-            & $script:PathPolicyGit config user.email 'test@example.com'
-            & $script:PathPolicyGit config user.name 'Pester Test'
-            Pop-Location
+            try {
+                Push-Location $script:HookRepo
+                & $script:PathPolicyGit init -q
+                & $script:PathPolicyGit config user.email 'test@example.com'
+                & $script:PathPolicyGit config user.name 'Pester Test'
+            }
+            finally {
+                Pop-Location
+            }
         }
 
         AfterEach {
