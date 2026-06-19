@@ -1,7 +1,7 @@
 version: 2
 updates:
   # Scan GitHub Actions dependencies
-  # Enabled Require actions to be pinned to a full-length commit SHA
+  # Dependabot can propose updates for actions (including those pinned to commit SHAs)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
