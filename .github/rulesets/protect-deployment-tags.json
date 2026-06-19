@@ -1,9 +1,6 @@
 {
-  "id": 17578976,
   "name": "Protect-Deployment Tags",
   "target": "tag",
-  "source_type": "Repository",
-  "source": "ccharland/CharlandCustomizations",
   "enforcement": "active",
   "conditions": {
     "ref_name": {
@@ -44,13 +41,12 @@
           {
             "context": "Manifest Compliance",
             "integration_id": 15368
-          },
-          {
-            "context": "CodeQL",
-            "integration_id": 57789
           }
         ]
       }
+    },
+    {
+      "type": "update"
     }
   ],
   "bypass_actors": []

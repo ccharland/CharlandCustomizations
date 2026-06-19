@@ -1,0 +1,35 @@
+{
+  "name": "Block Malformed Branch Names",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": [
+        "~ALL"
+      ],
+      "exclude": [
+        "refs/heads/main",
+        "refs/heads/feature/*",
+        "refs/heads/bugfix/*",
+        "refs/heads/hotfix/*",
+        "refs/heads/workflow/*",
+        "refs/heads/workflows/*",
+        "refs/heads/infrastructure/*",
+        "refs/heads/infra/*",
+        "refs/heads/ci/*",
+        "refs/heads/architecture/*",
+        "refs/heads/breaking/*",
+        "refs/heads/docs/*",
+        "refs/heads/chore/*",
+        "refs/heads/codex/*",
+        "refs/heads/copilot/*"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "creation"
+    }
+  ],
+  "bypass_actors": []
+}

@@ -6,6 +6,8 @@ function Install-CHARGitHook {
     .DESCRIPTION
         Copies the pre-commit hook from .githooks/pre-commit to .git/hooks/pre-commit,
         makes it executable on Unix-like systems, and checks signing configuration.
+        The hook blocks workflow/editor configuration changes on normal code branches,
+        and blocks source/test changes on workflow or infrastructure branches.
 
     .PARAMETER Force
         Overwrites an existing pre-commit hook without prompting.
@@ -19,6 +21,10 @@ function Install-CHARGitHook {
         PS C:\> Install-CHARGitHook -Force
 
         Overwrites an existing pre-commit hook without prompting.
+
+    .NOTES
+        For deliberate exceptions, rerun the commit with:
+        CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit ...
     #>
     [CmdletBinding()]
     param(
