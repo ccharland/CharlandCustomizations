@@ -258,19 +258,28 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
                 [string]$BranchName,
 
                 [Parameter(Mandatory)]
-                [string]$StagedPath
+                [string]$StagedPath,
+
+                [Parameter(Mandatory)]
+                [string]$HookRepo,
+
+                [Parameter(Mandatory)]
+                [string]$GitPath,
+
+                [Parameter(Mandatory)]
+                [string]$HookPath
             )
 
             try {
-                Push-Location $script:HookRepo
-                & $script:PathPolicyGit checkout -q -b $BranchName
+                Push-Location $HookRepo
+                & $GitPath checkout -q -b $BranchName
 
-                $fullPath = Join-Path $script:HookRepo $StagedPath
+                $fullPath = Join-Path $HookRepo $StagedPath
                 New-Item -Path (Split-Path $fullPath -Parent) -ItemType Directory -Force | Out-Null
                 Set-Content -Path $fullPath -Value 'test content'
-                & $script:PathPolicyGit add $StagedPath
+                & $GitPath add $StagedPath
 
-                $output = & sh $script:PathPolicyHook 2>&1
+                $output = & sh $HookPath 2>&1
                 $exitCode = $LASTEXITCODE
             }
             finally {
@@ -284,7 +293,7 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
         }
 
         It 'Blocks GitHub workflow changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
-            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath '.github/workflows/pr-quality-gate.yml'
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath '.github/workflows/pr-quality-gate.yml' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 1
             $result.Output | Should -Match 'normal code branch'
@@ -292,20 +301,20 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
         }
 
         It 'Allows source changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
-            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 0
         }
 
         It 'Blocks source changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
-            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 1
             $result.Output | Should -Match 'workflow/infrastructure branch'
         }
 
         It 'Allows workflow changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
-            $result = Invoke-TestPathPolicyHook -BranchName 'workflow/update-quality-gate' -StagedPath '.github/workflows/pr-quality-gate.yml'
+            $result = Invoke-TestPathPolicyHook -BranchName 'workflow/update-quality-gate' -StagedPath '.github/workflows/pr-quality-gate.yml' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 0
         }
@@ -313,7 +322,7 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
         It 'Allows a deliberate override for exceptional cases' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
             $env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE = '1'
 
-            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'tests/Unit/Git/Install-CCGitHook.Tests.ps1'
+            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'tests/Unit/Git/Install-CCGitHook.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 0
             $result.Output | Should -Match 'override enabled'
