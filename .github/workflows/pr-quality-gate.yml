@@ -62,7 +62,7 @@ jobs:
 
       - name: Install AWS.Tools.Common
         shell: pwsh
-        run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force
+        run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force -AllowClobber
 
       - name: Run help compliance gate
         shell: pwsh
