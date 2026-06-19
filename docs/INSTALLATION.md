@@ -20,7 +20,7 @@ Install-PSResource CharlandCustomizations -Repository PSGallery -Scope CurrentUs
 
 ```powershell
 # Clone the repository
-git clone https://github.com/youruser/CharlandCustomizations.git
+git clone https://github.com/ccharland/CharlandCustomizations.git
 cd CharlandCustomizations
 
 # Build and install

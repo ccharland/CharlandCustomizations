@@ -151,6 +151,8 @@ Minimum tests:
 - `Get-CHAREC2VolumeReport`
 - `Start-CHAREC2RetryLoop`
 - `Find-CHAROpenSecurityGroup`
+- `Get-CHARAllEC2Patch`
+- `Get-CHARDeprecatedLMFunctionList`
 - `Install-CHARProfilesFromSource`
 - `Update-CHARPowershell7`
 
@@ -168,48 +170,50 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 
 | Item | Type | Priority | Help | Pester Test | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `Install-CHARProfilesFromSource` | Function | P3 | Pending | Pending | Local profile copy behavior |
-| `Invoke-CHARScriptMultiRegionProfile` | Function | P1 | Pending | Pending | Multi-account execution contract |
-| `Set-CHARAuthenticodeSignature` | Function | P1 | Pending | Pending | Signing side effects |
-| `Update-CHARPowershell7` | Function | P3 | Pending | Pending | External install/update behavior |
-| `Clear-CHARAuthenticodeSignature` | Function | P1 | Pending | Pending | File mutation |
-| `Find-CHARCFNStackError` | Function | P2 | Pending | Pending | AWS mocks |
-| `Set-CHARAWSProfileWithMFA` | Function | P1 | Pending | Pending | Credential mutation |
-| `Get-CHARAWSMFASession` | Function | P2 | Pending | Pending | STS mocks |
-| `Start-CHARMultiStackDriftDetection` | Function | P2 | Pending | Pending | CloudFormation mocks |
-| `Get-CHARAWSAccountListOfDriftedResource` | Function | P2 | Pending | Pending | CloudFormation mocks |
-| `Get-CHARAWSObjectCount` | Function | P2 | Pending | Pending | AWS inventory mocks |
-| `Set-CHARAWSEnv` | Function | P2 | Pending | Pending | Environment mutation |
-| `Update-CHARSSOCredentialList` | Function | P1 | Pending | Pending | SSO credential file behavior |
-| `Remove-CHARExpiredAWSProfile` | Function | P1 | Pending | Pending | Credential file mutation |
-| `Get-CHARAccountListFromProfile` | Function | P2 | Pending | Pending | Local credential parsing |
-| `Use-CHARAssumedRole` | Function | P1 | Pending | Pending | Credential/environment mutation |
-| `New-CHARCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation create flow |
-| `Test-CHARCFNStackFromDirectory` | Function | P2 | Pending | Pending | Template validation flow |
-| `Out-CHARCFNStackInfo` | Function | P2 | Pending | Pending | Output file/report behavior |
-| `Update-CHARCFNStackFromDirectory` | Function | P1 | Pending | Pending | CloudFormation update flow |
-| `New-CHARCFNStackDirectory` | Function | P2 | Pending | Pending | File creation |
-| `Edit-CHARCFTTEbsVolume` | Function | P2 | Pending | Pending | Template transformation |
-| `Clear-CHARS3Bucket` | Function | P1 | Pending | Pending | Destructive S3 behavior |
-| `Get-CHAREC2SGInUse` | Function | P3 | Pending | Pending | EC2/security group mocks |
-| `Get-CHAREC2Count` | Function | P3 | Pending | Pending | EC2 mocks |
-| `Find-CHAREC2DBSG` | Function | P3 | Pending | Pending | Security group analysis |
-| `Out-CHARAWSSupportingInfo` | Function | P3 | Pending | Pending | Report output |
-| `Out-CHARAWSNetworkingComponent` | Function | P3 | Pending | Pending | Report output |
-| `Get-CHARIAMAuditList` | Function | P3 | Pending | Pending | IAM mocks |
-| `Get-CHARGlobalAuditReportItem` | Function | P3 | Pending | Pending | Report item shape |
-| `Get-CHAREC2KeyTagNameStatus` | Function | P3 | Pending | Pending | Tag analysis |
-| `Get-CHAREC2SnapshotReport` | Function | P3 | Pending | Pending | Snapshot mocks |
-| `Get-CHAREC2VolumeReport` | Function | P3 | Pending | Pending | Volume mocks |
-| `Start-CHAREC2RetryLoop` | Function | P3 | Pending | Pending | Retry behavior |
-| `Find-CHAROpenSecurityGroup` | Function | P3 | Pending | Pending | Security group rules |
-| `Test-CHARCommitSignature` | Function | P2 | Pending | Pending | Temporary git repo |
-| `Install-CHARGitHook` | Function | P1 | Pending | Pending | File mutation |
-| `New-AWSParamSplat` | Private Helper | P2 | Ready | Ready | Existing tests in `tests/New-AWSParamSplat.Tests.ps1` |
-| `Scripts/Build-Module.ps1` | Script | P1 | Pending | Pending | Build/package gate |
-| `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Pending | Pending | Publish flow with mocks |
-| `Scripts/Register-LocalRepository.ps1` | Script | P1 | Pending | Pending | Repository registration |
-| `Scripts/Test-CodeQuality.ps1` | Script | P2 | Pending | Pending | Analyzer invocation |
+| `Install-CHARProfilesFromSource` | Function | P3 | Ready | Passing | Local profile copy behavior |
+| `Invoke-CHARScriptMultiRegionProfile` | Function | P1 | Ready | Passing | Multi-account execution contract |
+| `Set-CHARAuthenticodeSignature` | Function | P1 | Ready | Passing | Signing side effects |
+| `Update-CHARPowershell7` | Function | P3 | Ready | Passing | External install/update behavior |
+| `Clear-CHARAuthenticodeSignature` | Function | P1 | Ready | Passing | File mutation |
+| `Find-CHARCFNStackError` | Function | P2 | Ready | Passing | AWS mocks |
+| `Set-CHARAWSProfileWithMFA` | Function | P1 | Ready | Passing | Credential mutation |
+| `Get-CHARAWSMFASession` | Function | P2 | Ready | Passing | STS mocks |
+| `Start-CHARMultiStackDriftDetection` | Function | P2 | Ready | Passing | CloudFormation mocks |
+| `Get-CHARAWSAccountListOfDriftedResource` | Function | P2 | Ready | Passing | CloudFormation mocks |
+| `Get-CHARAWSObjectCount` | Function | P2 | Ready | Passing | AWS inventory mocks |
+| `Set-CHARAWSEnv` | Function | P2 | Ready | Passing | Environment mutation |
+| `Update-CHARSSOCredentialList` | Function | P1 | Ready | Passing | SSO credential file behavior |
+| `Remove-CHARExpiredAWSProfile` | Function | P1 | Ready | Passing | Credential file mutation |
+| `Get-CHARAccountListFromProfile` | Function | P2 | Ready | Passing | Local credential parsing |
+| `Use-CHARAssumedRole` | Function | P1 | Ready | Passing | Credential/environment mutation |
+| `New-CHARCFNStackFromDirectory` | Function | P1 | Ready | Passing | CloudFormation create flow |
+| `Test-CHARCFNStackFromDirectory` | Function | P2 | Ready | Passing | Template validation flow |
+| `Out-CHARCFNStackInfo` | Function | P2 | Ready | Passing | Output file/report behavior |
+| `Update-CHARCFNStackFromDirectory` | Function | P1 | Ready | Passing | CloudFormation update flow |
+| `New-CHARCFNStackDirectory` | Function | P2 | Ready | Passing | File creation |
+| `Edit-CHARCFTTEbsVolume` | Function | P2 | Ready | Passing | Template transformation |
+| `Clear-CHARS3Bucket` | Function | P1 | Ready | Passing | Destructive S3 behavior |
+| `Get-CHAREC2SGInUse` | Function | P3 | Ready | Passing | EC2/security group mocks |
+| `Get-CHAREC2Count` | Function | P3 | Ready | Passing | EC2 mocks |
+| `Find-CHAREC2DBSG` | Function | P3 | Ready | Passing | Security group analysis |
+| `Out-CHARAWSSupportingInfo` | Function | P3 | Ready | Passing | Report output |
+| `Out-CHARAWSNetworkingComponent` | Function | P3 | Ready | Passing | Report output |
+| `Get-CHARIAMAuditList` | Function | P3 | Ready | Passing | IAM mocks |
+| `Get-CHARGlobalAuditReportItem` | Function | P3 | Ready | Passing | Report item shape |
+| `Get-CHAREC2KeyTagNameStatus` | Function | P3 | Ready | Passing | Tag analysis |
+| `Get-CHAREC2SnapshotReport` | Function | P3 | Ready | Passing | Snapshot mocks |
+| `Get-CHAREC2VolumeReport` | Function | P3 | Ready | Passing | Volume mocks |
+| `Start-CHAREC2RetryLoop` | Function | P3 | Ready | Passing | Retry behavior |
+| `Find-CHAROpenSecurityGroup` | Function | P3 | Ready | Passing | Security group rules |
+| `Get-CHARAllEC2Patch` | Function | P3 | Ready | Passing | SSM patch compliance mocks |
+| `Get-CHARDeprecatedLMFunctionList` | Function | P3 | Ready | Passing | Lambda mocks |
+| `Test-CHARCommitSignature` | Function | P2 | Ready | Passing | Temporary git repo |
+| `Install-CHARGitHook` | Function | P1 | Ready | Passing | File mutation |
+| `New-AWSParamSplat` | Private Helper | P2 | Ready | Passing | Existing tests in `tests/New-AWSParamSplat.Tests.ps1` |
+| `Scripts/Build-Module.ps1` | Script | P1 | Ready | Passing | Build/package gate |
+| `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Ready | Passing | Publish flow with mocks |
+| `Scripts/Register-LocalRepository.ps1` | Script | P1 | Ready | Passing | Repository registration |
+| `Scripts/Test-CodeQuality.ps1` | Script | P2 | Ready | Passing | Analyzer invocation |
 
 ## 8. Recommended Test Organization
 

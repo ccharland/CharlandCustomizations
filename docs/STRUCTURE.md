@@ -2,6 +2,11 @@
 
 ```
 CharlandCustomizations/
+├── .github/                       # GitHub configuration
+│   ├── rulesets/                   # Repository ruleset definitions
+│   └── workflows/                  # CI/CD workflow files
+├── .githooks/                     # Local git hooks
+│   └── pre-commit                  # Branch path policy hook
 ├── .kiro/                         # Kiro IDE configuration
 │   ├── specs/                     # Feature specifications
 │   └── steering/                  # Development guidelines
@@ -9,7 +14,11 @@ CharlandCustomizations/
 │   ├── Build-Module.ps1
 │   ├── Publish-CharlandCustomizations.ps1
 │   ├── Register-LocalRepository.ps1
-│   └── Test-CodeQuality.ps1
+│   ├── Test-BranchPathPolicy.ps1
+│   ├── Test-CodeQuality.ps1
+│   ├── Test-HelpCompliance.ps1
+│   ├── Test-ManifestCompliance.ps1
+│   └── Test-SignatureCompliance.ps1
 ├── src/                           # Module source
 │   └── CharlandCustomizations/
 │       ├── CharlandCustomizations.psd1  # Module manifest
@@ -21,13 +30,14 @@ CharlandCustomizations/
 │           ├── Clear-CHARAuthenticodeSignature.ps1
 │           ├── Install-CHARProfilesFromSource.ps1
 │           ├── Invoke-CHARScriptMultiRegionProfile.ps1
-│           ├── Test-CHARAuthenticodeSignature.ps1
 │           ├── Set-CHARAuthenticodeSignature.ps1
+│           ├── Test-CHARAuthenticodeSignature.ps1
 │           ├── Update-CHARPowershell7.ps1
 │           ├── AWS/
 │           │   ├── AWSCustomizations.psm1
 │           │   ├── Audit/Audit-AWSAccount.psm1
 │           │   ├── CloudFormation/CloudFormation-TemplateProcessing.psm1
+│           │   ├── Lambda/Lambda-Customizations.psm1
 │           │   └── S3/S3Customizations.psm1
 │           └── Git/
 │               ├── GitCustomizations.psm1
@@ -36,6 +46,7 @@ CharlandCustomizations/
 ├── tests/                         # Pester tests
 ├── build/                         # Build output (gitignored)
 ├── docs/                          # Documentation
+├── assets/                        # Icons and images
 ├── README.md
 └── LICENSE
 ```
@@ -51,14 +62,18 @@ The module source. This is the working directory for development. The module man
 
 ### `Scripts/`
 
-Build and deployment automation:
+Build, deployment, and CI gate automation:
 
 | Script | Purpose |
 |--------|---------|
 | `Build-Module.ps1` | Validate, sign, build, and install the module |
 | `Publish-CharlandCustomizations.ps1` | Publish to PowerShell Gallery |
 | `Register-LocalRepository.ps1` | Register a local NuGet repo for testing |
+| `Test-BranchPathPolicy.ps1` | Validate branch/path separation rules |
 | `Test-CodeQuality.ps1` | Run PSScriptAnalyzer checks |
+| `Test-HelpCompliance.ps1` | Validate comment-based help on public functions |
+| `Test-ManifestCompliance.ps1` | Validate manifest export alignment and formatting |
+| `Test-SignatureCompliance.ps1` | Validate Authenticode signatures on release files |
 
 ### `tests/`
 
@@ -77,6 +92,14 @@ build/
 ### `docs/`
 
 Project documentation including this file, changelog, installation guide, and function-specific docs.
+
+### `.github/`
+
+GitHub configuration including CI/CD workflows and repository ruleset reference copies.
+
+### `.githooks/`
+
+Local git hooks installed via `Install-CHARGitHook`. The `pre-commit` hook enforces the branch path policy.
 
 ### `.kiro/`
 

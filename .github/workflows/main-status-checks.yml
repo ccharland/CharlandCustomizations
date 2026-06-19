@@ -39,7 +39,7 @@ jobs:
 
   code-quality:
     name: PSScriptAnalyzer
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -47,19 +47,37 @@ jobs:
         shell: pwsh
         run: Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
 
+      - name: Verify Test-CodeQuality.ps1 signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath './Scripts/Test-CodeQuality.ps1'
+          if ($sig.Status -ne 'Valid') {
+              throw "Test-CodeQuality.ps1 signature status: $($sig.Status). Script must be Authenticode-signed."
+          }
+          Write-Host "Signature valid: $($sig.SignerCertificate.Subject)"
+
       - name: Run static analysis
         shell: pwsh
         run: ./Scripts/Test-CodeQuality.ps1
 
   help-validation:
     name: Comment-Based Help
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
 
       - name: Install AWS.Tools.Common
         shell: pwsh
-        run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force
+        run: Install-Module -Name AWS.Tools.Common -Scope CurrentUser -Force -AllowClobber
+
+      - name: Verify Test-HelpCompliance.ps1 signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath './Scripts/Test-HelpCompliance.ps1'
+          if ($sig.Status -ne 'Valid') {
+              throw "Test-HelpCompliance.ps1 signature status: $($sig.Status). Script must be Authenticode-signed."
+          }
+          Write-Host "Signature valid: $($sig.SignerCertificate.Subject)"
 
       - name: Run help compliance gate
         shell: pwsh
@@ -67,9 +85,18 @@ jobs:
 
   manifest-validation:
     name: Manifest Compliance
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Verify Test-ManifestCompliance.ps1 signature
+        shell: pwsh
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath './Scripts/Test-ManifestCompliance.ps1'
+          if ($sig.Status -ne 'Valid') {
+              throw "Test-ManifestCompliance.ps1 signature status: $($sig.Status). Script must be Authenticode-signed."
+          }
+          Write-Host "Signature valid: $($sig.SignerCertificate.Subject)"
 
       - name: Run manifest compliance gate
         shell: pwsh

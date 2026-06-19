@@ -41,6 +41,10 @@
           {
             "context": "Manifest Compliance",
             "integration_id": 15368
+          },
+          {
+            "context": "Analyze (actions)",
+            "integration_id": 15368
           }
         ]
       }

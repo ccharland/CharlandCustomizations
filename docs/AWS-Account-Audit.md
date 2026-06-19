@@ -146,12 +146,13 @@ These are available separately in the `TemplateProcessing.psm1` module.
 
 ## Contributing
 
-This module was generated from the aws-templates-tools-snippets repository. To contribute improvements:
+These functions were ported from a private repository and added to this module. To contribute improvements:
 
-1. Update the original `.ps1` scripts in the repository
-2. Regenerate the module to incorporate changes
-3. Test thoroughly in your environment
+1. Update the function source files under `src/CharlandCustomizations/Public/AWS/Audit/`
+2. Add or update Pester tests under `tests/`
+3. Run `./Scripts/Build-Module.ps1 -Install` to validate
+4. Submit a pull request following the branch naming conventions in the README
 
 ## License
 
-This module follows the same license as the source repository: aws-templates-tools-snippets
+See [LICENSE](../LICENSE) in the repository root.

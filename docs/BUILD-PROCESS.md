@@ -126,7 +126,7 @@ $publishPath = "./build/CharlandCustomizations/$version"
 
 Notes:
 - The publish script validates Authenticode signatures by default.
-- `-SkipSignatureValidation` can bypass this gate, but should not be used for release publishing.
+- Signature validation cannot be bypassed — the publish script always requires all module files to have valid Authenticode signatures before publishing.
 - API key can come from `PSGALLERY_API_KEY`, `Get-Secret PSGalleryApiKey`, or prompt input.
 - PSGallery publishing is only allowed when:
    - Current branch is `main`
