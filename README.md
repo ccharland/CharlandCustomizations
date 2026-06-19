@@ -26,16 +26,23 @@ Set-CHARAWSEnv -ProfileName my-sso-profile
 ## Repository baseline
 ```
 CharlandCustomizations/
-    ├── assets/
-    ├── docs/
+    ├── .github/
+    │   ├── rulesets/            # Repository ruleset definitions
+    │   └── workflows/           # CI/CD pipelines
+    ├── .githooks/
+    │   └── pre-commit           # Branch path policy hook
+    ├── .kiro/                   # Kiro IDE config and steering
+    ├── Scripts/                 # Build, test, and deployment scripts
+    ├── assets/                  # Icons and images
+    ├── docs/                    # Project documentation
     ├── src/
-    │ └── CharlandCustomizations/
-    │   ├── CharlandCustomizations.psd1
-    │   ├── CharlandCustomizations.psm1
-    │   ├── Public/
-    │   └── Private/
-    ├── Scripts/
-    ├── tests/
+    │   └── CharlandCustomizations/
+    │       ├── CharlandCustomizations.psd1
+    │       ├── CharlandCustomizations.psm1
+    │       ├── Public/          # Exported functions (AWS, Git, signing)
+    │       └── Private/         # Internal helpers
+    ├── tests/                   # Pester tests
+    ├── build/                   # Build output (gitignored)
     └── README.md
 ```
 

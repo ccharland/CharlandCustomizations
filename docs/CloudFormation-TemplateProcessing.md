@@ -15,13 +15,10 @@ The CloudFormation command set was created by extracting and consolidating Cloud
 - **`Update-CHARCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
 - **`Test-CHARCFNStackFromDirectory`** - Validates CloudFormation templates from directories
 - **`Out-CHARCFNStackInfo`** - Exports stack information for backup and redeployment
-- **`New-CHARCFNStackFromDirectory`** - Creates CloudFormation stacks from directory structures
-- **`Update-CHARCFNStackFromDirectory`** - Updates CloudFormation stacks using change sets
-- **`Test-CHARCFNStackFromDirectory`** - Validates CloudFormation templates from directories
-- **`Out-CHARCFNStackInfo`** - Exports stack information for backup and redeployment
 
 ### Template and Directory Utilities
 - **`New-CHARCFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
+- **`Edit-CHARCFTTEbsVolume`** - Modifies EBS volume configuration in CloudFormation templates
 
 
 ## Directory Structure Convention
@@ -238,12 +235,13 @@ The module automatically uploads templates to S3 for CloudFormation operations. 
 
 ## Contributing
 
-This module was generated from the aws-templates-tools-snippets repository. To contribute improvements:
+These functions were ported from a private repository and added to this module. To contribute improvements:
 
-1. Update the original `.ps1` scripts in the repository
-2. Regenerate the module to incorporate changes
-3. Test thoroughly in your environment
+1. Update the function source files under `src/CharlandCustomizations/Public/AWS/CloudFormation/`
+2. Add or update Pester tests under `tests/`
+3. Run `./Scripts/Build-Module.ps1 -Install` to validate
+4. Submit a pull request following the branch naming conventions in the README
 
 ## License
 
-This module follows the same license as the source repository: aws-templates-tools-snippets
+See [LICENSE](../LICENSE) in the repository root.
