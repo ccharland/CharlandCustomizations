@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Scan GitHub Actions dependencies, because
+  # Scan GitHub Actions dependencies
   # Enabled Require actions to be pinned to a full-length commit SHA
   - package-ecosystem: "github-actions"
     directory: "/"
