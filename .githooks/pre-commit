@@ -10,7 +10,7 @@ if [ "$OVERRIDE" = "1" ]; then
 fi
 
 BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)"
-STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMRD)"
 
 if [ -z "$STAGED_FILES" ]; then
     exit 0
@@ -32,9 +32,9 @@ if is_workflow_or_infrastructure_branch "$BRANCH"; then
     POLICY_NAME='workflow/infrastructure branch'
     BLOCKED_PATHS='src/ and tests/'
 else
-    BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E '^(\.github|\.kiro|\.vscode)(/|$)' || true)"
+    BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E '^(\.github|\.kiro|\.vscode|Scripts)(/|$)' || true)"
     POLICY_NAME='normal code branch'
-    BLOCKED_PATHS='.github/, .kiro/, and .vscode/'
+    BLOCKED_PATHS='.github/, .kiro/, .vscode/, and Scripts/'
 fi
 
 if [ -n "$BLOCKED_FILES" ]; then

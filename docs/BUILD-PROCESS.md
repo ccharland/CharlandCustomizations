@@ -150,13 +150,13 @@ The gate validates `.ps1`, `.psm1`, and `.psd1` files and fails if any signature
 
 Install the local pre-commit hook after cloning or when `.githooks/pre-commit` changes:
 
-```powershell
-Install-CCGitHook -Force
-```
+~~~powershell
+Install-CHARGitHook -Force
+~~~
 
 The hook keeps code work and repository automation work separated by branch type:
 
-- Normal code branches block staged changes under `.github/`, `.kiro/`, and `.vscode/`.
+- Normal code branches block staged changes under `.github/`, `.kiro/`, `.vscode/`, and `Scripts/`.
 - Workflow or infrastructure branches block staged changes under `src/` and `tests/`.
 - Branch names containing `workflow`, `workflows`, `infra`, or `infrastructure` are treated as workflow/infrastructure branches.
 - Branch names that use `ci` as a branch segment or token, such as `ci/update` or `chore-ci-config`, are also treated as workflow/infrastructure branches.

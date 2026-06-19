@@ -48,7 +48,7 @@ jobs:
           Write-Host "Branch: $branchName"
           Write-Host "Diff: $baseSha..$headSha"
 
-          $changedPaths = @(git diff --name-only --diff-filter=ACMR $baseSha $headSha)
+          $changedPaths = @(git diff --name-only --diff-filter=ACMRD $baseSha $headSha)
 
           if ($LASTEXITCODE -ne 0) {
               throw "Unable to determine changed paths for $baseSha..$headSha."

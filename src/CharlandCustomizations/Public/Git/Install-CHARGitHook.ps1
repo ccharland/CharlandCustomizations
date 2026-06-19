@@ -24,7 +24,7 @@ function Install-CHARGitHook {
 
     .NOTES
         For deliberate exceptions, rerun the commit with:
-        CHAR_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit ...
+        CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit ...
     #>
     [CmdletBinding()]
     param(

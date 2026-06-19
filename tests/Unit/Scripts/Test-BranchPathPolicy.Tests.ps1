@@ -35,6 +35,12 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Throw '*normal code branch*'
         }
 
+        It 'Blocks Scripts changes on normal code branches' {
+            {
+                & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('Scripts/Test-ManifestCompliance.ps1')
+            } | Should -Throw '*normal code branch*'
+        }
+
         It 'Allows source and test changes on normal code branches' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @(
@@ -58,7 +64,7 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
 
         It 'Treats ci as a branch token, not a substring' {
             {
-                & $script:ScriptPath -BranchName 'feature/special-case' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
+                & $script:ScriptPath -BranchName 'feature/concise-docs' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
             } | Should -Not -Throw
 
             {
