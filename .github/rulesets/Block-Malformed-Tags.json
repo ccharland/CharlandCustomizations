@@ -1,15 +1,13 @@
 {
-  "id": 17579202,
   "name": "Block-Malformed-Tags",
   "target": "tag",
-  "source_type": "Repository",
-  "source": "ccharland/CharlandCustomizations",
   "enforcement": "active",
   "conditions": {
     "ref_name": {
       "exclude": [
-        "refs/tags/*/*",
-        "refs/tags/v[0-9]*.[0-9]*.[0-9]*"
+        "refs/tags/v[0-9]*.[0-9]*.[0-9]*",
+        "refs/tags/start/v[0-9]*.[0-9]*.[0-9]*",
+        "refs/tags/feature/*"
       ],
       "include": [
         "~ALL"
