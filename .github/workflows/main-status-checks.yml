@@ -19,7 +19,7 @@ jobs:
     name: Pester Tests
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Install and import AWSPowerShell.NetCore
         shell: pwsh
@@ -41,7 +41,7 @@ jobs:
     name: PSScriptAnalyzer
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Install PSScriptAnalyzer
         shell: pwsh
@@ -64,7 +64,7 @@ jobs:
     name: Comment-Based Help
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Install AWS.Tools.Common
         shell: pwsh
@@ -87,7 +87,7 @@ jobs:
     name: Manifest Compliance
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Verify Test-ManifestCompliance.ps1 signature
         shell: pwsh

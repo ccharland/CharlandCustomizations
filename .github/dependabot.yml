@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Scan GitHub Actions dependencies
+  # Dependabot can propose updates for actions (including those pinned to commit SHAs)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly" # Options: daily, weekly, monthly
+    groups:
+      # Optional: Group updates together to minimize PR noise
+      action-updates:
+        patterns:
+          - "*"
