@@ -23,6 +23,9 @@ AfterAll {
     if (Test-Path "function:global:gpg") {
         Remove-Item "function:global:gpg" -ErrorAction SilentlyContinue
     }
+    if (Test-Path "function:global:Invoke-TestPathPolicyHook") {
+        Remove-Item "function:global:Invoke-TestPathPolicyHook" -ErrorAction SilentlyContinue
+    }
 }
 
 Describe 'Install-CHARGitHook' -Tag 'Unit' {
@@ -212,6 +215,100 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             # Assert - destination was not created
             $destPath = Join-Path $TestDrive 'repo\.git\hooks\pre-commit'
             $destPath | Should -Not -Exist
+        }
+    }
+
+    Context 'Repository path policy hook' {
+
+        BeforeAll {
+            $script:PathPolicyHook = Join-Path $PSScriptRoot '../../../.githooks/pre-commit'
+            $gitCommand = Get-Command git -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+            $script:PathPolicyGit = $gitCommand.Source
+        }
+
+        BeforeEach {
+            if (-not ($script:PathPolicyGit -and [bool](Get-Command sh -ErrorAction SilentlyContinue))) {
+                return
+            }
+
+            $script:HookRepo = Join-Path $TestDrive "hook-repo-$([guid]::NewGuid().ToString('N'))"
+            New-Item -Path $script:HookRepo -ItemType Directory -Force | Out-Null
+
+            Push-Location $script:HookRepo
+            & $script:PathPolicyGit init -q
+            & $script:PathPolicyGit config user.email 'test@example.com'
+            & $script:PathPolicyGit config user.name 'Pester Test'
+            Pop-Location
+        }
+
+        AfterEach {
+            if (Get-Location -Stack) {
+                Pop-Location -ErrorAction SilentlyContinue
+            }
+            Remove-Item Env:\CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE -ErrorAction SilentlyContinue
+        }
+
+        function global:Invoke-TestPathPolicyHook {
+            param(
+                [Parameter(Mandatory)]
+                [string]$BranchName,
+
+                [Parameter(Mandatory)]
+                [string]$StagedPath
+            )
+
+            Push-Location $script:HookRepo
+            & $script:PathPolicyGit checkout -q -b $BranchName
+
+            $fullPath = Join-Path $script:HookRepo $StagedPath
+            New-Item -Path (Split-Path $fullPath -Parent) -ItemType Directory -Force | Out-Null
+            Set-Content -Path $fullPath -Value 'test content'
+            & $script:PathPolicyGit add $StagedPath
+
+            $output = & sh $script:PathPolicyHook 2>&1
+            $exitCode = $LASTEXITCODE
+            Pop-Location
+
+            [PSCustomObject]@{
+                ExitCode = $exitCode
+                Output   = ($output | Out-String)
+            }
+        }
+
+        It 'Blocks GitHub workflow changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath '.github/workflows/pr-quality-gate.yml'
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'normal code branch'
+            $result.Output | Should -Match 'CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit'
+        }
+
+        It 'Allows source changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1'
+
+            $result.ExitCode | Should -Be 0
+        }
+
+        It 'Blocks source changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1'
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'workflow/infrastructure branch'
+        }
+
+        It 'Allows workflow changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'workflow/update-quality-gate' -StagedPath '.github/workflows/pr-quality-gate.yml'
+
+            $result.ExitCode | Should -Be 0
+        }
+
+        It 'Allows a deliberate override for exceptional cases' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE = '1'
+
+            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'tests/Unit/Git/Install-CCGitHook.Tests.ps1'
+
+            $result.ExitCode | Should -Be 0
+            $result.Output | Should -Match 'override enabled'
         }
     }
 }
