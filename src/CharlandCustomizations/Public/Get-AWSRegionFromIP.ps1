@@ -136,11 +136,11 @@ function Get-AWSRegionFromIP {
             }
         }
 
-        $isIPv4 = $parsedInputAddress.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork
-        $ranges = if ($isIPv4) { $script:AWSIPRangesCache.prefixes } else { $script:AWSIPRangesCache.ipv6_prefixes }
+        $usesIPv4AddressFamily = $parsedInputAddress.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork
+        $ranges = if ($usesIPv4AddressFamily) { $script:AWSIPRangesCache.prefixes } else { $script:AWSIPRangesCache.ipv6_prefixes }
 
         foreach ($range in $ranges) {
-            $cidr = if ($isIPv4) { $range.ip_prefix } else { $range.ipv6_prefix }
+            $cidr = if ($usesIPv4AddressFamily) { $range.ip_prefix } else { $range.ipv6_prefix }
             if (-not $cidr) {
                 continue
             }

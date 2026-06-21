@@ -58,6 +58,15 @@ Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
         $result.CIDR | Should -Be '52.95.245.0/24'
     }
 
+    It 'returns null region data when the IP address does not match AWS ranges' {
+        $result = Get-AWSRegionFromIP -IPAddress '203.0.113.10'
+
+        $result.IPAddress | Should -Be '203.0.113.10'
+        $result.Region | Should -BeNullOrEmpty
+        $result.Service | Should -BeNullOrEmpty
+        $result.CIDR | Should -BeNullOrEmpty
+    }
+
     It 'uses cached AWS IP ranges for subsequent calls within 24 hours' {
         $null = Get-AWSRegionFromIP -IPAddress '52.95.245.10'
         $null = Get-AWSRegionFromIP -IPAddress '52.95.245.20'
