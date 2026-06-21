@@ -83,6 +83,7 @@ FunctionsToExport = @(
     'Find-CHARCFNStackError',
     'Find-CHAREC2DBSG',
     'Find-CHAROpenSecurityGroup',
+    'Get-AWSRegionFromIP',
     'Get-CHARAccountListFromProfile',
     'Get-CHARAllEC2Patch',
     'Get-CHARAWSAccountListOfDriftedResource',
