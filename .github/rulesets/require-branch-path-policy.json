@@ -1,7 +1,7 @@
 {
   "name": "Require Branch Path Policy",
   "target": "branch",
-  "enforcement": "disabled",
+  "enforcement": "active",
   "conditions": {
     "ref_name": {
       "exclude": [],
