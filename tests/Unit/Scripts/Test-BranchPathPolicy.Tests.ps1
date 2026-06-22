@@ -25,6 +25,22 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
                 )
             } | Should -Not -Throw
         }
+
+        It 'Blocks all changes when branch prefix is not approved' {
+            {
+                & $script:ScriptPath -BranchName 'experiment/new-policy' -ChangedPath @(
+                    'src/CharlandCustomizations/Public/Test-Thing.ps1'
+                )
+            } | Should -Throw '*unrecognized prefix*'
+        }
+
+        It 'Allows approved AI branch prefix copilot-code' {
+            {
+                & $script:ScriptPath -BranchName 'copilot-code/test-improvements' -ChangedPath @(
+                    'src/CharlandCustomizations/Public/Test-Thing.ps1'
+                )
+            } | Should -Not -Throw
+        }
     }
 
     Context 'Path separation policy' {
