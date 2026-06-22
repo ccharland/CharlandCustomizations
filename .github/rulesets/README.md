@@ -82,7 +82,7 @@ gh api /repos/ccharland/CharlandCustomizations/rulesets \
 
 ## Change Logging
 
-Use the commands below to keep a durable local history of ruleset changes in `.github/rulesets/ruleset-activiation-logs.txt`.
+Use the commands below to keep a durable local history of ruleset changes in `.github/rulesets/ruleset-activation-logs.txt`.
 
 ### Use the helper script (recommended)
 
@@ -100,7 +100,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/rulesets/Log-RulesetSnap
 ### Append a timestamped status snapshot
 
 ```powershell
-$logPath = ".github/rulesets/ruleset-activiation-logs.txt"
+$logPath = ".github/rulesets/ruleset-activation-logs.txt"
 "`n=== Ruleset status snapshot $(Get-Date -Format o) ===" | Out-File -FilePath $logPath -Append -Encoding utf8
 gh api /repos/ccharland/CharlandCustomizations/rulesets `
   --jq '.[] | {id: .id, name: .name, target: .target, enforcement: .enforcement, updated: .updated_at, created: .created_at}' |
@@ -111,7 +111,7 @@ gh api /repos/ccharland/CharlandCustomizations/rulesets `
 
 ```powershell
 $rulesetId = "<RULESET_ID>"
-$logPath = ".github/rulesets/ruleset-activiation-logs.txt"
+$logPath = ".github/rulesets/ruleset-activation-logs.txt"
 
 "`n=== BEFORE update $rulesetId $(Get-Date -Format o) ===" | Out-File -FilePath $logPath -Append -Encoding utf8
 gh api "/repos/ccharland/CharlandCustomizations/rulesets/$rulesetId" |
