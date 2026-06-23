@@ -1,12 +1,17 @@
-<#
+﻿<#
 .SYNOPSIS
     Validates branch/path separation for repository changes.
 .DESCRIPTION
     Blocks workflow and editor configuration changes on normal code branches, and blocks
-    source or test changes on workflow/infrastructure branches.
+    source and tests/src changes on workflow/infrastructure branches.
+
+    Used in workflows:
+        - .github/workflows/pr-quality-gate.yml
+        - .github/workflows/publish.yml
+    to enforce branch/path separation policy.
 
     Test paths are separated by concern:
-    - tests/src/   mirrors the source module and is owned by code branches
+    - tests/src/  mirrors the source module and is owned by code branches
     - tests/scripts/ mirrors Scripts/ and is owned by infrastructure branches
 .PARAMETER BranchName
     Branch name to classify.
@@ -37,8 +42,8 @@
     ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'infra/pipeline-fixes' -ChangedPath @('src/CharlandCustomizations/Public/Get-Something.ps1')
     # Fails: source changes are not allowed on an infrastructure branch
 .EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'my-branch-no-slash' -ChangedPath @('src/CharlandCustomizations/Public/Get-Something.ps1')
-    # Fails: branch name must contain a forward slash
+    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'experiment/new-policy' -ChangedPath @('src/CharlandCustomizations/Public/Get-Something.ps1')
+    # Fails: branch prefix is not approved
 #>
 [CmdletBinding()]
 param(
@@ -52,43 +57,122 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$approvedBranchPrefixes = @(
-    'feature',
-    'bugfix',
-    'hotfix',
-    'workflow',
-    'workflows',
-    'infrastructure',
-    'infra',
-    'ci',
-    'architecture',
-    'breaking',
-    'docs',
-    'chore',
-    'codex-code',
-    'copilot-code',
-    'kiro-code',
-    'codex-infra',
-    'copilot-infra',
-    'kiro-infra'
+Set-Variable -Name NormalCodeBranchBlockedPath -Option Constant -Value @(
+    '.github'
+    '.githooks'
+    '.kiro/settings'
+    '.vscode'
+    'Scripts'
+    'tests/scripts'
 )
 
-# Branch names must contain a forward slash (e.g., feature/thing, ci/updates)
-if ($BranchName -notmatch '/') {
-    Write-Error @"
-Branch path policy failed.
+Set-Variable -Name WorkflowInfrastructureBranchBlockedPath -Option Constant -Value @(
+    'src'
+    'tests/src'
+)
 
-Branch '$BranchName' does not contain a forward slash.
-Branch names must follow the format 'type/description' (e.g., feature/add-audit, ci/update-workflows).
+$approvedBranchPrefixes = @(
+    [pscustomobject]@{
+        BranchPrefix = 'feature/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'bugfix/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'hotfix/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'workflow/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'workflows/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'infrastructure/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'infra/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'ci/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'architecture/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'breaking/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'docs/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'chore/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'codex-code/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'copilot-code/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'kiro-code/'
+        BlockedPath = $NormalCodeBranchBlockedPath
+        BranchType = 'normal code branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'codex-infra/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'copilot-infra/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'kiro-infra/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    }
+)
 
-All changes are blocked until the branch is renamed.
-"@
-    return
-}
 
-$branchPrefix = ($BranchName -split '/', 2)[0].ToLowerInvariant()
-if ($approvedBranchPrefixes -notcontains $branchPrefix) {
-    $approvedPrefixText = ($approvedBranchPrefixes | ForEach-Object { "'$_/*'" }) -join ', '
+$normalizedBranchName = $BranchName.ToLowerInvariant()
+$matchingBranchPolicy = $approvedBranchPrefixes | Where-Object {
+    $normalizedBranchName.StartsWith($_.BranchPrefix)
+} | Select-Object -First 1
+
+if (-not $matchingBranchPolicy) {
+    $branchPrefix = ($BranchName -split '/', 2)[0].ToLowerInvariant()
+    $approvedPrefixText = ($approvedBranchPrefixes | ForEach-Object { "'$($_.BranchPrefix)*'" }) -join ', '
     Write-Error @"
 Branch path policy failed.
 
@@ -98,16 +182,6 @@ Allowed branch prefixes are: $approvedPrefixText.
 All changes are blocked until the branch is renamed to an approved prefix.
 "@
     return
-}
-
-function Test-WorkflowInfrastructurePrefix {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Prefix
-    )
-
-    $infrastructurePrefixes = @('workflow', 'workflows', 'infrastructure', 'infra', 'ci')
-    return ($infrastructurePrefixes -contains $Prefix) -or $Prefix.EndsWith('-infra')
 }
 
 function Test-PathPrefix {
@@ -131,20 +205,8 @@ function Test-PathPrefix {
     return $false
 }
 
-$isWorkflowInfrastructureBranch = Test-WorkflowInfrastructurePrefix -Prefix $branchPrefix
-
-if ($isWorkflowInfrastructureBranch) {
-    # Infrastructure/CI branches own Scripts/ and tests/scripts/.
-    # They must not touch source code (src/) or the source-mirrored tests (tests/src/).
-    $blockedPrefixes = @('src', 'tests/src')
-    $branchType = 'workflow/infrastructure branch'
-}
-else {
-    # Normal code branches own src/ and tests/src/.
-    # They must not touch workflow config, build tooling, or the scripts-mirrored tests (tests/scripts/).
-    $blockedPrefixes = @('.github', '.kiro', '.vscode', 'Scripts', 'tests/scripts')
-    $branchType = 'normal code branch'
-}
+$blockedPrefixes = $matchingBranchPolicy.BlockedPath
+$branchType = $matchingBranchPolicy.BranchType
 
 $blockedPaths = @(
     foreach ($path in $ChangedPath) {
@@ -155,7 +217,7 @@ $blockedPaths = @(
 )
 
 if ($blockedPaths.Count -gt 0) {
-    $blockedPrefixText = ($blockedPrefixes | ForEach-Object { "$_/" }) -join ', '
+    $blockedPrefixText = ($blockedPrefixes | ForEach-Object { "$($_.TrimEnd('/'))/" }) -join ', '
     Write-Error @"
 Branch path policy failed.
 
@@ -170,13 +232,11 @@ Split this work into a branch whose name matches the kind of change being made.
 }
 
 Write-Output "Branch path policy passed for '$BranchName'."
-
-
 # SIG # Begin signature block
 # MIIs4wYJKoZIhvcNAQcCoIIs1DCCLNACAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC3MfTDDeVFqCYe
-# GAeYcOxLBYBik27b2Id718bSQNDWsKCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDE+rLwS2geDRk6
+# kpxYnWLkoyGWwbipOe+wXNgfUhQxNqCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -383,34 +443,34 @@ Write-Output "Branch path policy passed for '$BranchName'."
 # IExpbWl0ZWQxKzApBgNVBAMTIlNlY3RpZ28gUHVibGljIENvZGUgU2lnbmluZyBD
 # QSBSMzYCEBVU792hXgxFEa5eaR5wqcQwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYB
 # BAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAc
-# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgCRN4
-# UA2yducvq9+D+iwpRX3gfRSHrvsQ6DkmfFQmSlIwDQYJKoZIhvcNAQEBBQAEggIA
-# ZVQaaf5TkquKatuKpWVRhuAq3aIBV4KCvWlPiONP6KidEPOphAjYXRGN3B8UrXv0
-# 1TeacmPHR/emqoZIqEn5dh5LYi2DfM3KYeKOquUgQS9sPksHDlTsB0GjXCcn6fOK
-# 1uBC7HhE9gEfCIyuUqmWlwyenMq8L2MDG6WuP75WCg2TzDZwgmW9F+vaLnTqVBs2
-# eJrSByfOdAdRKDZvQikU0KP4ivkP/5hyiUt6W2jlnrvf5f72jg+xiG97d68Q/Bhx
-# BhmXWvDyJAUqfbAFpu8oLL6kVNyp18rNUuTpyh4MmGd4Ux2TGw+bRYE9XWSdFt3b
-# Zz+iQClmQeqiVEZf4Uzx9McX0tCfWxRP7FsaA//Np0s8clZ/wGMEw/Q8g1Cgc9uS
-# u1/e6fS308jsAAP6AKGUiR0SO/mkWab/qsXoG+NtiecSItSDq16hMP4DbB7vhtST
-# sUSAYbJIOuBSWaDCbOsaXXfMJBcGvBFFuAGGyzKnH4c2YIhaDF7VfPVD9xKbIffF
-# 5Y2Px25qBklb0G0olse7C//BaYN3b1RU2T4+1hF73TgUGjkOl7aM0n0NDJgam4uk
-# NufMlcstZA67GhB4VsTRUGuGkRfvFsdbq0bDlGAhBnl8hHWYOXQgPzFY3W+gw6wV
-# bkNAgWM2AZaZLgnkerSpuuSWvklx82f5VN4TMC9BlpOhggMjMIIDHwYJKoZIhvcN
+# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgDZIy
+# eK5zPJPlb9qDtppEVrXIqtIhbQqzcKlwH9TCmD0wDQYJKoZIhvcNAQEBBQAEggIA
+# bfs1UQsHEl3tWI+f27qPRGV0/CpUNfY8jOobJ0gQYTUrZ/+1wieNP1kdklwjlOxH
+# E/v58RaRNeEp7k3PR4Cn7vht+FY8XHiXB/MnwksW6b1e08xKT/usQxakiGOGYRc5
+# jE73tY0LOdxvBU6c9da5MgQkG7BgL1ITtogv+Ytke+FFiBQkxUHL3Oz4q+GQGA6C
+# 60JBjk0awjCiTeo9Ni3PJH/tm9gKPPhdX5fjHHxsOyn2z9/BCdyJsMy8TiSTWKOv
+# KiKmgzclNH4V0Orn2C8UoY6pyDugIHZZIAS/0ig8QmFQutnncw5z2aSXNpF1llaH
+# HCDM+rBewfSm7tzFBu3RXYQUSiHd939JJQKVP7W1+Yl3Sm1GDpRGS80NtXNqxJw6
+# AiH1UDmX7bNiFJv+yb7LyAldo6CNTrJ8SqYP2iQ89/B/4AAZCqkLbqKylAK+um6w
+# u+pe/7A/FSVTV3MHqoSMyn/AVF2cuN5+K2sSnMkjd8lNsYBpCSZPi0lEiOQ6s8mZ
+# cy/trSG7xifV/PKDzY8+FgVqX8713+uUD1soVxpNENc4LTxcBzzWMoi5qCVyjEW0
+# gh8DZmz3boisqKcWEHu8uQbX6fZOEV/LlrCEZ3p0zQ4oWGhMsqDmEI64P9f9jaTj
+# 2FK/Fs7EuP39iAL9sdoLs86cMp6llyVcyp4CPia6NGuhggMjMIIDHwYJKoZIhvcN
 # AQkGMYIDEDCCAwwCAQEwajBVMQswCQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGln
 # byBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5n
 # IENBIFI0MQIRAOdO8lWwUE/626bf9/yLoxUwDQYJYIZIAWUDBAICBQCgeTAYBgkq
-# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA2MjIyMTM5
-# NDJaMD8GCSqGSIb3DQEJBDEyBDDfioQ4vgyqdW6XZF561+wwh+2+S+tSImdogz4t
-# tHq0PYf2rPie5ub185+4hhVdxKAwDQYJKoZIhvcNAQEBBQAEggIAkpQwSL1Y8z5/
-# q0gV5NO/JHGQ06JiQN6iRrQGttMa46SHswLD7vHSxlMyYmb0KpPrxol5mqh68hc7
-# aBTG2PXMaNx1bvMA5zBsezFmd8h1frqJZwIbWCp+p0Ksqudf1s6zYw9RAubwdLPX
-# /9vtDgeWSbYRD0N5IU4SXQEXkCNJsU1/7NXeW3oXFc3uvGWoYZcpptVo2vmPMOy/
-# 6JsnU9oECHgNt9VQEzedCqbQS1rAkkD32nAB306yrJZrZOz5nmaojcoKwYGrFp/R
-# DM0EPGQzzgauMHUQ2XzYhOZZM9VvoQZ3gz/4+PtJyOrVn3iQ3eKHpqumUTtyiwbZ
-# mOLvrvWpYyKHc0acJFFho+twHae3zSnu3P2XX9qYH1GVJu+zpTwgoEGojPIRDw4+
-# UFToqDXsPSXDPWec9WyfNDAqCkQsun2tIeVXkwO8/9ObUuKZ7U7Y5jHfagOGBZwg
-# ubRa8gouyJDL2hYUjR4Oy+KbH4kwiaHI5QMUZfqRLTwQ4EPuyRM1p87RATNtAHbE
-# eCkoVR+uGQIgLhDisJOTyytoUHLnlz+dMpY5fakcd6aDsSCaMkAOnapoud8XsbFS
-# wInjV4csctpqui+1XPCuNMhsI43IkdeLz85AJWPi5LHHAZOiwG/9B7mqBUAehtUh
-# Vznef7iY+vhvBzoagj/tSwu+Jz/mfDE=
+# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA2MjMwMjMw
+# MTJaMD8GCSqGSIb3DQEJBDEyBDD7QDsEVMGufBgoIEI0/Mv9hDN4w+G7FVq8sPC5
+# MS/fGSbCoPQGwSGC4wlXarNHk6AwDQYJKoZIhvcNAQEBBQAEggIAHKh7VCFO6RPD
+# xxam6c+IdM7hPCkc8yW95lq6QO/eXLZ6i+vbegoNao3CFc9O4ImDqqQ1+k3Hjly6
+# 54y/02c5Amlq3PZsyylUF9sN4sRzcLKnsav4ENed+6S26je575p/l4+Db0xIoZvy
+# dRPFcg02QdZxs54K7ws5IYGReLTYf3uL2dl84+bynclUUXy1zrWX5MzgzDdRX0lE
+# f5cftbW3pATkyAJYEOehHSIBkPAuGEGkXcuRUOfgAom/+hGeE+WeD4a9ii8H6iLX
+# 9rZiRNwabXcQkBL9UlO+xVNAV4331MkaOQET+scJRKt72U1AVdo6JFxvxzAgo4yX
+# Z5J9iPMIBjxPQtsJf2Z4zUFBXyEJWEgRm1S3NSVJiu+rILtlCt80w+BTW93ZKPQX
+# C5z6H/TU1cGvFQIE/VIWdsFiiSyV1T4tYLSEPc5aDeK6vA8gRAGrExFJDuCocOT4
+# ClgZ8FecdkUQw9rdw7ue2YhEHNiiYbZlFJNgHp+YVFB4oeFgQiSZKg8QrxlIzocs
+# kvAsnY8lhaiapXFvtW46gUp79Cm6oIlhEPNZfDhgFE6Uu3GjRE2C2a/WJFVhhw1y
+# 5OJi4K+pJ+No/2k3BNxTY3D7xcgdCAoUFcWACF0jqEl0BbJUfKL1cn6z6XmI9+H3
+# Gdbm4nFpYsEkpyBOyhEA52B0NxYhELU=
 # SIG # End signature block

@@ -9,13 +9,13 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         It 'Blocks all changes when branch name has no forward slash' {
             {
                 & $script:ScriptPath -BranchName 'my-branch-no-slash' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*does not contain a forward slash*'
+            } | Should -Throw '*unrecognized prefix*'
         }
 
         It 'Blocks workflow changes when branch name has no forward slash' {
             {
                 & $script:ScriptPath -BranchName 'update-workflows' -ChangedPath @('.github/workflows/publish.yml')
-            } | Should -Throw '*does not contain a forward slash*'
+            } | Should -Throw '*unrecognized prefix*'
         }
 
         It 'Passes when branch name contains a forward slash' {
