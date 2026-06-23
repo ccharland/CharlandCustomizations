@@ -1,8 +1,8 @@
 BeforeAll {
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Get-AWSRegionFromIP.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Get-CHARAWSRegionFromIp.ps1"
 }
 
-Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
+Describe 'Get-CHARAWSRegionFromIp' -Tag 'Unit' {
     BeforeEach {
         $script:AWSIPRangesCache = $null
         $script:AWSIPRangesCacheTimestamp = $null
@@ -30,7 +30,7 @@ Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
     }
 
     It 'accepts valid IPv4 addresses and returns matching region data' {
-        $result = Get-AWSRegionFromIP -IPAddress '52.95.245.10'
+        $result = Get-CHARAWSRegionFromIp -IPAddress '52.95.245.10'
 
         $result.IPAddress | Should -Be '52.95.245.10'
         $result.Region | Should -Be 'us-east-1'
@@ -39,7 +39,7 @@ Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
     }
 
     It 'accepts valid IPv6 addresses and returns matching region data' {
-        $result = Get-AWSRegionFromIP -IPAddress '2406:da00:ff00::1'
+        $result = Get-CHARAWSRegionFromIp -IPAddress '2406:da00:ff00::1'
 
         $result.IPAddress | Should -Be '2406:da00:ff00::1'
         $result.Region | Should -Be 'ap-southeast-1'
@@ -48,18 +48,18 @@ Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
     }
 
     It 'rejects invalid IP addresses' {
-        { Get-AWSRegionFromIP -IPAddress 'not-an-ip' } | Should -Throw
+        { Get-CHARAWSRegionFromIp -IPAddress 'not-an-ip' } | Should -Throw
     }
 
     It 'returns expected AWS region for known IP ranges' {
-        $result = Get-AWSRegionFromIP -IPAddress '52.95.245.200'
+        $result = Get-CHARAWSRegionFromIp -IPAddress '52.95.245.200'
 
         $result.Region | Should -Be 'us-east-1'
         $result.CIDR | Should -Be '52.95.245.0/24'
     }
 
     It 'returns null region data when the IP address does not match AWS ranges' {
-        $result = Get-AWSRegionFromIP -IPAddress '203.0.113.10'
+        $result = Get-CHARAWSRegionFromIp -IPAddress '203.0.113.10'
 
         $result.IPAddress | Should -Be '203.0.113.10'
         $result.Region | Should -BeNullOrEmpty
@@ -68,8 +68,8 @@ Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
     }
 
     It 'uses cached AWS IP ranges for subsequent calls within 24 hours' {
-        $null = Get-AWSRegionFromIP -IPAddress '52.95.245.10'
-        $null = Get-AWSRegionFromIP -IPAddress '52.95.245.20'
+        $null = Get-CHARAWSRegionFromIp -IPAddress '52.95.245.10'
+        $null = Get-CHARAWSRegionFromIp -IPAddress '52.95.245.20'
 
         Should -Invoke Invoke-RestMethod -Times 1 -Exactly
     }
@@ -77,6 +77,6 @@ Describe 'Get-AWSRegionFromIP' -Tag 'Unit' {
     It 'throws a useful error when AWS IP ranges retrieval fails' {
         Mock Invoke-RestMethod { throw 'network unavailable' }
 
-        { Get-AWSRegionFromIP -IPAddress '52.95.245.10' } | Should -Throw '*Unable to retrieve AWS IP ranges*'
+        { Get-CHARAWSRegionFromIp -IPAddress '52.95.245.10' } | Should -Throw '*Unable to retrieve AWS IP ranges*'
     }
 }

@@ -1,4 +1,4 @@
-function Get-AWSRegionFromIP {
+function Get-CHARAWSRegionFromIp {
 <#
 .SYNOPSIS
     Resolves an IP address to the matching AWS region from official AWS IP ranges.
@@ -16,12 +16,12 @@ function Get-AWSRegionFromIP {
     The IPv4 or IPv6 address to evaluate.
 
 .EXAMPLE
-    Get-AWSRegionFromIP -IPAddress '52.95.245.10'
+    Get-CHARAWSRegionFromIp -IPAddress '52.95.245.10'
 
     Returns the matching AWS region, service, and CIDR for the provided IPv4 address.
 
 .EXAMPLE
-    Get-AWSRegionFromIP -IPAddress '2406:da00:ff00::1'
+    Get-CHARAWSRegionFromIp -IPAddress '2406:da00:ff00::1'
 
     Returns the matching AWS region, service, and CIDR for the provided IPv6 address.
 
