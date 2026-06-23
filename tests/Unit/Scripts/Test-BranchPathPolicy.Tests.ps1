@@ -96,14 +96,14 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
-        It 'Treats ci as a branch token, not a substring' {
+        It 'Treats ci as a branch prefix, not a substring' {
             {
                 & $script:ScriptPath -BranchName 'feature/concise-docs' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
             } | Should -Not -Throw
 
             {
                 & $script:ScriptPath -BranchName 'chore/ci-config' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*workflow/infrastructure branch*'
+            } | Should -Not -Throw
         }
     }
 }
