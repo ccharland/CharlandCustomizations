@@ -306,8 +306,28 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             $result.ExitCode | Should -Be 0
         }
 
+        It 'Allows tests/src changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath 'tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 0
+        }
+
+        It 'Blocks tests/scripts changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath 'tests/scripts/Build-Module.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'normal code branch'
+        }
+
         It 'Blocks source changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
             $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'workflow/infrastructure branch'
+        }
+
+        It 'Blocks tests/src changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 1
             $result.Output | Should -Match 'workflow/infrastructure branch'
@@ -319,10 +339,23 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             $result.ExitCode | Should -Be 0
         }
 
+        It 'Allows tests/scripts changes on infrastructure branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'ci/update-tests' -StagedPath 'tests/scripts/Build-Module.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 0
+        }
+
+        It 'Blocks all changes when branch prefix is not approved' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'experiment/new-policy' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'unrecognized prefix'
+        }
+
         It 'Allows a deliberate override for exceptional cases' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
             $env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE = '1'
 
-            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'tests/Unit/Git/Install-CCGitHook.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+            $result = Invoke-TestPathPolicyHook -BranchName 'infrastructure/update-ci' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 
             $result.ExitCode | Should -Be 0
             $result.Output | Should -Match 'override enabled'

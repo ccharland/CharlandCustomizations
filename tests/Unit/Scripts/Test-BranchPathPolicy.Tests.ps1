@@ -9,18 +9,34 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         It 'Blocks all changes when branch name has no forward slash' {
             {
                 & $script:ScriptPath -BranchName 'my-branch-no-slash' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*does not contain a forward slash*'
+            } | Should -Throw '*unrecognized prefix*'
         }
 
         It 'Blocks workflow changes when branch name has no forward slash' {
             {
                 & $script:ScriptPath -BranchName 'update-workflows' -ChangedPath @('.github/workflows/publish.yml')
-            } | Should -Throw '*does not contain a forward slash*'
+            } | Should -Throw '*unrecognized prefix*'
         }
 
         It 'Passes when branch name contains a forward slash' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @(
+                    'src/CharlandCustomizations/Public/Test-Thing.ps1'
+                )
+            } | Should -Not -Throw
+        }
+
+        It 'Blocks all changes when branch prefix is not approved' {
+            {
+                & $script:ScriptPath -BranchName 'experiment/new-policy' -ChangedPath @(
+                    'src/CharlandCustomizations/Public/Test-Thing.ps1'
+                )
+            } | Should -Throw '*unrecognized prefix*'
+        }
+
+        It 'Allows approved AI branch prefix copilot-code' {
+            {
+                & $script:ScriptPath -BranchName 'copilot-code/test-improvements' -ChangedPath @(
                     'src/CharlandCustomizations/Public/Test-Thing.ps1'
                 )
             } | Should -Not -Throw
@@ -41,18 +57,30 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Throw '*normal code branch*'
         }
 
-        It 'Allows source and test changes on normal code branches' {
+        It 'Allows source and tests/src changes on normal code branches' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @(
                     'src/CharlandCustomizations/Public/Test-Thing.ps1',
-                    'tests/Unit/Git/Test-Thing.Tests.ps1'
+                    'tests/src/CharlandCustomizations/Public/Git/Test-Thing.Tests.ps1'
                 )
             } | Should -Not -Throw
+        }
+
+        It 'Blocks tests/scripts changes on normal code branches' {
+            {
+                & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('tests/scripts/Build-Module.Tests.ps1')
+            } | Should -Throw '*normal code branch*'
         }
 
         It 'Blocks source changes on infrastructure branches' {
             {
                 & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
+            } | Should -Throw '*workflow/infrastructure branch*'
+        }
+
+        It 'Blocks tests/src changes on infrastructure branches' {
+            {
+                & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1')
             } | Should -Throw '*workflow/infrastructure branch*'
         }
 
@@ -62,14 +90,20 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
-        It 'Treats ci as a branch token, not a substring' {
+        It 'Allows tests/scripts changes on infrastructure branches' {
+            {
+                & $script:ScriptPath -BranchName 'ci/update-tests' -ChangedPath @('tests/scripts/Build-Module.Tests.ps1')
+            } | Should -Not -Throw
+        }
+
+        It 'Treats ci as a branch prefix, not a substring' {
             {
                 & $script:ScriptPath -BranchName 'feature/concise-docs' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
             } | Should -Not -Throw
 
             {
                 & $script:ScriptPath -BranchName 'chore/ci-config' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*workflow/infrastructure branch*'
+            } | Should -Not -Throw
         }
     }
 }
