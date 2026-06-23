@@ -70,8 +70,8 @@ All branches must use a `type/description` format with a forward slash separator
 
 Branches are scoped to specific areas of the codebase. The branch path policy (enforced via pre-commit hook and CI workflow) prevents mixing infrastructure and source changes:
 
-- **Code branches** (`feature/*`, `bugfix/*`, etc., and `*-code` AI prefixes) — can modify `src/` and `tests/src/`, but **cannot** touch `.github/`, `.kiro/`, `.vscode/`, `Scripts/`, or `tests/scripts/`.
-- **Infrastructure branches** (`workflow/*`, `infrastructure/*`, `ci/*`, etc., and `*-infra` AI prefixes) — can modify `.github/`, `.kiro/`, `.vscode/`, `Scripts/`, and `tests/scripts/`, but **cannot** touch `src/` or `tests/src/`.
+- **Code branches** (`feature/*`, `bugfix/*`, etc., and `*-code` AI prefixes) — can modify `src/` and `tests/src/`, but **cannot** touch `.github/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `Scripts/`, or `tests/scripts/`.
+- **Infrastructure branches** (`workflow/*`, `infrastructure/*`, `ci/*`, etc., and `*-infra` AI prefixes) — can modify `.github/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `Scripts/`, and `tests/scripts/`, but **cannot** touch `src/` or `tests/src/`.
 
 Branch prefixes are strictly validated. If a branch prefix is not in the approved list above, all changes are blocked until the branch is renamed.
 
