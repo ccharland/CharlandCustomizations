@@ -209,7 +209,7 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 | `Get-CHARDeprecatedLMFunctionList` | Function | P3 | Ready | Passing | Lambda mocks |
 | `Test-CHARCommitSignature` | Function | P2 | Ready | Passing | Temporary git repo |
 | `Install-CHARGitHook` | Function | P1 | Ready | Passing | File mutation |
-| `New-AWSParamSplat` | Private Helper | P2 | Ready | Passing | Existing tests in `tests/New-AWSParamSplat.Tests.ps1` |
+| `New-AWSParamSplat` | Private Helper | P2 | Ready | Passing | Comprehensive tests in `tests/src/Private/New-AWSParamSplat.Tests.ps1` |
 | `Scripts/Build-Module.ps1` | Script | P1 | Ready | Passing | Build/package gate |
 | `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Ready | Passing | Publish flow with mocks |
 | `Scripts/Register-LocalRepository.ps1` | Script | P1 | Ready | Passing | Repository registration |
@@ -217,16 +217,28 @@ Track each item through the release. Use `Not Started`, `Help Ready`, `Test Read
 
 ## 8. Recommended Test Organization
 
-Recommended folders:
+Test files are organized under `tests/src/` to mirror the source structure under `src/CharlandCustomizations/`. Module-contained functions are grouped under a module-named folder.
 
-- `tests/Unit/Core/*.Tests.ps1`
-- `tests/Unit/AWS/*.Tests.ps1`
-- `tests/Unit/AWS/S3/*.Tests.ps1`
-- `tests/Unit/AWS/Audit/*.Tests.ps1`
-- `tests/Unit/CloudFormation/*.Tests.ps1`
-- `tests/Unit/Git/*.Tests.ps1`
-- `tests/Unit/Scripts/*.Tests.ps1`
-- `tests/Integration/**/*.Tests.ps1`
+Structure:
+
+- `tests/src/{CharlandCustomizations,Private,Public}/` mirrors `src/CharlandCustomizations/`
+- Module files: `tests/src/Public/AWS/AWSCustomizations/AWSCustomizations.Tests.ps1` + per-function tests
+- Script files in module directories: `tests/src/Public/Git/GitCustomizations/{FunctionName}.Tests.ps1`
+- Scripts/helpers: `tests/src/Private/New-AWSParamSplat.Tests.ps1`
+- **SRC Layout Gate**: `tests/src/SourceLayout.Tests.ps1` enforces:
+  - Each `.ps1`, `.psm1`, `.psd1` under `src/` must have a corresponding `.Tests.ps1` under `tests/src/`
+  - Modules must have at least one `It` block (minimum: module existence test)
+
+Modern test organization (all under `tests/src/`):
+
+- `tests/src/Private/*.Tests.ps1`
+- `tests/src/Public/AWS/AWSCustomizations/*.Tests.ps1`
+- `tests/src/Public/AWS/Audit/Audit-AWSAccount/*.Tests.ps1`
+- `tests/src/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing/*.Tests.ps1`
+- `tests/src/Public/AWS/Lambda/Lambda-Customizations/*.Tests.ps1`
+- `tests/src/Public/AWS/S3/S3Customizations/*.Tests.ps1`
+- `tests/src/Public/Git/GitCustomizations/*.Tests.ps1`
+- `tests/src/Public/*.Tests.ps1` (standalone functions)
 
 Recommended tags:
 
@@ -289,7 +301,19 @@ It 'throws a useful error when the downstream operation fails' -Tag 'Unit' {
 
 ## 10. Execution Commands
 
-Run all unit tests:
+Run all SRC tests (module + function unit tests):
+
+```powershell
+Invoke-Pester -Path ./tests/src -Output Detailed
+```
+
+Run source layout gate (enforces test file presence and structure):
+
+```powershell
+Invoke-Pester -Path ./tests/src/SourceLayout.Tests.ps1 -Output Detailed
+```
+
+Run all unit tests (including legacy test locations):
 
 ```powershell
 Invoke-Pester -Path ./tests -Tag Unit
@@ -323,14 +347,15 @@ Run release build/package check:
 
 1. Refresh the release inventory from `CharlandCustomizations.psd1`.
 2. Verify comment-based help for every function and script.
-3. Add or update Pester tests for every changed command.
-4. Run unit tests and fix failures.
-5. Run PSScriptAnalyzer and fix errors.
-6. Build and package the module.
-7. Import the packaged module in a clean PowerShell session.
-8. Run manual smoke checks for command discovery and help.
-9. Run opt-in integration tests only when sandbox credentials are configured.
-10. Record release exceptions, if any, before publishing.
+3. Add or update Pester tests for every changed command under `tests/src/`.
+4. Verify source layout gate passes: each source file has a corresponding test file under `tests/src/`.
+5. Run SRC unit tests and fix failures: `Invoke-Pester -Path ./tests/src`.
+6. Run PSScriptAnalyzer and fix errors via `./Scripts/Test-CodeQuality.ps1`.
+7. Build and package the module: `./Scripts/Build-Module.ps1 -Clean -Package`.
+8. Import the packaged module in a clean PowerShell session.
+9. Run manual smoke checks for command discovery and help.
+10. Run opt-in integration tests only when sandbox credentials are configured.
+11. Record release exceptions, if any, before publishing.
 
 ## 12. Definition Of Done
 
