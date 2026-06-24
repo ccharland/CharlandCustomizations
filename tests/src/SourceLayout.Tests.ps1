@@ -22,7 +22,7 @@ Describe 'SRC test layout gate' {
             $relativePath = $sourceFile.FullName.Substring($script:SourceRoot.Length + 1).Replace('\', '/')
             $relativeDirectory = [System.IO.Path]::GetDirectoryName($relativePath)
             if ($relativeDirectory) {
-                $relativeDirectory = $relativeDirectory.Replace('\\', '/')
+                $relativeDirectory = $relativeDirectory.Replace('\', '/')
             }
             $sourceBaseName = [System.IO.Path]::GetFileNameWithoutExtension($relativePath)
             $sourceExtension = [System.IO.Path]::GetExtension($relativePath)
