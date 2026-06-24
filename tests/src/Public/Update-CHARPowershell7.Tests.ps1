@@ -6,8 +6,7 @@ BeforeAll {
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Update-CHARPowershell7.ps1"
 
     # Create a wrapper function for the winget executable so Pester can mock it
-    function winget { }
-}
+    function script:winget { }
 
 Describe 'Update-CHARPowershell7' -Tag 'Unit' {
 
