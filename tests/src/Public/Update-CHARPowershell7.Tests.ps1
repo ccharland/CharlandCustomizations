@@ -7,6 +7,7 @@ BeforeAll {
 
     # Create a wrapper function for the winget executable so Pester can mock it
     function script:winget { }
+}
 
 Describe 'Update-CHARPowershell7' -Tag 'Unit' {
 
