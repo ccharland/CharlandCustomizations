@@ -4,7 +4,7 @@
 #>
 BeforeAll {
     # Build-Module.ps1 is a script with CmdletBinding, so we dot-source it inside mocks
-    $script:BuildModulePath = "$PSScriptRoot/../../../Scripts/Build-Module.ps1"
+    $script:BuildModulePath = "$PSScriptRoot/../../Scripts/Build-Module.ps1"
 
     # Stub Get-AuthenticodeSignature on non-Windows systems where it doesn't exist
     if (-not (Get-Command Get-AuthenticodeSignature -ErrorAction SilentlyContinue)) {
