@@ -22,6 +22,12 @@ jobs:
           Import-Module AWSPowerShell.NetCore -ErrorAction Stop
           Write-Output "AWSPowerShell.NetCore $(Get-Module AWSPowerShell.NetCore | Select-Object -ExpandProperty Version) loaded"
 
+      - name: Validate required test layout gates
+        shell: pwsh
+        run: |
+          Invoke-Pester -Path './tests/src/SourceLayout.Tests.ps1' -CI
+          Invoke-Pester -Path './tests/scripts/SourceLayout.Tests.ps1' -CI
+
       - name: Run Pester tests
         shell: pwsh
         run: |
