@@ -4,7 +4,7 @@
 #>
 BeforeAll {
     # SUT is a standalone script with CmdletBinding and params
-    $script:SUTPath = "$PSScriptRoot/../../../Scripts/Register-LocalRepository.ps1"
+    $script:SUTPath = "$PSScriptRoot/../../Scripts/Register-LocalRepository.ps1"
 }
 
 Describe 'Register-LocalRepository' -Tag 'Unit' {

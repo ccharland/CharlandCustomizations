@@ -11,7 +11,11 @@
 $config = New-PesterConfiguration
 
 # Run settings
-$config.Run.Path = "$PSScriptRoot/Unit"
+$config.Run.Path = @(
+    "$PSScriptRoot/src"
+    "$PSScriptRoot/scripts"
+    "$PSScriptRoot/Unit"
+)
 $config.Run.Exit = $true
 
 # Filter settings — exclude Integration by default
