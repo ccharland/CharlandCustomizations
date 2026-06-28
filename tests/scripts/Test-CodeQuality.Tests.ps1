@@ -6,7 +6,7 @@ BeforeAll {
     # The SUT is a standalone script. We wrap it in a function so that:
     # 1. Mocks defined in the test scope are visible to it (dot-source semantics)
     # 2. 'exit' statements don't terminate Pester (they only exit the function scope)
-    $script:SUTPath = "$PSScriptRoot/../../../Scripts/Test-CodeQuality.ps1"
+    $script:SUTPath = "$PSScriptRoot/../../Scripts/Test-CodeQuality.ps1"
 
     # Build a wrapper function from the script content so 'exit' becomes 'return'
     # and mocks are visible in the same scope.

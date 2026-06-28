@@ -1,5 +1,5 @@
 BeforeAll {
-    $script:ScriptPath = "$PSScriptRoot/../../../Scripts/Test-BranchPathPolicy.ps1"
+    $script:ScriptPath = "$PSScriptRoot/../../Scripts/Test-BranchPathPolicy.ps1"
 }
 
 Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
