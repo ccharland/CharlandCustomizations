@@ -209,7 +209,7 @@ function Get-CHARDeprecatedLMFunctionList {
 
         $allFunctions | Where-Object {
             -not [string]::IsNullOrWhiteSpace($_.Runtime) -and
-            $_.Runtime.ToLowerInvariant() -in $deprecatedRuntimes
+            ($_.Runtime.ToString().ToLowerInvariant()) -in $deprecatedRuntimes
         }
     }
 }
