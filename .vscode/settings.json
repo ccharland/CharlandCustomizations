@@ -5,5 +5,15 @@
             "envManager": "ms-python.python:venv",
             "packageManager": "ms-python.python:pip"
         }
+    ],
+    "cSpell.words": [
+        "ACMRD",
+        "Authenticode",
+        "CHARAWS",
+        "CHARCFN",
+        "kiro",
+        "LASTEXITCODE",
+        "notmatch",
+        "pscustomobject"
     ]
 }

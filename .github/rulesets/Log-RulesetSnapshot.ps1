@@ -1,242 +1,111 @@
-﻿<#
+<#
 .SYNOPSIS
-    Validates branch/path separation for repository changes.
+    Logs GitHub repository ruleset status snapshots.
+
 .DESCRIPTION
-    Blocks workflow and editor configuration changes on normal code branches, and blocks
-    source and tests/src changes on workflow/infrastructure branches.
+    Queries GitHub rulesets for a repository using the GitHub CLI (`gh`) and appends
+    a timestamped summary to a local log file. Optionally logs full details for a
+    specific ruleset ID and writes a JSON snapshot file.
 
-    Used in workflows:
-        - .github/workflows/pr-quality-gate.yml
-        - .github/workflows/publish.yml
-    to enforce branch/path separation policy.
+.PARAMETER Repository
+    Repository in owner/name format.
 
-    Test paths are separated by concern:
-    - tests/src/  mirrors the source module and is owned by code branches
-    - tests/scripts/ mirrors Scripts/ and is owned by infrastructure branches
-.PARAMETER BranchName
-    Branch name to classify.
-.PARAMETER ChangedPath
-    Changed repository-relative paths to validate.
+.PARAMETER LogPath
+    Path to the log file that receives timestamped snapshot entries.
+    Defaults to ruleset-activation-logs.txt in this script's directory.
+
+.PARAMETER RulesetId
+    Optional ruleset ID to retrieve and log full ruleset details.
+
+.PARAMETER Label
+    Optional label included in the log entry header.
+
+.PARAMETER WriteSnapshotFile
+    When set, writes the full rulesets API response to a timestamped JSON file.
+
+.PARAMETER SnapshotDirectory
+    Directory used for JSON snapshot files when -WriteSnapshotFile is set.
+    Defaults to a snapshots folder in this script's directory.
+
 .EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'feature/add-audit' -ChangedPath @('src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1')
-    # Passes: source changes are allowed on a normal code branch
+    pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/rulesets/Log-RulesetSnapshot.ps1
+    Logs a ruleset summary snapshot to the default log path.
+
 .EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'feature/add-audit' -ChangedPath @('tests/src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount/Audit-Functions.Tests.ps1')
-    # Passes: tests/src changes are allowed on a normal code branch
+    pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/rulesets/Log-RulesetSnapshot.ps1 -RulesetId 12345678 -Label before-update
+    Logs a summary snapshot plus full details for ruleset 12345678.
+
 .EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'feature/add-audit' -ChangedPath @('.github/workflows/publish.yml')
-    # Fails: workflow changes are not allowed on a normal code branch
-.EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'feature/add-audit' -ChangedPath @('tests/scripts/Build-Module.Tests.ps1')
-    # Fails: tests/scripts changes are not allowed on a normal code branch
-.EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'ci/update-workflows' -ChangedPath @('.github/workflows/publish.yml', '.kiro/settings/mcp.json')
-    # Passes: workflow/infra changes are allowed on a CI branch
-.EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'ci/update-workflows' -ChangedPath @('tests/scripts/Build-Module.Tests.ps1')
-    # Passes: tests/scripts changes are allowed on a CI branch
-.EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'ci/update-workflows' -ChangedPath @('tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1')
-    # Fails: tests/src changes are not allowed on an infrastructure branch
-.EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'infra/pipeline-fixes' -ChangedPath @('src/CharlandCustomizations/Public/Get-Something.ps1')
-    # Fails: source changes are not allowed on an infrastructure branch
-.EXAMPLE
-    ./Scripts/Test-BranchPathPolicy.ps1 -BranchName 'experiment/new-policy' -ChangedPath @('src/CharlandCustomizations/Public/Get-Something.ps1')
-    # Fails: branch prefix is not approved
+    pwsh -NoProfile -ExecutionPolicy Bypass -File ./.github/rulesets/Log-RulesetSnapshot.ps1 -WriteSnapshotFile
+    Logs a summary snapshot and writes a timestamped JSON snapshot file.
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)]
-    [string]$BranchName,
-
-    [Parameter(Mandatory)]
-    [AllowEmptyCollection()]
-    [string[]]$ChangedPath
+    [string]$Repository = 'ccharland/CharlandCustomizations',
+    [string]$LogPath = (Join-Path -Path $PSScriptRoot -ChildPath 'ruleset-activation-logs.txt'),
+    [string]$RulesetId,
+    [string]$Label = 'manual',
+    [switch]$WriteSnapshotFile,
+    [string]$SnapshotDirectory = (Join-Path -Path $PSScriptRoot -ChildPath 'snapshots')
 )
 
 $ErrorActionPreference = 'Stop'
 
-Set-Variable -Name NormalCodeBranchBlockedPath -Option Constant -Value @(
-    '.github'
-    '.githooks'
-    '.kiro/settings'
-    '.vscode'
-    'Scripts'
-    'tests/scripts'
-)
-
-Set-Variable -Name WorkflowInfrastructureBranchBlockedPath -Option Constant -Value @(
-    'src'
-    'tests/src'
-)
-
-$approvedBranchPrefixes = @(
-    [pscustomobject]@{
-        BranchPrefix = 'feature/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'bugfix/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'hotfix/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'workflow/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'workflows/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'infrastructure/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'infra/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'ci/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'architecture/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'breaking/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'docs/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'chore/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'codex-code/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'copilot-code/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'kiro-code/'
-        BlockedPath = $NormalCodeBranchBlockedPath
-        BranchType = 'normal code branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'codex-infra/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'copilot-infra/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    },
-    [pscustomobject]@{
-        BranchPrefix = 'kiro-infra/'
-        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
-        BranchType = 'workflow/infrastructure branch'
-    }
-)
-
-
-$normalizedBranchName = $BranchName.ToLowerInvariant()
-$matchingBranchPolicy = $approvedBranchPrefixes | Where-Object {
-    $normalizedBranchName.StartsWith($_.BranchPrefix)
-} | Select-Object -First 1
-
-if (-not $matchingBranchPolicy) {
-    $branchPrefix = ($BranchName -split '/', 2)[0].ToLowerInvariant()
-    $approvedPrefixText = ($approvedBranchPrefixes | ForEach-Object { "'$($_.BranchPrefix)*'" }) -join ', '
-    Write-Error @"
-Branch path policy failed.
-
-Branch '$BranchName' has unrecognized prefix '$branchPrefix/'.
-Allowed branch prefixes are: $approvedPrefixText.
-
-All changes are blocked until the branch is renamed to an approved prefix.
-"@
-    return
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    throw "GitHub CLI 'gh' is not installed or not available in PATH."
 }
 
-function Test-PathPrefix {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Path,
+$timestamp = Get-Date -Format o
+$repoRulesetsEndpoint = "/repos/$Repository/rulesets"
 
-        [Parameter(Mandatory)]
-        [string[]]$Prefix
-    )
-
-    $normalizedPath = $Path -replace '\\', '/'
-
-    foreach ($item in $Prefix) {
-        $normalizedPrefix = $item.TrimEnd('/')
-        if ($normalizedPath -eq $normalizedPrefix -or $normalizedPath.StartsWith("$normalizedPrefix/")) {
-            return $true
-        }
-    }
-
-    return $false
+$logDirectory = Split-Path -Parent $LogPath
+if ($logDirectory) {
+    New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
 }
 
-$blockedPrefixes = $matchingBranchPolicy.BlockedPath
-$branchType = $matchingBranchPolicy.BranchType
+$header = "`n=== Ruleset log [$Label] $timestamp ==="
+$header | Out-File -FilePath $LogPath -Append -Encoding utf8
 
-$blockedPaths = @(
-    foreach ($path in $ChangedPath) {
-        if (Test-PathPrefix -Path $path -Prefix $blockedPrefixes) {
-            $path
-        }
-    }
-)
-
-if ($blockedPaths.Count -gt 0) {
-    $blockedPrefixText = ($blockedPrefixes | ForEach-Object { "$($_.TrimEnd('/'))/" }) -join ', '
-    Write-Error @"
-Branch path policy failed.
-
-Branch '$BranchName' is treated as a $branchType.
-Do not include changes under $blockedPrefixText on this branch type.
-
-Blocked changed paths:
-$($blockedPaths -join [Environment]::NewLine)
-
-Split this work into a branch whose name matches the kind of change being made.
-"@
+$rulesetsJson = gh api $repoRulesetsEndpoint
+if ($LASTEXITCODE -ne 0) {
+    throw 'Failed to retrieve rulesets list from GitHub API.'
 }
 
-Write-Output "Branch path policy passed for '$BranchName'."
+$rulesets = $rulesetsJson | ConvertFrom-Json
+$summary = $rulesets |
+    Select-Object id, name, target, enforcement, created_at, updated_at |
+    ConvertTo-Json -Depth 10
+
+"Summary:" | Out-File -FilePath $LogPath -Append -Encoding utf8
+$summary | Out-File -FilePath $LogPath -Append -Encoding utf8
+
+if ($RulesetId) {
+    $rulesetEndpoint = "/repos/$Repository/rulesets/$RulesetId"
+    $rulesetJson = gh api $rulesetEndpoint
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to retrieve ruleset id '$RulesetId' from GitHub API."
+    }
+
+    "Ruleset detail ($RulesetId):" | Out-File -FilePath $LogPath -Append -Encoding utf8
+    $rulesetJson | Out-File -FilePath $LogPath -Append -Encoding utf8
+}
+
+if ($WriteSnapshotFile) {
+    New-Item -ItemType Directory -Path $SnapshotDirectory -Force | Out-Null
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $snapshotFile = Join-Path $SnapshotDirectory "rulesets-$stamp.json"
+    $rulesetsJson | Out-File -FilePath $snapshotFile -Encoding utf8
+    "Snapshot file: $snapshotFile" | Out-File -FilePath $LogPath -Append -Encoding utf8
+    Write-Output "Snapshot file written: $snapshotFile"
+}
+
+Write-Output "Ruleset log updated: $LogPath"
+
 # SIG # Begin signature block
 # MIIs4wYJKoZIhvcNAQcCoIIs1DCCLNACAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDE+rLwS2geDRk6
-# kpxYnWLkoyGWwbipOe+wXNgfUhQxNqCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCb6NWN1JaI7Xx5
+# 5XDliUAGAohZWhS12yKy1IZLPu0FBKCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -443,34 +312,34 @@ Write-Output "Branch path policy passed for '$BranchName'."
 # IExpbWl0ZWQxKzApBgNVBAMTIlNlY3RpZ28gUHVibGljIENvZGUgU2lnbmluZyBD
 # QSBSMzYCEBVU792hXgxFEa5eaR5wqcQwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYB
 # BAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAc
-# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgDZIy
-# eK5zPJPlb9qDtppEVrXIqtIhbQqzcKlwH9TCmD0wDQYJKoZIhvcNAQEBBQAEggIA
-# bfs1UQsHEl3tWI+f27qPRGV0/CpUNfY8jOobJ0gQYTUrZ/+1wieNP1kdklwjlOxH
-# E/v58RaRNeEp7k3PR4Cn7vht+FY8XHiXB/MnwksW6b1e08xKT/usQxakiGOGYRc5
-# jE73tY0LOdxvBU6c9da5MgQkG7BgL1ITtogv+Ytke+FFiBQkxUHL3Oz4q+GQGA6C
-# 60JBjk0awjCiTeo9Ni3PJH/tm9gKPPhdX5fjHHxsOyn2z9/BCdyJsMy8TiSTWKOv
-# KiKmgzclNH4V0Orn2C8UoY6pyDugIHZZIAS/0ig8QmFQutnncw5z2aSXNpF1llaH
-# HCDM+rBewfSm7tzFBu3RXYQUSiHd939JJQKVP7W1+Yl3Sm1GDpRGS80NtXNqxJw6
-# AiH1UDmX7bNiFJv+yb7LyAldo6CNTrJ8SqYP2iQ89/B/4AAZCqkLbqKylAK+um6w
-# u+pe/7A/FSVTV3MHqoSMyn/AVF2cuN5+K2sSnMkjd8lNsYBpCSZPi0lEiOQ6s8mZ
-# cy/trSG7xifV/PKDzY8+FgVqX8713+uUD1soVxpNENc4LTxcBzzWMoi5qCVyjEW0
-# gh8DZmz3boisqKcWEHu8uQbX6fZOEV/LlrCEZ3p0zQ4oWGhMsqDmEI64P9f9jaTj
-# 2FK/Fs7EuP39iAL9sdoLs86cMp6llyVcyp4CPia6NGuhggMjMIIDHwYJKoZIhvcN
+# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgpm4N
+# zkfK1s75AHR7s5WOe23qZyY8jQueit9TWmIVAy0wDQYJKoZIhvcNAQEBBQAEggIA
+# Ko1sTZ5L6ipu33mYVcfuky8caP3xzt/99NAK0jYq+GGrXKq1yzFMAmnKE05kERmS
+# 99qgyfGjxlJJnGKWgJ0hb+0H6Aohk8SK/YZKH6oQB12BNfmtSwHJvm4VVSdyC9dJ
+# OohItJxzJR+JOiqFQsPi4ywgB4jdSVwK2hjjrSirRTHEabPiW9GlvrscjTR/3qlA
+# 7k1rofyj7n2djj84orOvURz+jFvGSa1eG/MffCozvW5yrpcjA2dSFCMXRdp7roDE
+# z9alwmB6Mci6wOuhqGAUc3/R1/tPONwRIq5bSWJZvZSeDyjAim/jMOSq7G/HYdRh
+# vZ4gAJso1r/3i07srYsR2wQ7MY2cHxJbhgKPcj+iPWnHL7RpNqkP13RZszTOr3+A
+# jJCBBv6z8v2ri3vjHBVhzN7BV3lvPV/TisxXVfaae8JEBHwzJm5kXYORoRULlmyr
+# HGVdPqnZa7TmSy8whIEtoLtVMUrYKW/VQL0Da1BdaTbrSyaU7fH3qUsmGz8I+tSf
+# d6en0DCate21FHu9hvyr8VMrhFuCxQaOfdBHsayXZFdSPKinUhyrAyn0N1wluPFS
+# mXvEdVrD68sNvHsF6AhE9Y/zX/MmtGn94e5u/Q5wxPQzESnUJTq6GpGTYsnVR9OJ
+# vUmuWOE9amH5Qgz1aXJu9Or/lGs9n0voI/fxQKZijdehggMjMIIDHwYJKoZIhvcN
 # AQkGMYIDEDCCAwwCAQEwajBVMQswCQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGln
 # byBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5n
 # IENBIFI0MQIRAOdO8lWwUE/626bf9/yLoxUwDQYJYIZIAWUDBAICBQCgeTAYBgkq
-# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA2MjMwMjMw
-# MTJaMD8GCSqGSIb3DQEJBDEyBDD7QDsEVMGufBgoIEI0/Mv9hDN4w+G7FVq8sPC5
-# MS/fGSbCoPQGwSGC4wlXarNHk6AwDQYJKoZIhvcNAQEBBQAEggIAHKh7VCFO6RPD
-# xxam6c+IdM7hPCkc8yW95lq6QO/eXLZ6i+vbegoNao3CFc9O4ImDqqQ1+k3Hjly6
-# 54y/02c5Amlq3PZsyylUF9sN4sRzcLKnsav4ENed+6S26je575p/l4+Db0xIoZvy
-# dRPFcg02QdZxs54K7ws5IYGReLTYf3uL2dl84+bynclUUXy1zrWX5MzgzDdRX0lE
-# f5cftbW3pATkyAJYEOehHSIBkPAuGEGkXcuRUOfgAom/+hGeE+WeD4a9ii8H6iLX
-# 9rZiRNwabXcQkBL9UlO+xVNAV4331MkaOQET+scJRKt72U1AVdo6JFxvxzAgo4yX
-# Z5J9iPMIBjxPQtsJf2Z4zUFBXyEJWEgRm1S3NSVJiu+rILtlCt80w+BTW93ZKPQX
-# C5z6H/TU1cGvFQIE/VIWdsFiiSyV1T4tYLSEPc5aDeK6vA8gRAGrExFJDuCocOT4
-# ClgZ8FecdkUQw9rdw7ue2YhEHNiiYbZlFJNgHp+YVFB4oeFgQiSZKg8QrxlIzocs
-# kvAsnY8lhaiapXFvtW46gUp79Cm6oIlhEPNZfDhgFE6Uu3GjRE2C2a/WJFVhhw1y
-# 5OJi4K+pJ+No/2k3BNxTY3D7xcgdCAoUFcWACF0jqEl0BbJUfKL1cn6z6XmI9+H3
-# Gdbm4nFpYsEkpyBOyhEA52B0NxYhELU=
+# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA2MjIyMTM5
+# MjVaMD8GCSqGSIb3DQEJBDEyBDCYhNFAqKtzayJCHNK1V8Amsur/zBl+Oj7pVpGQ
+# 3lRa5etUEoZKDXLvBi+mgo4v2u0wDQYJKoZIhvcNAQEBBQAEggIAGhRYsuWnVuP4
+# ntZOOR3GyhWPAqXXlGj5TK17nXwnEP6rM+OxxzaD073HF87t15MAN6FncMdKtaiQ
+# /2WbAto5GjOTIm0p6tOyRRJlStlknBwYIuYsH2Y0QL7AGCbAQC2OevpIy4vVjkfj
+# 2IUgZGN4oTWlgsRuNcE3rwNTRHf4kp+gxL1v7Dalx9//ad7X4yAhwEVM3Mlqg8hB
+# mfYrKGNlEVdPJtrKR72geXpiAOSJUBZo/hpE0blUcMkePtWpcWBLKuefORL+mDRU
+# 4qidGOG5uDwdZD5qhNE5Le+rPE7+PzPR0Lg6APnAkJKIkCU/4kvbqrAEifC0LIPk
+# Udcjkw+YcxPfRGljn1Q30vm0mhn1LyBakao0nJZ3rWT5ie7dp4UkHKT2ny/CCF4A
+# X96wTK7tHLvXG39KKwNF+JeaKYajv7eZPNc4wMOaQHWgBEJgkFdb4+IkwFMAdMn1
+# bdNrMeIIkYQiGyfxvR0fxiK7JGn7vm9AB7LcOKPGHv2JIRdBhl4bE/Is5kBZTX8e
+# L8rmeUNw/KY62S7Ow4gfgTi8ZWsnYTlcqirp2YcmZ8lGw1zbpbna7izlAYf/8dcL
+# X7tRg0FEL+iRgTCosDY5dP2BAzA8+sDJ1GXE9hMZTUqJ80RYnLuGt4wpTGCx5kEE
+# uPElQeIW0bpC98mv1AA2ViwWArQHcgI=
 # SIG # End signature block
