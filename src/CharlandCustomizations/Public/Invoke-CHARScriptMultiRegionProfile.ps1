@@ -134,6 +134,7 @@
   begin {
     # When -OutputSubTemplate is specified, emit a function stub for use as a ScriptBlock
     if ($OutputSubTemplate) {
+      Write-Verbose "Emitting sub-template for ScriptBlock"
       $subTemplate = @'
 {
     <#
@@ -177,7 +178,7 @@
       Write-Output $subTemplate
       return
     }
-
+    Write-Debug "Start Begin"
     # Build base AWS splat from credential parameters then remove ProfileName/Region
     # since those are arrays used for iteration in this function, not single-value
     # credential params to pass to AWS cmdlets directly.
@@ -186,31 +187,40 @@
     $awsParams.Remove('Region') | Out-Null
     if (-not $ProfileName) {
       # Try the shell's current stored credential profile name
+      Write-Debug "ProfileName not specified"
       $currentProfile = $null
       if ($StoredAWSCredentials) {
+        Write-Debug "Found StoredAWSCredentials: $StoredAWSCredentials"
         $currentProfile = $StoredAWSCredentials
       }
       if (-not $currentProfile) {
+        Write-Debug "Checking for default profile"
         # Fall back: check if there's a default profile in the credential store
         $defaultProfile = (Get-AWSCredential -ListProfileDetail |
           Where-Object { $_.ProfileName -eq 'default' } |
           Select-Object -First 1 -ExpandProperty ProfileName)
         if ($defaultProfile) {
+          Write-Debug "Default profile found: $defaultProfile"
           $currentProfile = $defaultProfile
         }
       }
       if ($currentProfile) {
+        Write-Verbose "Using current profile: $currentProfile"
         $ProfileName = @($currentProfile)
       }
       else {
         Write-Error "No ProfileName specified and no current AWS profile found. Use -ProfileName or Set-AWSCredential."
         return
       }
+  
     }
+  Write-Debug "aRegion checks : $Region"
 
-    if (-not $Region) {
+    if ($Region -eq "") {
+      Write-Debug "Region not specified"
       $defaultRegion = (Get-DefaultAWSRegion).Region
       if ($defaultRegion) {
+        Write-Verbose "Using current/default region: $defaultRegion"
         $Region = @($defaultRegion)
       }
       else {
@@ -218,9 +228,12 @@
         return
       }
     }
+    else {
+      Write-Verbose "region specified: $Region"
+    }
     $profileCount = 0
     $regionTotal = $Region.Count
-
+    Write-Verbose "Executing against $($ProfileName.Count) profile(s) across $regionTotal region(s) each"
     # Match common AWS.Tools missing-region failures:
     # - "No region..." text
     # - "RegionEndpoint" / "ServiceURL" configuration errors
@@ -234,10 +247,12 @@
       'region.*not.*(configured|specified|set)'
     )
     $missingRegionPattern = '(?i)(' + ($missingRegionPatternAlternatives -join '|') + ')'
-  }
+    Write-Debug "end begin"
+}
 
   process {
     foreach ($prof in $ProfileName) {
+      Write-Verbose "Processing profile: $prof"
       $profileCount++
       if (-not $NoProgress) {
         Write-Progress -Id 1 -Activity "Processing AWS Profiles" `
@@ -251,6 +266,7 @@
       $iterParams = $awsParams.Clone()
       $iterParams['ProfileName'] = $prof
       $iterParams['Region'] = $Region[0]
+      Write-Verbose "Validating profile '$prof' with region '$($iterParams.Region)'"
       try {
         $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
         $accountId = $identity.Account
@@ -356,7 +372,43 @@
           $origErrorAction = $ErrorActionPreference
           $ErrorActionPreference = 'Stop'
           try {
-            $results = & $ScriptBlock
+            $results = $NULL
+            write-verbose "Results before script: $results" 
+            Write-Verbose "Region:  $r"
+            # $results = & $ScriptBlock
+            # $results = & $ScriptBlock -Region $r -ProfileName $prof
+            # Inject Region and ProfileName as automatic variables so simple
+            # ScriptBlocks can reference them directly (e.g. -Region $Region).
+            # Also inject $PSDefaultParameterValues so any cmdlet or wrapper
+            # accepting -Region/-ProfileName picks them up implicitly during
+            # parameter binding — this avoids requiring users to thread the
+            # values through every wrapper call.
+            $iterationDefaults = @{
+              '*:Region'      = $r
+              '*:ProfileName' = $prof
+            }
+            $vars = [System.Collections.Generic.List[psvariable]]::new()
+            $vars.Add([psvariable]::new('Region', $r))
+            $vars.Add([psvariable]::new('ProfileName', $prof))
+            $vars.Add([psvariable]::new('PSDefaultParameterValues', $iterationDefaults))
+            $results = $ScriptBlock.InvokeWithContext($null, $vars)
+
+            write-verbose "Results after script:  $results"
+            if ($Null -eq $results){
+              Write-Verbose "ScriptBlock returned null for Profile='$prof', Region='$r'"
+              $results = [PSCustomObject]@{ 
+                'Message' = 'No results returned'
+              }
+            }
+          }
+          catch {
+           # show error
+            Write-Warning "Error in ScriptBlock for Profile='${prof}', Region='${r}': $_"
+            # return an empty item
+            # to indicate failure but keep processing
+            $results = [PSCustomObject]@{
+              'Message' = "Error in ScriptBlock: $_"
+             }
           }
           finally {
             $ErrorActionPreference = $origErrorAction
@@ -364,6 +416,7 @@
 
           if ($results) {
             foreach ($item in $results) {
+              Write-Debug "Returning result for Profile='$prof', Region='$r': $item"
               $props = [ordered]@{}
 
               # If the item is a simple type (string, number, etc.), wrap it so enrichment works
@@ -395,7 +448,10 @@
             }
           }
           else {
+            Throw "Error - Results shoud not be Null"
             Write-Verbose "No results returned for Profile='$prof', Region='$r'"
+            #return empty result to indicate no data for this profile/region
+           
           }
         }
         catch {
