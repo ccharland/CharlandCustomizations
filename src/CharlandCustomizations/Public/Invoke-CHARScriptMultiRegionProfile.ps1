@@ -328,6 +328,7 @@
         Write-Verbose "Executing against Profile='$prof', Region='$r'"
 
         try {
+          write-verbose "saving state"
           # Save current AWS session state
           $origStoredRegion = $global:StoredAWSRegion
           $origStoredCreds = $global:StoredAWSCredentials
@@ -373,7 +374,7 @@
           $ErrorActionPreference = 'Stop'
           try {
             $results = $NULL
-            write-verbose "Results before script: $results" 
+            write-verbose "Try to invoke script: Results before script: $results" 
             Write-Verbose "Region:  $r"
             # $results = & $ScriptBlock
             # $results = & $ScriptBlock -Region $r -ProfileName $prof
@@ -393,8 +394,8 @@
             $vars.Add([psvariable]::new('PSDefaultParameterValues', $iterationDefaults))
             $results = $ScriptBlock.InvokeWithContext($null, $vars)
 
-            write-verbose "Results after script:  $results"
-            if ($Null -eq $results){
+            write-verbose "(397)invoke ok: Results after script:  $results"
+            if ($results.count -eq 0){
               Write-Verbose "ScriptBlock returned null for Profile='$prof', Region='$r'"
               $results = [PSCustomObject]@{ 
                 'Message' = 'No results returned'
@@ -411,22 +412,29 @@
              }
           }
           finally {
+            write-verbose "(415)finally block"
+            write-verbose "Results: $results"
             $ErrorActionPreference = $origErrorAction
           }
 
           if ($results) {
+            Write-Verbose "(419)Results for Profile='$prof', Region='$r'"
+            write-verbose "(420)results:  $results"
             foreach ($item in $results) {
               Write-Debug "Returning result for Profile='$prof', Region='$r': $item"
               $props = [ordered]@{}
 
-              # If the item is a simple type (string, number, etc.), wrap it so enrichment works
+              # If the item is a simple type (string, number, etc.), wrap it so enrichment worksug
               if ($item -is [string]) {
+                Write-Debug "item: string"
                 $props['Value'] = $item
               }
               elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
+                Write-Debug "item: primitive"
                 $props['Value'] = $item
               }
               else {
+                write-debug "item: psobject"
                 foreach ($p in $item.PSObject.Properties) {
                   $props[$p.Name] = $p.Value
                 }
@@ -448,14 +456,14 @@
             }
           }
           else {
-            Throw "Error - Results shoud not be Null"
+            Throw "(457)Error - Results should not be Null"
             Write-Verbose "No results returned for Profile='$prof', Region='$r'"
             #return empty result to indicate no data for this profile/region
            
           }
         }
         catch {
-          Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
+          Write-Warning "(460)Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
         }
         finally {
           # Restore original AWS session state
