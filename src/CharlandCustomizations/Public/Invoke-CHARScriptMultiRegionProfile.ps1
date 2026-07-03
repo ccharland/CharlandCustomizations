@@ -265,7 +265,13 @@
       # Use the first region from the list for validation since Region was removed from awsParams
       $iterParams = $awsParams.Clone()
       $iterParams['ProfileName'] = $prof
-      $iterParams['Region'] = $Region[0]
+      if ($Region -and $Region.Count -gt 0) {
+        $iterParams['Region'] = $Region[0]
+      }
+      else {
+        Write-Error "Region array is empty or null for profile '$prof'"
+        continue
+      }
       Write-Verbose "Validating profile '$prof' with region '$($iterParams.Region)'"
       try {
         $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
@@ -394,22 +400,14 @@
             $vars.Add([psvariable]::new('PSDefaultParameterValues', $iterationDefaults))
             $results = $ScriptBlock.InvokeWithContext($null, $vars)
 
-            write-verbose "(397)invoke ok: Results after script:  $results"
-            if ($results.count -eq 0){
-              Write-Verbose "ScriptBlock returned null for Profile='$prof', Region='$r'"
-              $results = [PSCustomObject]@{ 
-                'Message' = 'No results returned'
-              }
+            $results = @($ScriptBlock.InvokeWithContext($null, $vars))
+
+            if ($results.Count -eq 0) {
+              Write-Verbose "No results returned for Profile='$prof', Region='$r'"
             }
           }
           catch {
-           # show error
-            Write-Warning "Error in ScriptBlock for Profile='${prof}', Region='${r}': $_"
-            # return an empty item
-            # to indicate failure but keep processing
-            $results = [PSCustomObject]@{
-              'Message' = "Error in ScriptBlock: $_"
-             }
+            throw
           }
           finally {
             write-verbose "(415)finally block"
@@ -424,7 +422,7 @@
               Write-Debug "Returning result for Profile='$prof', Region='$r': $item"
               $props = [ordered]@{}
 
-              # If the item is a simple type (string, number, etc.), wrap it so enrichment worksug
+              # If the item is a simple type (string, number, etc.), wrap it so enrichment works
               if ($item -is [string]) {
                 Write-Debug "item: string"
                 $props['Value'] = $item
@@ -456,10 +454,7 @@
             }
           }
           else {
-            Throw "(457)Error - Results should not be Null"
             Write-Verbose "No results returned for Profile='$prof', Region='$r'"
-            #return empty result to indicate no data for this profile/region
-           
           }
         }
         catch {
