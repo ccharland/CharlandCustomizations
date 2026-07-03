@@ -11,7 +11,7 @@ BeforeAll {
 Describe 'Get-CHAREC2KeyTagNameStatus' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Tag {
+        Mock Get-EC2Tag -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ ResourceId = 'i-111'; Key = 'Name'; Value = 'web-server-1' }
                 [PSCustomObject]@{ ResourceId = 'i-222'; Key = 'Name'; Value = 'db-server-1' }
@@ -43,7 +43,7 @@ Describe 'Get-CHAREC2KeyTagNameStatus' -Tag 'Unit' {
     }
 
     It 'Handles no results from Get-EC2Tag gracefully' {
-        Mock Get-EC2Tag { @() }
+        Mock Get-EC2Tag -ModuleName Audit-AWSAccount { @() }
 
         $results = @(Get-CHAREC2KeyTagNameStatus -TagKey 'Environment')
         $results.Count | Should -Be 0

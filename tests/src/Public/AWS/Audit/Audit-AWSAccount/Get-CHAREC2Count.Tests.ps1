@@ -11,31 +11,31 @@ BeforeAll {
 Describe 'Get-CHAREC2Count' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Region {
+        Mock Get-EC2Region -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ RegionName = 'us-east-1' }
                 [PSCustomObject]@{ RegionName = 'us-west-2' }
             )
         }
-        Mock Get-EC2Instance {
+        Mock Get-EC2Instance -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ InstanceId = 'i-111'; State = @{ Name = 'running' } }
                 [PSCustomObject]@{ InstanceId = 'i-222'; State = @{ Name = 'stopped' } }
             )
         }
-        Mock Get-EC2Volume {
+        Mock Get-EC2Volume -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ VolumeId = 'vol-111'; Size = 100 })
         }
-        Mock Get-EC2Snapshot {
+        Mock Get-EC2Snapshot -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ SnapshotId = 'snap-111' })
         }
-        Mock Get-ASAutoScalingGroup {
+        Mock Get-ASAutoScalingGroup -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ AutoScalingGroupName = 'asg-1' })
         }
-        Mock Get-ELB2LoadBalancer {
+        Mock Get-ELB2LoadBalancer -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ LoadBalancerName = 'alb-1' })
         }
-        Mock Get-ELBLoadBalancer {
+        Mock Get-ELBLoadBalancer -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ LoadBalancerName = 'clb-1' })
         }
     }
@@ -62,7 +62,7 @@ Describe 'Get-CHAREC2Count' -Tag 'Unit' {
     }
 
     It 'Handles API errors gracefully and marks ScanOk false' {
-        Mock Get-EC2Instance { throw 'Access denied' }
+        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { throw 'Access denied' }
 
         $results = @(Get-CHAREC2Count)
         $results[0].ScanOk | Should -BeFalse

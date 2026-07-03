@@ -11,7 +11,7 @@ BeforeAll {
 Describe 'Find-CHAROpenSecurityGroup' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2SecurityGroup {
+        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{
                     GroupId = 'sg-open22'

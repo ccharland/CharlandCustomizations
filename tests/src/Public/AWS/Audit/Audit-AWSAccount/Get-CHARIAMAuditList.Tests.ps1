@@ -11,9 +11,9 @@ BeforeAll {
 Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Request-IAMCredentialReport { [PSCustomObject]@{ State = 'COMPLETE' } }
-        Mock Start-Sleep {}
-        Mock Get-IAMCredentialReport {
+        Mock Request-IAMCredentialReport -ModuleName Audit-AWSAccount { [PSCustomObject]@{ State = 'COMPLETE' } }
+        Mock Start-Sleep -ModuleName Audit-AWSAccount {}
+        Mock Get-IAMCredentialReport -ModuleName Audit-AWSAccount {
             @('user,arn,creation_time', 'admin,arn:aws:iam::123:user/admin,2024-01-01')
         }
     }
@@ -25,7 +25,7 @@ Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
 
     It 'Calls Request-IAMCredentialReport for the specified profile' {
         Get-CHARIAMAuditList -ProfileName 'testprofile' | Out-Null
-        Should -Invoke Request-IAMCredentialReport -Times 1
+        Should -Invoke Request-IAMCredentialReport -ModuleName Audit-AWSAccount -Times 1
     }
 
     It 'Accepts ProfileName from pipeline' {
@@ -34,7 +34,7 @@ Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
     }
 
     It 'Skips header row for subsequent profiles' {
-        Mock Get-IAMCredentialReport {
+        Mock Get-IAMCredentialReport -ModuleName Audit-AWSAccount {
             @('header,row,here', 'data,row,one')
         }
 

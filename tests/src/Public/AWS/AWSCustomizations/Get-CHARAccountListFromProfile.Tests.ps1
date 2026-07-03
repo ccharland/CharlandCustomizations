@@ -11,14 +11,14 @@ BeforeAll {
 Describe 'Get-CHARAccountListFromProfile' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-AWSCredential {
+        Mock Get-AWSCredential -ModuleName AWSCustomizations {
             @(
                 [PSCustomObject]@{ ProfileName = 'dev' }
                 [PSCustomObject]@{ ProfileName = 'prod' }
             )
         } -ParameterFilter { $ListProfileDetail -eq $true }
 
-        Mock Get-STSCallerIdentity {
+        Mock Get-STSCallerIdentity -ModuleName AWSCustomizations {
             if ($ProfileName -eq 'dev') {
                 [PSCustomObject]@{ Account = '111111111111' }
             } else {
@@ -26,7 +26,7 @@ Describe 'Get-CHARAccountListFromProfile' -Tag 'Unit' {
             }
         }
 
-        Mock Get-IAMAccountAlias {
+        Mock Get-IAMAccountAlias -ModuleName AWSCustomizations {
             if ($ProfileName -eq 'dev') { 'dev-account' }
             else { 'prod-account' }
         }

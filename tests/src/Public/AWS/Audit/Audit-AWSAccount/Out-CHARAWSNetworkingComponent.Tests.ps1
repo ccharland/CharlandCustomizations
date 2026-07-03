@@ -11,10 +11,10 @@ BeforeAll {
 Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-STSCallerIdentity {
+        Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
             [PSCustomObject]@{ Account = '123456789012'; Arn = 'arn:aws:iam::123456789012:user/test' }
         }
-        Mock Get-EC2Vpc {
+        Mock Get-EC2Vpc -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 VpcId = 'vpc-111'
                 CidrBlock = '10.0.0.0/16'
@@ -22,7 +22,7 @@ Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
                 Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'main-vpc' })
             })
         }
-        Mock Get-EC2Subnet {
+        Mock Get-EC2Subnet -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 SubnetId = 'subnet-111'
                 VpcId = 'vpc-111'
@@ -31,20 +31,20 @@ Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
                 Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'public-subnet' })
             })
         }
-        Mock Get-EC2RouteTable {
+        Mock Get-EC2RouteTable -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 RouteTableId = 'rtb-111'
                 VpcId = 'vpc-111'
                 Routes = @([PSCustomObject]@{ DestinationCidrBlock = '0.0.0.0/0'; GatewayId = 'igw-111' })
             })
         }
-        Mock Get-EC2InternetGateway {
+        Mock Get-EC2InternetGateway -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 InternetGatewayId = 'igw-111'
                 Attachments = @([PSCustomObject]@{ VpcId = 'vpc-111'; State = 'available' })
             })
         }
-        Mock Get-EC2NatGateway {
+        Mock Get-EC2NatGateway -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 NatGatewayId = 'nat-111'
                 SubnetId = 'subnet-111'
@@ -73,17 +73,17 @@ Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
     }
 
     It 'Handles accounts with no VPCs gracefully' {
-        Mock Get-EC2Vpc { @() }
-        Mock Get-EC2Subnet { @() }
-        Mock Get-EC2RouteTable { @() }
-        Mock Get-EC2InternetGateway { @() }
-        Mock Get-EC2NatGateway { @() }
+        Mock Get-EC2Vpc -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2Subnet -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2RouteTable -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2InternetGateway -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2NatGateway -ModuleName Audit-AWSAccount { @() }
 
         { Out-CHARAWSNetworkingComponent -RootPath $TestDrive } | Should -Not -Throw
     }
 
     It 'Calls Get-STSCallerIdentity to identify the account' {
         Out-CHARAWSNetworkingComponent -RootPath $TestDrive
-        Should -Invoke Get-STSCallerIdentity -Times 1
+        Should -Invoke Get-STSCallerIdentity -ModuleName Audit-AWSAccount -Times 1
     }
 }

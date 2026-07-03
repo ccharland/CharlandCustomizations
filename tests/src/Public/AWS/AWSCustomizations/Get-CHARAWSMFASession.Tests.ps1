@@ -11,10 +11,10 @@ BeforeAll {
 Describe 'Get-CHARAWSMFASession' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-IAMMFADevice {
+        Mock Get-IAMMFADevice -ModuleName AWSCustomizations {
             [PSCustomObject]@{ SerialNumber = 'arn:aws:iam::123456789012:mfa/testuser' }
         }
-        Mock Get-STSSessionToken {
+        Mock Get-STSSessionToken -ModuleName AWSCustomizations {
             [PSCustomObject]@{
                 AccessKeyId = 'ASIA1234567890'
                 SecretAccessKey = 'fakesecret'
@@ -31,7 +31,7 @@ Describe 'Get-CHARAWSMFASession' -Tag 'Unit' {
 
     It 'Passes the MFA serial number from Get-IAMMFADevice to Get-STSSessionToken' {
         Get-CHARAWSMFASession -TokenCode '654321' | Out-Null
-        Should -Invoke Get-STSSessionToken -ParameterFilter {
+        Should -Invoke Get-STSSessionToken -ModuleName AWSCustomizations -ParameterFilter {
             $SerialNumber -eq 'arn:aws:iam::123456789012:mfa/testuser' -and
             $TokenCode -eq '654321'
         }

@@ -11,32 +11,32 @@ BeforeAll {
 Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Instance {
+        Mock Get-EC2Instance -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ InstanceId = 'i-111' }
                 [PSCustomObject]@{ InstanceId = 'i-222' }
             )
         }
-        Mock Get-LMFunctionList {
+        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ FunctionName = 'func-1' }
                 [PSCustomObject]@{ FunctionName = 'func-2' }
                 [PSCustomObject]@{ FunctionName = 'func-3' }
             )
         }
-        Mock Get-CFNStack {
+        Mock Get-CFNStack -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ StackName = 'stack-1' })
         }
-        Mock Get-S3Bucket {
+        Mock Get-S3Bucket -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ BucketName = 'bucket-1' }
                 [PSCustomObject]@{ BucketName = 'bucket-2' }
             )
         }
-        Mock Get-EC2Vpc {
+        Mock Get-EC2Vpc -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ VpcId = 'vpc-111' })
         }
-        Mock Get-EC2SecurityGroup {
+        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{ GroupId = 'sg-111' })
         }
     }
@@ -58,7 +58,7 @@ Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
     }
 
     It 'Handles API errors for individual services without failing entirely' {
-        Mock Get-LMFunctionList { throw 'Access denied' }
+        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount { throw 'Access denied' }
 
         # Should still return data for other services
         $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))

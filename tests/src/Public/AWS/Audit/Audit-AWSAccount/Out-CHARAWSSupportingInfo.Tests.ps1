@@ -11,24 +11,24 @@ BeforeAll {
 Describe 'Out-CHARAWSSupportingInfo' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-STSCallerIdentity {
+        Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
             [PSCustomObject]@{ Account = '123456789012'; Arn = 'arn:aws:iam::123456789012:user/admin' }
         }
-        Mock Get-DefaultAWSRegion {
+        Mock Get-DefaultAWSRegion -ModuleName Audit-AWSAccount {
             [PSCustomObject]@{ Region = 'us-east-1' }
         }
-        Mock Get-SSMParameterList {
+        Mock Get-SSMParameterList -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ Name = '/app/config/db-host'; Type = 'String'; LastModifiedDate = (Get-Date) }
                 [PSCustomObject]@{ Name = '/app/config/api-key'; Type = 'SecureString'; LastModifiedDate = (Get-Date) }
             )
         }
-        Mock Get-SECSecretList {
+        Mock Get-SECSecretList -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ Name = 'prod/database'; ARN = 'arn:aws:secretsmanager:us-east-1:123:secret:prod/database' }
             )
         }
-        Mock Get-CFNExport {
+        Mock Get-CFNExport -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ Name = 'VpcId'; Value = 'vpc-111'; ExportingStackId = 'arn:aws:cfn:us-east-1:123:stack/net/abc' }
             )
@@ -54,15 +54,15 @@ Describe 'Out-CHARAWSSupportingInfo' -Tag 'Unit' {
     }
 
     It 'Handles empty service responses gracefully' {
-        Mock Get-SSMParameterList { @() }
-        Mock Get-SECSecretList { @() }
-        Mock Get-CFNExport { @() }
+        Mock Get-SSMParameterList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-SECSecretList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-CFNExport -ModuleName Audit-AWSAccount { @() }
 
         { Out-CHARAWSSupportingInfo -RootPath $TestDrive } | Should -Not -Throw
     }
 
     It 'Calls Get-STSCallerIdentity for account identification' {
         Out-CHARAWSSupportingInfo -RootPath $TestDrive
-        Should -Invoke Get-STSCallerIdentity -Times 1
+        Should -Invoke Get-STSCallerIdentity -ModuleName Audit-AWSAccount -Times 1
     }
 }

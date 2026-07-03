@@ -11,7 +11,7 @@ BeforeAll {
 Describe 'Get-CHAREC2VolumeReport' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Volume {
+        Mock Get-EC2Volume -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{
                     VolumeId = 'vol-111'
@@ -58,7 +58,7 @@ Describe 'Get-CHAREC2VolumeReport' -Tag 'Unit' {
     }
 
     It 'Handles empty volume list gracefully' {
-        Mock Get-EC2Volume { @() }
+        Mock Get-EC2Volume -ModuleName Audit-AWSAccount { @() }
 
         $results = @(Get-CHAREC2VolumeReport)
         $results.Count | Should -Be 0

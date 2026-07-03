@@ -11,7 +11,7 @@ BeforeAll {
 Describe 'Get-CHAREC2SnapshotReport' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Snapshot {
+        Mock Get-EC2Snapshot -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{
                     SnapshotId = 'snap-111'
@@ -57,7 +57,7 @@ Describe 'Get-CHAREC2SnapshotReport' -Tag 'Unit' {
     }
 
     It 'Handles no snapshots returned' {
-        Mock Get-EC2Snapshot { @() }
+        Mock Get-EC2Snapshot -ModuleName Audit-AWSAccount { @() }
 
         $results = @(Get-CHAREC2SnapshotReport)
         $results.Count | Should -Be 0

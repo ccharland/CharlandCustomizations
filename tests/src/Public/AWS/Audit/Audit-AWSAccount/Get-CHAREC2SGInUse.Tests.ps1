@@ -11,13 +11,13 @@ BeforeAll {
 Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2SecurityGroup {
+        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{ GroupId = 'sg-used'; GroupName = 'in-use-sg'; VpcId = 'vpc-123' }
                 [PSCustomObject]@{ GroupId = 'sg-unused'; GroupName = 'orphan-sg'; VpcId = 'vpc-123' }
             )
         }
-        Mock Get-EC2Instance {
+        Mock Get-EC2Instance -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{
                     InstanceId = 'i-111'
@@ -25,7 +25,7 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
                 }
             )
         }
-        Mock Get-EC2NetworkInterface {
+        Mock Get-EC2NetworkInterface -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{
                     NetworkInterfaceId = 'eni-111'
@@ -52,8 +52,8 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
     }
 
     It 'Handles empty instance list gracefully' {
-        Mock Get-EC2Instance { @() }
-        Mock Get-EC2NetworkInterface { @() }
+        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2NetworkInterface -ModuleName Audit-AWSAccount { @() }
 
         $results = @(Get-CHAREC2SGInUse)
         # All SGs should be reported as unused

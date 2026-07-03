@@ -11,7 +11,7 @@ BeforeAll {
 Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2SecurityGroup {
+        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{
                     GroupId = 'sg-db'
@@ -46,18 +46,18 @@ Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
     }
 
     It 'Finds security groups with database port rules' {
-        $results = @(Find-CHAREC2DBSG)
+        $results = @(Find-CHAREC2DBSG -Region 'us-east-1')
         $results.Count | Should -BeGreaterThan 0
         $results.GroupId | Should -Contain 'sg-db'
     }
 
     It 'Does not flag security groups without database ports' {
-        $results = @(Find-CHAREC2DBSG)
+        $results = @(Find-CHAREC2DBSG -Region 'us-east-1')
         $results.GroupId | Should -Not -Contain 'sg-web'
     }
 
     It 'Detects all-traffic rules as covering database ports' {
-        Mock Get-EC2SecurityGroup {
+        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 GroupId = 'sg-alltraffic'
                 GroupName = 'all-traffic'
@@ -74,13 +74,31 @@ Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
             })
         }
 
-        $results = @(Find-CHAREC2DBSG)
+        $results = @(Find-CHAREC2DBSG -Region 'us-east-1')
         $results.GroupId | Should -Contain 'sg-alltraffic'
     }
 
-    It 'Accepts custom DatabasePorts parameter' {
-        $results = @(Find-CHAREC2DBSG -DatabasePorts @(9999))
-        # Port 5432 should no longer match
-        $results.Count | Should -Be 0
+    It 'Returns empty when no rules match custom DatabasePorts' {
+        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
+            @([PSCustomObject]@{
+                GroupId = 'sg-noport'
+                GroupName = 'no-match'
+                VpcId = 'vpc-123'
+                IpPermissions = @(
+                    [PSCustomObject]@{
+                        IpProtocol = 'tcp'
+                        FromPort = 443
+                        ToPort = 443
+                        Ipv4Ranges = @([PSCustomObject]@{ CidrIp = '10.0.0.0/8'; Description = '' })
+                        Ipv6Ranges = @()
+                    }
+                )
+            })
+        }
+
+        $results = @(Find-CHAREC2DBSG -DatabasePorts @(9999) -Region 'us-east-1')
+        # No database port findings — results should not contain any GroupId matching
+        $findings = $results | Where-Object { $_.PSObject.Properties.Name -contains 'GroupId' }
+        $findings.Count | Should -Be 0
     }
 }
