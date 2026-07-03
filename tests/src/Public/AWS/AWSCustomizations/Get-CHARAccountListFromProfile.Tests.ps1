@@ -10,7 +10,48 @@ BeforeAll {
 
 Describe 'Get-CHARAccountListFromProfile' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHARAccountListFromProfile | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-AWSCredential {
+            @(
+                [PSCustomObject]@{ ProfileName = 'dev' }
+                [PSCustomObject]@{ ProfileName = 'prod' }
+            )
+        } -ParameterFilter { $ListProfileDetail -eq $true }
+
+        Mock Get-STSCallerIdentity {
+            if ($ProfileName -eq 'dev') {
+                [PSCustomObject]@{ Account = '111111111111' }
+            } else {
+                [PSCustomObject]@{ Account = '222222222222' }
+            }
+        }
+
+        Mock Get-IAMAccountAlias {
+            if ($ProfileName -eq 'dev') { 'dev-account' }
+            else { 'prod-account' }
+        }
+    }
+
+    It 'Returns one object per profile' {
+        $results = @(Get-CHARAccountListFromProfile)
+        $results.Count | Should -Be 2
+    }
+
+    It 'Includes ProfileName in output' {
+        $results = @(Get-CHARAccountListFromProfile)
+        $results[0].Profilename | Should -Be 'dev'
+        $results[1].Profilename | Should -Be 'prod'
+    }
+
+    It 'Includes Account from Get-STSCallerIdentity' {
+        $results = @(Get-CHARAccountListFromProfile)
+        $results[0].Account | Should -Be '111111111111'
+        $results[1].Account | Should -Be '222222222222'
+    }
+
+    It 'Includes AccountAlias from Get-IAMAccountAlias' {
+        $results = @(Get-CHARAccountListFromProfile)
+        $results[0].AccountAlias | Should -Be 'dev-account'
+        $results[1].AccountAlias | Should -Be 'prod-account'
     }
 }

@@ -10,15 +10,36 @@ BeforeAll {
 
 Describe 'Start-CHAREC2RetryLoop' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Start-CHAREC2RetryLoop | Should -Not -BeNullOrEmpty
+    It 'Returns the ScriptBlock result on first success' {
+        $result = Start-CHAREC2RetryLoop -ScriptBlock { 'success' } -Confirm:$false
+        $result | Should -Be 'success'
     }
 
-    It 'Has a ScriptBlock parameter' {
-        (Get-Command Start-CHAREC2RetryLoop).Parameters.Keys | Should -Contain 'ScriptBlock'
+    It 'Retries on failure and succeeds on second attempt' {
+        $script:attempt = 0
+        $sb = {
+            $script:attempt++
+            if ($script:attempt -lt 2) { throw 'transient error' }
+            'recovered'
+        }
+
+        $result = Start-CHAREC2RetryLoop -ScriptBlock $sb -MaxRetries 3 -DelaySeconds 0 -Confirm:$false
+        $result | Should -Be 'recovered'
+        $script:attempt | Should -Be 2
     }
 
-    It 'Has a MaxRetries parameter' {
-        (Get-Command Start-CHAREC2RetryLoop).Parameters.Keys | Should -Contain 'MaxRetries'
+    It 'Throws after MaxRetries attempts are exhausted' {
+        $sb = { throw 'persistent failure' }
+
+        { Start-CHAREC2RetryLoop -ScriptBlock $sb -MaxRetries 2 -DelaySeconds 0 -Confirm:$false } |
+            Should -Throw '*All 2 attempts failed*'
+    }
+
+    It 'Respects WhatIf and does not execute the ScriptBlock' {
+        $script:executed = $false
+        $sb = { $script:executed = $true }
+
+        Start-CHAREC2RetryLoop -ScriptBlock $sb -WhatIf | Out-Null
+        $script:executed | Should -BeFalse
     }
 }

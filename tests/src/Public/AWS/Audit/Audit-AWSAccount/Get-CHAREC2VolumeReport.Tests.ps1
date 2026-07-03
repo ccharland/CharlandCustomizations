@@ -10,15 +10,57 @@ BeforeAll {
 
 Describe 'Get-CHAREC2VolumeReport' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHAREC2VolumeReport | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2Volume {
+            @(
+                [PSCustomObject]@{
+                    VolumeId = 'vol-111'
+                    Size = 100
+                    VolumeType = 'gp3'
+                    State = 'in-use'
+                    AvailabilityZone = 'us-east-1a'
+                    Encrypted = $true
+                    Attachments = @([PSCustomObject]@{ InstanceId = 'i-111'; Device = '/dev/sda1' })
+                }
+                [PSCustomObject]@{
+                    VolumeId = 'vol-222'
+                    Size = 50
+                    VolumeType = 'gp2'
+                    State = 'available'
+                    AvailabilityZone = 'us-east-1b'
+                    Encrypted = $false
+                    Attachments = @()
+                }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHAREC2VolumeReport).Parameters.Keys | Should -Contain 'Region'
+    It 'Returns volume data with VolumeId' {
+        $results = @(Get-CHAREC2VolumeReport)
+        $results[0].VolumeId | Should -Be 'vol-111'
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHAREC2VolumeReport).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Returns all volumes from the API response' {
+        $results = @(Get-CHAREC2VolumeReport)
+        $results.Count | Should -Be 2
+    }
+
+    It 'Includes volume state in output' {
+        $results = @(Get-CHAREC2VolumeReport)
+        $results[0].State | Should -Be 'in-use'
+        $results[1].State | Should -Be 'available'
+    }
+
+    It 'Identifies unattached volumes' {
+        $results = @(Get-CHAREC2VolumeReport)
+        $unattached = $results | Where-Object { $_.State -eq 'available' }
+        $unattached.VolumeId | Should -Contain 'vol-222'
+    }
+
+    It 'Handles empty volume list gracefully' {
+        Mock Get-EC2Volume { @() }
+
+        $results = @(Get-CHAREC2VolumeReport)
+        $results.Count | Should -Be 0
     }
 }

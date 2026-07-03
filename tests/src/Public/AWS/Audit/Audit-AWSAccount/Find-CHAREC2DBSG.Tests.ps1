@@ -10,15 +10,77 @@ BeforeAll {
 
 Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Find-CHAREC2DBSG | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2SecurityGroup {
+            @(
+                [PSCustomObject]@{
+                    GroupId = 'sg-db'
+                    GroupName = 'database-sg'
+                    VpcId = 'vpc-123'
+                    IpPermissions = @(
+                        [PSCustomObject]@{
+                            IpProtocol = 'tcp'
+                            FromPort = 5432
+                            ToPort = 5432
+                            Ipv4Ranges = @([PSCustomObject]@{ CidrIp = '10.0.0.0/8'; Description = 'internal' })
+                            Ipv6Ranges = @()
+                        }
+                    )
+                },
+                [PSCustomObject]@{
+                    GroupId = 'sg-web'
+                    GroupName = 'web-sg'
+                    VpcId = 'vpc-123'
+                    IpPermissions = @(
+                        [PSCustomObject]@{
+                            IpProtocol = 'tcp'
+                            FromPort = 443
+                            ToPort = 443
+                            Ipv4Ranges = @([PSCustomObject]@{ CidrIp = '0.0.0.0/0'; Description = 'https' })
+                            Ipv6Ranges = @()
+                        }
+                    )
+                }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Find-CHAREC2DBSG).Parameters.Keys | Should -Contain 'Region'
+    It 'Finds security groups with database port rules' {
+        $results = @(Find-CHAREC2DBSG)
+        $results.Count | Should -BeGreaterThan 0
+        $results.GroupId | Should -Contain 'sg-db'
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Find-CHAREC2DBSG).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Does not flag security groups without database ports' {
+        $results = @(Find-CHAREC2DBSG)
+        $results.GroupId | Should -Not -Contain 'sg-web'
+    }
+
+    It 'Detects all-traffic rules as covering database ports' {
+        Mock Get-EC2SecurityGroup {
+            @([PSCustomObject]@{
+                GroupId = 'sg-alltraffic'
+                GroupName = 'all-traffic'
+                VpcId = 'vpc-123'
+                IpPermissions = @(
+                    [PSCustomObject]@{
+                        IpProtocol = '-1'
+                        FromPort = 0
+                        ToPort = 0
+                        Ipv4Ranges = @([PSCustomObject]@{ CidrIp = '0.0.0.0/0'; Description = '' })
+                        Ipv6Ranges = @()
+                    }
+                )
+            })
+        }
+
+        $results = @(Find-CHAREC2DBSG)
+        $results.GroupId | Should -Contain 'sg-alltraffic'
+    }
+
+    It 'Accepts custom DatabasePorts parameter' {
+        $results = @(Find-CHAREC2DBSG -DatabasePorts @(9999))
+        # Port 5432 should no longer match
+        $results.Count | Should -Be 0
     }
 }

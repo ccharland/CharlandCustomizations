@@ -10,15 +10,64 @@ BeforeAll {
 
 Describe 'Find-CHAROpenSecurityGroup' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Find-CHAROpenSecurityGroup | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2SecurityGroup {
+            @(
+                [PSCustomObject]@{
+                    GroupId = 'sg-open22'
+                    GroupName = 'open-ssh'
+                    VpcId = 'vpc-123'
+                    IpPermissions = @(
+                        [PSCustomObject]@{
+                            IpProtocol = 'tcp'
+                            FromPort = 22
+                            ToPort = 22
+                            Ipv4Ranges = @([PSCustomObject]@{ CidrIp = '0.0.0.0/0'; Description = 'SSH open' })
+                            Ipv6Ranges = @()
+                        }
+                    )
+                },
+                [PSCustomObject]@{
+                    GroupId = 'sg-safe443'
+                    GroupName = 'web-only'
+                    VpcId = 'vpc-123'
+                    IpPermissions = @(
+                        [PSCustomObject]@{
+                            IpProtocol = 'tcp'
+                            FromPort = 443
+                            ToPort = 443
+                            Ipv4Ranges = @([PSCustomObject]@{ CidrIp = '0.0.0.0/0'; Description = 'HTTPS' })
+                            Ipv6Ranges = @()
+                        }
+                    )
+                }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Find-CHAROpenSecurityGroup).Parameters.Keys | Should -Contain 'Region'
+    It 'Finds security groups open on non-allowed ports' {
+        $results = @(Find-CHAROpenSecurityGroup -Region 'us-east-1')
+        $results.Count | Should -Be 1
+        $results[0].GroupId | Should -Be 'sg-open22'
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Find-CHAROpenSecurityGroup).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Does not flag security groups open only on port 443' {
+        $results = @(Find-CHAROpenSecurityGroup -Region 'us-east-1')
+        $results.GroupId | Should -Not -Contain 'sg-safe443'
+    }
+
+    It 'Includes port information in findings' {
+        $results = @(Find-CHAROpenSecurityGroup -Region 'us-east-1')
+        $results[0].Ports | Should -Be '22'
+    }
+
+    It 'Includes open CIDR in findings' {
+        $results = @(Find-CHAROpenSecurityGroup -Region 'us-east-1')
+        $results[0].OpenCIDR | Should -BeLike '*0.0.0.0/0*'
+    }
+
+    It 'Respects custom AllowedPorts parameter' {
+        $results = @(Find-CHAROpenSecurityGroup -AllowedPorts @(22, 80, 443) -Region 'us-east-1')
+        $results.Count | Should -Be 0
     }
 }

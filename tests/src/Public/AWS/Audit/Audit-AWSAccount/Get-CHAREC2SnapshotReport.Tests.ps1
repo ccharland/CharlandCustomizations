@@ -10,15 +10,56 @@ BeforeAll {
 
 Describe 'Get-CHAREC2SnapshotReport' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHAREC2SnapshotReport | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2Snapshot {
+            @(
+                [PSCustomObject]@{
+                    SnapshotId = 'snap-111'
+                    VolumeId = 'vol-aaa'
+                    StartTime = [DateTime]'2024-01-15T10:00:00Z'
+                    VolumeSize = 100
+                    State = 'completed'
+                    Description = 'Daily backup'
+                    OwnerId = '123456789012'
+                }
+                [PSCustomObject]@{
+                    SnapshotId = 'snap-222'
+                    VolumeId = 'vol-bbb'
+                    StartTime = [DateTime]'2024-02-20T14:30:00Z'
+                    VolumeSize = 50
+                    State = 'completed'
+                    Description = 'Manual snapshot'
+                    OwnerId = '123456789012'
+                }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHAREC2SnapshotReport).Parameters.Keys | Should -Contain 'Region'
+    It 'Returns snapshot data with SnapshotId' {
+        $results = @(Get-CHAREC2SnapshotReport)
+        $results[0].SnapshotId | Should -Be 'snap-111'
+        $results[1].SnapshotId | Should -Be 'snap-222'
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHAREC2SnapshotReport).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Includes VolumeId in output' {
+        $results = @(Get-CHAREC2SnapshotReport)
+        $results[0].VolumeId | Should -Be 'vol-aaa'
+    }
+
+    It 'Includes StartTime in output' {
+        $results = @(Get-CHAREC2SnapshotReport)
+        $results[0].StartTime | Should -Be ([DateTime]'2024-01-15T10:00:00Z')
+    }
+
+    It 'Returns all snapshots from the API response' {
+        $results = @(Get-CHAREC2SnapshotReport)
+        $results.Count | Should -Be 2
+    }
+
+    It 'Handles no snapshots returned' {
+        Mock Get-EC2Snapshot { @() }
+
+        $results = @(Get-CHAREC2SnapshotReport)
+        $results.Count | Should -Be 0
     }
 }

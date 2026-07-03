@@ -10,15 +10,61 @@ BeforeAll {
 
 Describe 'Get-CHAREC2Count' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHAREC2Count | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2Region {
+            @(
+                [PSCustomObject]@{ RegionName = 'us-east-1' }
+                [PSCustomObject]@{ RegionName = 'us-west-2' }
+            )
+        }
+        Mock Get-EC2Instance {
+            @(
+                [PSCustomObject]@{ InstanceId = 'i-111'; State = @{ Name = 'running' } }
+                [PSCustomObject]@{ InstanceId = 'i-222'; State = @{ Name = 'stopped' } }
+            )
+        }
+        Mock Get-EC2Volume {
+            @([PSCustomObject]@{ VolumeId = 'vol-111'; Size = 100 })
+        }
+        Mock Get-EC2Snapshot {
+            @([PSCustomObject]@{ SnapshotId = 'snap-111' })
+        }
+        Mock Get-ASAutoScalingGroup {
+            @([PSCustomObject]@{ AutoScalingGroupName = 'asg-1' })
+        }
+        Mock Get-ELB2LoadBalancer {
+            @([PSCustomObject]@{ LoadBalancerName = 'alb-1' })
+        }
+        Mock Get-ELBLoadBalancer {
+            @([PSCustomObject]@{ LoadBalancerName = 'clb-1' })
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHAREC2Count).Parameters.Keys | Should -Contain 'Region'
+    It 'Returns results for each region' {
+        $results = @(Get-CHAREC2Count)
+        $results.Count | Should -Be 2
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHAREC2Count).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Includes Region property in output' {
+        $results = @(Get-CHAREC2Count)
+        $results[0].Region | Should -Be 'us-east-1'
+        $results[1].Region | Should -Be 'us-west-2'
+    }
+
+    It 'Reports instance count per region' {
+        $results = @(Get-CHAREC2Count)
+        $results[0].InstanceCount | Should -Be 2
+    }
+
+    It 'Sets ScanOk to true when API calls succeed' {
+        $results = @(Get-CHAREC2Count)
+        $results[0].ScanOk | Should -BeTrue
+    }
+
+    It 'Handles API errors gracefully and marks ScanOk false' {
+        Mock Get-EC2Instance { throw 'Access denied' }
+
+        $results = @(Get-CHAREC2Count)
+        $results[0].ScanOk | Should -BeFalse
     }
 }

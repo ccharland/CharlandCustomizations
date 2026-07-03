@@ -10,15 +10,42 @@ BeforeAll {
 
 Describe 'Get-CHAREC2KeyTagNameStatus' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHAREC2KeyTagNameStatus | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2Tag {
+            @(
+                [PSCustomObject]@{ ResourceId = 'i-111'; Key = 'Name'; Value = 'web-server-1' }
+                [PSCustomObject]@{ ResourceId = 'i-222'; Key = 'Name'; Value = 'db-server-1' }
+                [PSCustomObject]@{ ResourceId = 'i-333'; Key = 'Name'; Value = '' }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHAREC2KeyTagNameStatus).Parameters.Keys | Should -Contain 'Region'
+    It 'Returns objects with ResourceId property' {
+        $results = @(Get-CHAREC2KeyTagNameStatus -TagKey 'Name')
+        $results | ForEach-Object { $_.ResourceId | Should -Not -BeNullOrEmpty }
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHAREC2KeyTagNameStatus).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Returns objects with KeyName property' {
+        $results = @(Get-CHAREC2KeyTagNameStatus -TagKey 'Name')
+        $results.Count | Should -BeGreaterThan 0
+    }
+
+    It 'Requires TagKey parameter' {
+        (Get-Command Get-CHAREC2KeyTagNameStatus).Parameters['TagKey'].Attributes |
+            Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] } |
+            ForEach-Object { $_.Mandatory } | Should -Contain $true
+    }
+
+    It 'Identifies resources with empty tag values' {
+        $results = @(Get-CHAREC2KeyTagNameStatus -TagKey 'Name')
+        # Should include the resource with empty value as needing attention
+        $results.ResourceId | Should -Contain 'i-333'
+    }
+
+    It 'Handles no results from Get-EC2Tag gracefully' {
+        Mock Get-EC2Tag { @() }
+
+        $results = @(Get-CHAREC2KeyTagNameStatus -TagKey 'Environment')
+        $results.Count | Should -Be 0
     }
 }

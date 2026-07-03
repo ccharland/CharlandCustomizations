@@ -10,15 +10,53 @@ BeforeAll {
 
 Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHAREC2SGInUse | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2SecurityGroup {
+            @(
+                [PSCustomObject]@{ GroupId = 'sg-used'; GroupName = 'in-use-sg'; VpcId = 'vpc-123' }
+                [PSCustomObject]@{ GroupId = 'sg-unused'; GroupName = 'orphan-sg'; VpcId = 'vpc-123' }
+            )
+        }
+        Mock Get-EC2Instance {
+            @(
+                [PSCustomObject]@{
+                    InstanceId = 'i-111'
+                    SecurityGroups = @([PSCustomObject]@{ GroupId = 'sg-used' })
+                }
+            )
+        }
+        Mock Get-EC2NetworkInterface {
+            @(
+                [PSCustomObject]@{
+                    NetworkInterfaceId = 'eni-111'
+                    Groups = @([PSCustomObject]@{ GroupId = 'sg-used' })
+                }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHAREC2SGInUse).Parameters.Keys | Should -Contain 'Region'
+    It 'Returns security group usage data' {
+        $results = @(Get-CHAREC2SGInUse)
+        $results | Should -Not -BeNullOrEmpty
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHAREC2SGInUse).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Identifies security groups attached to instances or ENIs' {
+        $results = @(Get-CHAREC2SGInUse)
+        $results.GroupId | Should -Contain 'sg-used'
+    }
+
+    It 'Identifies unused security groups' {
+        $results = @(Get-CHAREC2SGInUse)
+        # Unused SG should be flagged or listed separately
+        $results | Where-Object { $_.GroupId -eq 'sg-unused' } | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Handles empty instance list gracefully' {
+        Mock Get-EC2Instance { @() }
+        Mock Get-EC2NetworkInterface { @() }
+
+        $results = @(Get-CHAREC2SGInUse)
+        # All SGs should be reported as unused
+        $results.Count | Should -BeGreaterOrEqual 2
     }
 }

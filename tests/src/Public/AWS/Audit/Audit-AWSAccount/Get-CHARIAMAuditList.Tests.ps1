@@ -10,11 +10,36 @@ BeforeAll {
 
 Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHARIAMAuditList | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Request-IAMCredentialReport { [PSCustomObject]@{ State = 'COMPLETE' } }
+        Mock Start-Sleep {}
+        Mock Get-IAMCredentialReport {
+            @('user,arn,creation_time', 'admin,arn:aws:iam::123:user/admin,2024-01-01')
+        }
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHARIAMAuditList).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Returns credential report data' {
+        $results = @(Get-CHARIAMAuditList -ProfileName 'myprofile')
+        $results.Count | Should -BeGreaterThan 0
+    }
+
+    It 'Calls Request-IAMCredentialReport for the specified profile' {
+        Get-CHARIAMAuditList -ProfileName 'testprofile' | Out-Null
+        Should -Invoke Request-IAMCredentialReport -Times 1
+    }
+
+    It 'Accepts ProfileName from pipeline' {
+        $results = @('prof1', 'prof2' | Get-CHARIAMAuditList)
+        $results | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Skips header row for subsequent profiles' {
+        Mock Get-IAMCredentialReport {
+            @('header,row,here', 'data,row,one')
+        }
+
+        $results = @('prof1', 'prof2' | Get-CHARIAMAuditList)
+        # First profile includes header + data (2 lines), second profile skips header (1 line)
+        $results.Count | Should -Be 3
     }
 }

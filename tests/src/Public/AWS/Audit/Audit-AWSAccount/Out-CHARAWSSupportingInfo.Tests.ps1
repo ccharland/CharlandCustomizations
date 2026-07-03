@@ -10,15 +10,59 @@ BeforeAll {
 
 Describe 'Out-CHARAWSSupportingInfo' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Out-CHARAWSSupportingInfo | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-STSCallerIdentity {
+            [PSCustomObject]@{ Account = '123456789012'; Arn = 'arn:aws:iam::123456789012:user/admin' }
+        }
+        Mock Get-DefaultAWSRegion {
+            [PSCustomObject]@{ Region = 'us-east-1' }
+        }
+        Mock Get-SSMParameterList {
+            @(
+                [PSCustomObject]@{ Name = '/app/config/db-host'; Type = 'String'; LastModifiedDate = (Get-Date) }
+                [PSCustomObject]@{ Name = '/app/config/api-key'; Type = 'SecureString'; LastModifiedDate = (Get-Date) }
+            )
+        }
+        Mock Get-SECSecretList {
+            @(
+                [PSCustomObject]@{ Name = 'prod/database'; ARN = 'arn:aws:secretsmanager:us-east-1:123:secret:prod/database' }
+            )
+        }
+        Mock Get-CFNExport {
+            @(
+                [PSCustomObject]@{ Name = 'VpcId'; Value = 'vpc-111'; ExportingStackId = 'arn:aws:cfn:us-east-1:123:stack/net/abc' }
+            )
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Out-CHARAWSSupportingInfo).Parameters.Keys | Should -Contain 'Region'
+    It 'Creates output files in the specified RootPath' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive
+        $files = Get-ChildItem -Path $TestDrive -Recurse -File
+        $files.Count | Should -BeGreaterThan 0
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Out-CHARAWSSupportingInfo).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Includes SSM parameter data in output' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive
+        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
+        $content | Should -BeLike '*/app/config*'
+    }
+
+    It 'Includes CloudFormation exports in output' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive
+        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
+        $content | Should -BeLike '*VpcId*'
+    }
+
+    It 'Handles empty service responses gracefully' {
+        Mock Get-SSMParameterList { @() }
+        Mock Get-SECSecretList { @() }
+        Mock Get-CFNExport { @() }
+
+        { Out-CHARAWSSupportingInfo -RootPath $TestDrive } | Should -Not -Throw
+    }
+
+    It 'Calls Get-STSCallerIdentity for account identification' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive
+        Should -Invoke Get-STSCallerIdentity -Times 1
     }
 }

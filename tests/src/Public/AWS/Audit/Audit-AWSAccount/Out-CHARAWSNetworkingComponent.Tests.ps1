@@ -10,15 +10,80 @@ BeforeAll {
 
 Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Out-CHARAWSNetworkingComponent | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-STSCallerIdentity {
+            [PSCustomObject]@{ Account = '123456789012'; Arn = 'arn:aws:iam::123456789012:user/test' }
+        }
+        Mock Get-EC2Vpc {
+            @([PSCustomObject]@{
+                VpcId = 'vpc-111'
+                CidrBlock = '10.0.0.0/16'
+                State = 'available'
+                Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'main-vpc' })
+            })
+        }
+        Mock Get-EC2Subnet {
+            @([PSCustomObject]@{
+                SubnetId = 'subnet-111'
+                VpcId = 'vpc-111'
+                CidrBlock = '10.0.1.0/24'
+                AvailabilityZone = 'us-east-1a'
+                Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'public-subnet' })
+            })
+        }
+        Mock Get-EC2RouteTable {
+            @([PSCustomObject]@{
+                RouteTableId = 'rtb-111'
+                VpcId = 'vpc-111'
+                Routes = @([PSCustomObject]@{ DestinationCidrBlock = '0.0.0.0/0'; GatewayId = 'igw-111' })
+            })
+        }
+        Mock Get-EC2InternetGateway {
+            @([PSCustomObject]@{
+                InternetGatewayId = 'igw-111'
+                Attachments = @([PSCustomObject]@{ VpcId = 'vpc-111'; State = 'available' })
+            })
+        }
+        Mock Get-EC2NatGateway {
+            @([PSCustomObject]@{
+                NatGatewayId = 'nat-111'
+                SubnetId = 'subnet-111'
+                State = 'available'
+            })
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Out-CHARAWSNetworkingComponent).Parameters.Keys | Should -Contain 'Region'
+    It 'Creates output files in the specified RootPath' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
+        # Verify at least one output file was created
+        $files = Get-ChildItem -Path $TestDrive -Recurse -File
+        $files.Count | Should -BeGreaterThan 0
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Out-CHARAWSNetworkingComponent).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Includes VPC data in output' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
+        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
+        $content | Should -BeLike '*vpc-111*'
+    }
+
+    It 'Includes subnet data in output' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
+        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
+        $content | Should -BeLike '*subnet-111*'
+    }
+
+    It 'Handles accounts with no VPCs gracefully' {
+        Mock Get-EC2Vpc { @() }
+        Mock Get-EC2Subnet { @() }
+        Mock Get-EC2RouteTable { @() }
+        Mock Get-EC2InternetGateway { @() }
+        Mock Get-EC2NatGateway { @() }
+
+        { Out-CHARAWSNetworkingComponent -RootPath $TestDrive } | Should -Not -Throw
+    }
+
+    It 'Calls Get-STSCallerIdentity to identify the account' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
+        Should -Invoke Get-STSCallerIdentity -Times 1
     }
 }

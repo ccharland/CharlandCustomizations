@@ -10,11 +10,36 @@ BeforeAll {
 
 Describe 'Get-CHARAWSMFASession' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHARAWSMFASession | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-IAMMFADevice {
+            [PSCustomObject]@{ SerialNumber = 'arn:aws:iam::123456789012:mfa/testuser' }
+        }
+        Mock Get-STSSessionToken {
+            [PSCustomObject]@{
+                AccessKeyId = 'ASIA1234567890'
+                SecretAccessKey = 'fakesecret'
+                SessionToken = 'faketoken'
+                Expiration = (Get-Date).AddHours(12)
+            }
+        }
     }
 
-    It 'Has a TokenCode parameter' {
-        (Get-Command Get-CHARAWSMFASession).Parameters.Keys | Should -Contain 'TokenCode'
+    It 'Returns STS session credentials' {
+        $result = Get-CHARAWSMFASession -TokenCode '123456'
+        $result.AccessKeyId | Should -Be 'ASIA1234567890'
+    }
+
+    It 'Passes the MFA serial number from Get-IAMMFADevice to Get-STSSessionToken' {
+        Get-CHARAWSMFASession -TokenCode '654321' | Out-Null
+        Should -Invoke Get-STSSessionToken -ParameterFilter {
+            $SerialNumber -eq 'arn:aws:iam::123456789012:mfa/testuser' -and
+            $TokenCode -eq '654321'
+        }
+    }
+
+    It 'Requires TokenCode parameter' {
+        (Get-Command Get-CHARAWSMFASession).Parameters['TokenCode'].Attributes |
+            Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] } |
+            ForEach-Object { $_.Mandatory } | Should -Contain $true
     }
 }

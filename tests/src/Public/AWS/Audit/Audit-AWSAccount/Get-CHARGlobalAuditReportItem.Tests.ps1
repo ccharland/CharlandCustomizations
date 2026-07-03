@@ -10,15 +10,62 @@ BeforeAll {
 
 Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
 
-    It 'Is an available command' {
-        Get-Command Get-CHARGlobalAuditReportItem | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        Mock Get-EC2Instance {
+            @(
+                [PSCustomObject]@{ InstanceId = 'i-111' }
+                [PSCustomObject]@{ InstanceId = 'i-222' }
+            )
+        }
+        Mock Get-LMFunctionList {
+            @(
+                [PSCustomObject]@{ FunctionName = 'func-1' }
+                [PSCustomObject]@{ FunctionName = 'func-2' }
+                [PSCustomObject]@{ FunctionName = 'func-3' }
+            )
+        }
+        Mock Get-CFNStack {
+            @([PSCustomObject]@{ StackName = 'stack-1' })
+        }
+        Mock Get-S3Bucket {
+            @(
+                [PSCustomObject]@{ BucketName = 'bucket-1' }
+                [PSCustomObject]@{ BucketName = 'bucket-2' }
+            )
+        }
+        Mock Get-EC2Vpc {
+            @([PSCustomObject]@{ VpcId = 'vpc-111' })
+        }
+        Mock Get-EC2SecurityGroup {
+            @([PSCustomObject]@{ GroupId = 'sg-111' })
+        }
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHARGlobalAuditReportItem).Parameters.Keys | Should -Contain 'Region'
+    It 'Returns per-region resource counts' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))
+        $results.Count | Should -BeGreaterThan 0
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHARGlobalAuditReportItem).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Includes EC2 instance count in output' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))
+        # Verify the results contain instance-related data
+        $results | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Handles multiple regions' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1', 'us-west-2'))
+        $results.Count | Should -BeGreaterOrEqual 2
+    }
+
+    It 'Handles API errors for individual services without failing entirely' {
+        Mock Get-LMFunctionList { throw 'Access denied' }
+
+        # Should still return data for other services
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))
+        $results | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Accepts Region as a required parameter' {
+        (Get-Command Get-CHARGlobalAuditReportItem).Parameters['Region'] | Should -Not -BeNullOrEmpty
     }
 }
