@@ -185,7 +185,7 @@
   begin {
     # When -OutputSubTemplate is specified, emit a function stub for use as a ScriptBlock
     if ($OutputSubTemplate) {
-      Write-Verbose "Emitting sub-template for ScriptBlock"
+      Write-Verbose 'Emitting sub-template for ScriptBlock'
       $subTemplate = @'
 {
     <#
@@ -229,7 +229,7 @@
       Write-Output $subTemplate
       return
     }
-    Write-Debug "Start Begin"
+    Write-Debug 'Start Begin'
     # Build base AWS splat from credential parameters then remove ProfileName/Region
     # since those are arrays used for iteration in this function, not single-value
     # credential params to pass to AWS cmdlets directly.
@@ -238,18 +238,18 @@
     $awsParams.Remove('Region') | Out-Null
     if (-not $ProfileName) {
       # Try the shell's current stored credential profile name
-      Write-Debug "ProfileName not specified"
+      Write-Debug 'ProfileName not specified'
       $currentProfile = $null
       if ($StoredAWSCredentials) {
         Write-Debug "Found StoredAWSCredentials: $StoredAWSCredentials"
         $currentProfile = $StoredAWSCredentials
       }
       if (-not $currentProfile) {
-        Write-Debug "Checking for default profile"
+        Write-Debug 'Checking for default profile'
         # Fall back: check if there's a default profile in the credential store
         $defaultProfile = (Get-AWSCredential -ListProfileDetail |
-          Where-Object { $_.ProfileName -eq 'default' } |
-          Select-Object -First 1 -ExpandProperty ProfileName)
+            Where-Object { $_.ProfileName -eq 'default' } |
+            Select-Object -First 1 -ExpandProperty ProfileName)
         if ($defaultProfile) {
           Write-Debug "Default profile found: $defaultProfile"
           $currentProfile = $defaultProfile
@@ -258,28 +258,25 @@
       if ($currentProfile) {
         Write-Verbose "Using current profile: $currentProfile"
         $ProfileName = @($currentProfile)
-      }
-      else {
-        Write-Error "No ProfileName specified and no current AWS profile found. Use -ProfileName or Set-AWSCredential."
+      } else {
+        Write-Error 'No ProfileName specified and no current AWS profile found. Use -ProfileName or Set-AWSCredential.'
         return
       }
 
     }
-  Write-Debug "aRegion checks : $Region"
+    Write-Debug "Region checks : $Region"
 
-    if ($Region -eq "") {
-      Write-Debug "Region not specified"
+    if ($Region.count -eq 0) {
+      Write-Verbose 'Region not specified - trying default region'
       $defaultRegion = (Get-DefaultAWSRegion).Region
       if ($defaultRegion) {
         Write-Verbose "Using current/default region: $defaultRegion"
         $Region = @($defaultRegion)
-      }
-      else {
-        Write-Error "No region specified and no default AWS region set. Use -Region or Set-DefaultAWSRegion."
+      } else {
+        Write-Error 'No region specified and no default AWS region set. Use -Region or Set-DefaultAWSRegion.'
         return
       }
-    }
-    else {
+    } else {
       Write-Verbose "region specified: $Region"
     }
     $profileCount = 0
@@ -298,17 +295,17 @@
       'region.*not.*(configured|specified|set)'
     )
     $missingRegionPattern = '(?i)(' + ($missingRegionPatternAlternatives -join '|') + ')'
-    Write-Debug "end begin"
-}
+    Write-Debug 'end begin'
+  }
 
   process {
     foreach ($prof in $ProfileName) {
       Write-Verbose "Processing profile: $prof"
       $profileCount++
       if (-not $NoProgress) {
-        Write-Progress -Id 1 -Activity "Processing AWS Profiles" `
+        Write-Progress -Id 1 -Activity 'Processing AWS Profiles' `
           -Status "Profile: $prof (#$profileCount)" `
-          -CurrentOperation "Authenticating..."
+          -CurrentOperation 'Authenticating...'
       }
 
       # Validate credentials before doing any work for this profile
@@ -318,8 +315,7 @@
       $iterParams['ProfileName'] = $prof
       if ($Region -and $Region.Count -gt 0) {
         $iterParams['Region'] = $Region[0]
-      }
-      else {
+      } else {
         Write-Error "Region array is empty or null for profile '$prof'"
         continue
       }
@@ -328,8 +324,7 @@
         $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
         $accountId = $identity.Account
         Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
-      }
-      catch {
+      } catch {
         if ($_.Exception.Message -match $missingRegionPattern) {
           $missingRegionError = [System.Management.Automation.ErrorRecord]::new(
             $_.Exception,
@@ -351,7 +346,7 @@
         # Get-AWSCredential -ProfileName with the profile's location resolves correctly
         # because it reads directly from the ini file, not from the SSO token cache.
         $profileDetail = Get-AWSCredential -ListProfileDetail |
-        Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
+          Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
 
         if ($profileDetail -and $profileDetail.ProfileLocation) {
           $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
@@ -367,8 +362,7 @@
             $resolvedCreds = $credObj.GetCredentials()
           }
         }
-      }
-      catch {
+      } catch {
         Write-Verbose "Could not resolve credentials for profile '$prof': $_"
       }
 
@@ -392,7 +386,7 @@
         $origEnvSessionToken = $env:AWS_SESSION_TOKEN
 
         try {
-          write-verbose "saving state"
+          Write-Verbose 'saving state'
 
           if ($resolvedCreds -and $resolvedCreds.AccessKey) {
             # Use Set-AWSCredential to properly register credentials in the SDK session cache
@@ -411,12 +405,10 @@
             $env:AWS_SECRET_ACCESS_KEY = $resolvedCreds.SecretKey
             if ($resolvedCreds.Token) {
               $env:AWS_SESSION_TOKEN = $resolvedCreds.Token
-            }
-            else {
+            } else {
               $env:AWS_SESSION_TOKEN = $null
             }
-          }
-          else {
+          } else {
             Set-AWSCredential -ProfileName $prof
           }
           Set-DefaultAWSRegion -Region $r
@@ -431,7 +423,7 @@
           $ErrorActionPreference = 'Stop'
           try {
             $results = $NULL
-            write-verbose "Try to invoke script: Results before script: $results"
+            Write-Verbose "Try to invoke script: Results before script: $results"
             Write-Verbose "Region:  $r"
             # $results = & $ScriptBlock
             # $results = & $ScriptBlock -Region $r -ProfileName $prof
@@ -453,41 +445,37 @@
 
             if ($results.Count -eq 0) {
               Write-Verbose "No results returned for Profile='$prof', Region='$r'"
-              Write-Verbose "emit a single item for tracking"
+              Write-Verbose 'emit a single item for tracking'
               $results = [PSCustomObject]@{}
             }
-          }
-          catch {
+          } catch {
             # script failed to execute, record error and continue
             Write-Warning "ScriptBlock failed for Profile='${prof}', Region='${r}': $_"
-            $results= [PSCustomObject]@{
+            $results = [PSCustomObject]@{
               Error = $_.Exception.Message
-           }
-          }
-          finally {
-            write-verbose "finally block"
-            write-verbose "Results: $results"
+            }
+          } finally {
+            Write-Verbose 'finally block'
+            Write-Verbose "Results: $results"
             $ErrorActionPreference = $origErrorAction
           }
           # Results should NEVER be empty
           if ($results) {
             Write-Verbose "Results for Profile='$prof', Region='$r'"
-            write-verbose "results:  $results"
+            Write-Verbose "results:  $results"
             foreach ($item in $results) {
               Write-Debug "Returning result for Profile='$prof', Region='$r': $item"
               $props = [ordered]@{}
 
               # If the item is a simple type (string, number, etc.), wrap it so enrichment works
               if ($item -is [string]) {
-                Write-Debug "item: string"
+                Write-Debug 'item: string'
                 $props['Value'] = $item
-              }
-              elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
-                Write-Debug "item: primitive"
+              } elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
+                Write-Debug 'item: primitive'
                 $props['Value'] = $item
-              }
-              else {
-                write-debug "item: psobject"
+              } else {
+                Write-Debug 'item: psobject'
                 foreach ($p in $item.PSObject.Properties) {
                   $props[$p.Name] = $p.Value
                 }
@@ -508,26 +496,21 @@
 
               $enriched
             }
+          } else {
+            throw 'Error- Results empty, aborting'
           }
-          else {
-            throw "Error- Results empty, aborting"
-          }
-        }
-        catch {
+        } catch {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
-        }
-        finally {
+        } finally {
           # Restore original AWS session state
           if ($origStoredCreds) {
             Set-AWSCredential -ProfileName $origStoredCreds
-          }
-          else {
+          } else {
             Clear-AWSCredential
           }
           if ($origStoredRegion) {
             Set-DefaultAWSRegion -Region $origStoredRegion
-          }
-          else {
+          } else {
             Clear-DefaultAWSRegion
           }
           # Restore environment variables
@@ -546,7 +529,7 @@
 
   end {
     if (-not $NoProgress) {
-      Write-Progress -Id 1 -Activity "Processing AWS Profiles" -Completed
+      Write-Progress -Id 1 -Activity 'Processing AWS Profiles' -Completed
     }
   }
 }
