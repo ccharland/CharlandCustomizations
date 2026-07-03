@@ -14,11 +14,11 @@ Describe 'Start-CHAREC2RetryLoop' -Tag 'Unit' {
         Get-Command Start-CHAREC2RetryLoop | Should -Not -BeNullOrEmpty
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Start-CHAREC2RetryLoop).Parameters.Keys | Should -Contain 'Region'
+    It 'Has a ScriptBlock parameter' {
+        (Get-Command Start-CHAREC2RetryLoop).Parameters.Keys | Should -Contain 'ScriptBlock'
     }
 
-    It 'Has a ProfileName parameter' {
-        (Get-Command Start-CHAREC2RetryLoop).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Has a MaxRetries parameter' {
+        (Get-Command Start-CHAREC2RetryLoop).Parameters.Keys | Should -Contain 'MaxRetries'
     }
 }

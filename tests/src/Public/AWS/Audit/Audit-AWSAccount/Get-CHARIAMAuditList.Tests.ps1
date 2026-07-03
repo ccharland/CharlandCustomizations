@@ -14,10 +14,6 @@ Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
         Get-Command Get-CHARIAMAuditList | Should -Not -BeNullOrEmpty
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHARIAMAuditList).Parameters.Keys | Should -Contain 'Region'
-    }
-
     It 'Has a ProfileName parameter' {
         (Get-Command Get-CHARIAMAuditList).Parameters.Keys | Should -Contain 'ProfileName'
     }

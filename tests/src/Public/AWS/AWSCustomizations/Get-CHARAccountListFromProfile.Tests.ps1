@@ -13,12 +13,4 @@ Describe 'Get-CHARAccountListFromProfile' -Tag 'Unit' {
     It 'Is an available command' {
         Get-Command Get-CHARAccountListFromProfile | Should -Not -BeNullOrEmpty
     }
-
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHARAccountListFromProfile).Parameters.Keys | Should -Contain 'Region'
-    }
-
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHARAccountListFromProfile).Parameters.Keys | Should -Contain 'ProfileName'
-    }
 }

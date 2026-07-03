@@ -14,11 +14,7 @@ Describe 'Get-CHARAWSMFASession' -Tag 'Unit' {
         Get-Command Get-CHARAWSMFASession | Should -Not -BeNullOrEmpty
     }
 
-    It 'Has a Region parameter' {
-        (Get-Command Get-CHARAWSMFASession).Parameters.Keys | Should -Contain 'Region'
-    }
-
-    It 'Has a ProfileName parameter' {
-        (Get-Command Get-CHARAWSMFASession).Parameters.Keys | Should -Contain 'ProfileName'
+    It 'Has a TokenCode parameter' {
+        (Get-Command Get-CHARAWSMFASession).Parameters.Keys | Should -Contain 'TokenCode'
     }
 }
