@@ -485,6 +485,187 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
         }
     }
 
+    Context 'PSDefaultParameterValues injection via InvokeWithContext' {
+
+        It 'Injects $Region variable accessible inside ScriptBlock' {
+            $sb = { [PSCustomObject]@{ SeenRegion = $Region } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'eu-west-1' `
+                -ScriptBlock $sb
+
+            $results.SeenRegion | Should -Be 'eu-west-1'
+        }
+
+        It 'Injects $ProfileName variable accessible inside ScriptBlock' {
+            $sb = { [PSCustomObject]@{ SeenProfile = $ProfileName } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'prod-account' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.SeenProfile | Should -Be 'prod-account'
+        }
+
+        It 'Injects PSDefaultParameterValues so cmdlets with -Region parameter get the value' {
+            $sb = { [PSCustomObject]@{ Defaults = $PSDefaultParameterValues } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'ap-southeast-1' `
+                -ScriptBlock $sb
+
+            $results.Defaults['*:Region'] | Should -Be 'ap-southeast-1'
+            $results.Defaults['*:ProfileName'] | Should -Be 'myprofile'
+        }
+
+        It 'Updates injected variables per region iteration' {
+            $sb = { [PSCustomObject]@{ R = $Region; P = $ProfileName } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1', 'eu-west-1' `
+                -ScriptBlock $sb
+
+            $results | Should -HaveCount 2
+            $results[0].R | Should -Be 'us-east-1'
+            $results[1].R | Should -Be 'eu-west-1'
+            $results[0].P | Should -Be 'myprofile'
+        }
+    }
+
+    Context 'Error property on output objects' {
+
+        It 'Adds Error property set to null on successful results' {
+            $sb = { [PSCustomObject]@{ Name = 'TestResource' } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.PSObject.Properties.Name | Should -Contain 'Error'
+            $results.Error | Should -BeNullOrEmpty
+        }
+
+        It 'Preserves Error property from ScriptBlock if already present' {
+            $sb = { [PSCustomObject]@{ Name = 'Thing'; Error = 'SCP denied' } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb
+
+            $results.Error | Should -Be 'SCP denied'
+        }
+
+        It 'Sets Error property with exception message when ScriptBlock throws' {
+            $sb = { throw 'Access Denied by SCP' }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb `
+                -WarningVariable w 3>&1
+
+            $results.Error | Should -BeLike '*Access Denied by SCP*'
+        }
+
+        It 'All objects in multi-region output have Error property for consistent Format-Table' {
+            $sb = { [PSCustomObject]@{ Name = 'Func1' } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1', 'us-west-2', 'eu-west-1' `
+                -ScriptBlock $sb
+
+            $results | Should -HaveCount 3
+            foreach ($r in $results) {
+                $r.PSObject.Properties.Name | Should -Contain 'Error'
+            }
+        }
+    }
+
+    Context 'Empty ScriptBlock results produce tracking object' {
+
+        It 'Produces output even when ScriptBlock returns nothing' {
+            $sb = { }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb)
+
+            $results.Count | Should -BeGreaterOrEqual 1
+        }
+    }
+
+    Context 'IncludeRegion and IncludeProfileName switches' {
+
+        It 'Adds Region property when -IncludeRegion is specified' {
+            $sb = { [PSCustomObject]@{ Name = 'Thing' } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'eu-west-1' `
+                -ScriptBlock $sb `
+                -IncludeRegion
+
+            $results.Region | Should -Be 'eu-west-1'
+        }
+
+        It 'Adds ProfileName property when -IncludeProfileName is specified' {
+            $sb = { [PSCustomObject]@{ Name = 'Thing' } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'prod-acct' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb `
+                -IncludeProfileName
+
+            $results.ProfileName | Should -Be 'prod-acct'
+        }
+
+        It 'Adds all enrichment properties when all switches specified' {
+            Mock Get-STSCallerIdentity {
+                [PSCustomObject]@{ Account = '555555555555'; Arn = 'arn:aws:iam::555555555555:user/test' }
+            }
+
+            $sb = { [PSCustomObject]@{ Name = 'Resource' } }
+
+            $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'ap-southeast-1' `
+                -ScriptBlock $sb `
+                -IncludeAccountId -IncludeRegion -IncludeProfileName
+
+            $results.AccountId | Should -Be '555555555555'
+            $results.Region | Should -Be 'ap-southeast-1'
+            $results.ProfileName | Should -Be 'myprofile'
+            $results.Error | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'Environment variable save and restore' {
+
+        It 'Restores AWS_DEFAULT_REGION after execution' {
+            $env:AWS_DEFAULT_REGION = 'original-region'
+
+            $sb = { [PSCustomObject]@{ Done = $true } }
+
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'eu-central-1' `
+                -ScriptBlock $sb | Out-Null
+
+            $env:AWS_DEFAULT_REGION | Should -Be 'original-region'
+            $env:AWS_DEFAULT_REGION = $null
+        }
+
+        It 'Restores AWS_DEFAULT_REGION even when ScriptBlock throws' {
+            $env:AWS_DEFAULT_REGION = 'keep-this'
+
+            $sb = { throw 'boom' }
+
+            Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-west-2' `
+                -ScriptBlock $sb `
+                -WarningVariable w 3>&1 | Out-Null
+
+            $env:AWS_DEFAULT_REGION | Should -Be 'keep-this'
+            $env:AWS_DEFAULT_REGION = $null
+        }
+    }
+
     Context 'Parameter set validation' {
 
         It 'Rejects -OutputSubTemplate combined with -ScriptBlock' {
