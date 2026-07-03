@@ -15,5 +15,6 @@
         "LASTEXITCODE",
         "notmatch",
         "pscustomobject"
-    ]
+    ],
+    "gitlens.currentLine.enabled": true
 }
