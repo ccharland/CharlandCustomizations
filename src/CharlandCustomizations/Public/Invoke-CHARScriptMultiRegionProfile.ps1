@@ -469,7 +469,7 @@
             write-verbose "Results: $results"
             $ErrorActionPreference = $origErrorAction
           }
-          #Results shoud NEVER be empty
+          # Results should NEVER be empty
           if ($results) {
             Write-Verbose "Results for Profile='$prof', Region='$r'"
             write-verbose "results:  $results"

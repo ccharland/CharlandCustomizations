@@ -638,8 +638,11 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
 
     Context 'Environment variable save and restore' {
 
-        It 'Restores AWS_DEFAULT_REGION after execution' {
+        It 'Restores AWS_* environment variables after execution' {
             $env:AWS_DEFAULT_REGION = 'original-region'
+            $env:AWS_ACCESS_KEY_ID = 'orig-ak'
+            $env:AWS_SECRET_ACCESS_KEY = 'orig-sk'
+            $env:AWS_SESSION_TOKEN = 'orig-token'
 
             $sb = { [PSCustomObject]@{ Done = $true } }
 
@@ -648,11 +651,21 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
                 -ScriptBlock $sb | Out-Null
 
             $env:AWS_DEFAULT_REGION | Should -Be 'original-region'
+            $env:AWS_ACCESS_KEY_ID | Should -Be 'orig-ak'
+            $env:AWS_SECRET_ACCESS_KEY | Should -Be 'orig-sk'
+            $env:AWS_SESSION_TOKEN | Should -Be 'orig-token'
+
             $env:AWS_DEFAULT_REGION = $null
+            $env:AWS_ACCESS_KEY_ID = $null
+            $env:AWS_SECRET_ACCESS_KEY = $null
+            $env:AWS_SESSION_TOKEN = $null
         }
 
-        It 'Restores AWS_DEFAULT_REGION even when ScriptBlock throws' {
+        It 'Restores AWS_* environment variables even when ScriptBlock throws' {
             $env:AWS_DEFAULT_REGION = 'keep-this'
+            $env:AWS_ACCESS_KEY_ID = 'keep-ak'
+            $env:AWS_SECRET_ACCESS_KEY = 'keep-sk'
+            $env:AWS_SESSION_TOKEN = 'keep-token'
 
             $sb = { throw 'boom' }
 
@@ -662,7 +675,14 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
                 -WarningVariable w 3>&1 | Out-Null
 
             $env:AWS_DEFAULT_REGION | Should -Be 'keep-this'
+            $env:AWS_ACCESS_KEY_ID | Should -Be 'keep-ak'
+            $env:AWS_SECRET_ACCESS_KEY | Should -Be 'keep-sk'
+            $env:AWS_SESSION_TOKEN | Should -Be 'keep-token'
+
             $env:AWS_DEFAULT_REGION = $null
+            $env:AWS_ACCESS_KEY_ID = $null
+            $env:AWS_SECRET_ACCESS_KEY = $null
+            $env:AWS_SESSION_TOKEN = $null
         }
     }
 
