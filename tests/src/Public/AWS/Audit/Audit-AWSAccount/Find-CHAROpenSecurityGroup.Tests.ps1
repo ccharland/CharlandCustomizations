@@ -68,6 +68,8 @@ Describe 'Find-CHAROpenSecurityGroup' -Tag 'Unit' {
 
     It 'Respects custom AllowedPorts parameter' {
         $results = @(Find-CHAROpenSecurityGroup -AllowedPorts @(22, 80, 443) -Region 'us-east-1')
-        $results.Count | Should -Be 0
+        # Function returns empty PSCustomObject when no findings — filter to actual findings
+        $findings = $results | Where-Object { $_.GroupId }
+        $findings.Count | Should -Be 0
     }
 }

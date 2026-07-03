@@ -16,51 +16,46 @@ Describe 'Get-CHAREC2VolumeReport' -Tag 'Unit' {
                 [PSCustomObject]@{
                     VolumeId = 'vol-111'
                     Size = 100
+                    Iops = 3000
                     VolumeType = 'gp3'
                     State = 'in-use'
-                    AvailabilityZone = 'us-east-1a'
-                    Encrypted = $true
-                    Attachments = @([PSCustomObject]@{ InstanceId = 'i-111'; Device = '/dev/sda1' })
-                }
+                    Attachments = @([PSCustomObject]@{ VolumeId = 'vol-111'; InstanceId = 'i-111' })
+                },
                 [PSCustomObject]@{
                     VolumeId = 'vol-222'
                     Size = 50
+                    Iops = 100
                     VolumeType = 'gp2'
                     State = 'available'
-                    AvailabilityZone = 'us-east-1b'
-                    Encrypted = $false
                     Attachments = @()
                 }
             )
         }
     }
 
-    It 'Returns volume data with VolumeId' {
-        $results = @(Get-CHAREC2VolumeReport)
+    It 'Returns results with VolumeId property' {
+        $results = @(Get-CHAREC2VolumeReport -Region 'us-east-1')
+        $results.Count | Should -Be 2
         $results[0].VolumeId | Should -Be 'vol-111'
     }
 
-    It 'Returns all volumes from the API response' {
-        $results = @(Get-CHAREC2VolumeReport)
-        $results.Count | Should -Be 2
+    It 'Reports InstanceId as NoInstance for unattached volumes' {
+        $results = @(Get-CHAREC2VolumeReport -Region 'us-east-1')
+        $unattached = $results | Where-Object { $_.VolumeId -eq 'vol-222' }
+        $unattached.InstanceId | Should -Be 'NoInstance'
     }
 
-    It 'Includes volume state in output' {
-        $results = @(Get-CHAREC2VolumeReport)
-        $results[0].State | Should -Be 'in-use'
-        $results[1].State | Should -Be 'available'
-    }
-
-    It 'Identifies unattached volumes' {
-        $results = @(Get-CHAREC2VolumeReport)
-        $unattached = $results | Where-Object { $_.State -eq 'available' }
-        $unattached.VolumeId | Should -Contain 'vol-222'
+    It 'Includes Size and VolumeType for attached volumes' {
+        $results = @(Get-CHAREC2VolumeReport -Region 'us-east-1')
+        $attached = $results | Where-Object { $_.VolumeId -eq 'vol-111' }
+        $attached.Size | Should -Be 100
+        $attached.VolumeType | Should -Be 'gp3'
     }
 
     It 'Handles empty volume list gracefully' {
         Mock Get-EC2Volume -ModuleName Audit-AWSAccount { @() }
 
-        $results = @(Get-CHAREC2VolumeReport)
+        $results = @(Get-CHAREC2VolumeReport -Region 'us-east-1')
         $results.Count | Should -Be 0
     }
 }

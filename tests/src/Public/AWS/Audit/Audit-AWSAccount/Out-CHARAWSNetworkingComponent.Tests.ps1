@@ -14,12 +14,16 @@ Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
         Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
             [PSCustomObject]@{ Account = '123456789012'; Arn = 'arn:aws:iam::123456789012:user/test' }
         }
+        Mock Get-DefaultAWSRegion -ModuleName Audit-AWSAccount {
+            [PSCustomObject]@{ Region = 'us-east-1' }
+        }
+        Mock Get-EC2VpnConnection -ModuleName Audit-AWSAccount { @() }
         Mock Get-EC2Vpc -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 VpcId = 'vpc-111'
                 CidrBlock = '10.0.0.0/16'
-                State = 'available'
                 Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'main-vpc' })
+                CidrBlockAssociationSet = @([PSCustomObject]@{ CidrBlock = '10.0.0.0/16' })
             })
         }
         Mock Get-EC2Subnet -ModuleName Audit-AWSAccount {
@@ -28,62 +32,47 @@ Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
                 VpcId = 'vpc-111'
                 CidrBlock = '10.0.1.0/24'
                 AvailabilityZone = 'us-east-1a'
-                Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'public-subnet' })
+                AvailableIpAddressCount = 250
+                Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'public' })
             })
         }
         Mock Get-EC2RouteTable -ModuleName Audit-AWSAccount {
             @([PSCustomObject]@{
                 RouteTableId = 'rtb-111'
                 VpcId = 'vpc-111'
-                Routes = @([PSCustomObject]@{ DestinationCidrBlock = '0.0.0.0/0'; GatewayId = 'igw-111' })
+                Associations = @([PSCustomObject]@{ SubnetId = 'subnet-111' })
+                Tags = @([PSCustomObject]@{ Key = 'Name'; Value = 'main-rt' })
             })
         }
-        Mock Get-EC2InternetGateway -ModuleName Audit-AWSAccount {
-            @([PSCustomObject]@{
-                InternetGatewayId = 'igw-111'
-                Attachments = @([PSCustomObject]@{ VpcId = 'vpc-111'; State = 'available' })
-            })
-        }
-        Mock Get-EC2NatGateway -ModuleName Audit-AWSAccount {
-            @([PSCustomObject]@{
-                NatGatewayId = 'nat-111'
-                SubnetId = 'subnet-111'
-                State = 'available'
-            })
-        }
+        Mock Get-EC2ManagedPrefixList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2TransitGatewayRouteTable -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EC2TransitGatewayAttachment -ModuleName Audit-AWSAccount { @() }
     }
 
-    It 'Creates output files in the specified RootPath' {
-        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
-        # Verify at least one output file was created
-        $files = Get-ChildItem -Path $TestDrive -Recurse -File
-        $files.Count | Should -BeGreaterThan 0
+    It 'Creates output directory under RootPath/AccountId/Region' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive -Region 'us-east-1'
+        $expectedDir = Join-Path $TestDrive '123456789012/us-east-1'
+        Test-Path $expectedDir | Should -BeTrue
     }
 
-    It 'Includes VPC data in output' {
-        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
-        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
-        $content | Should -BeLike '*vpc-111*'
+    It 'Creates VPCs.txt with VPC data' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive -Region 'us-east-1'
+        $file = Join-Path $TestDrive '123456789012/us-east-1/VPCs.txt'
+        Test-Path $file | Should -BeTrue
+        Get-Content $file -Raw | Should -BeLike '*vpc-111*'
     }
 
-    It 'Includes subnet data in output' {
-        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
-        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
-        $content | Should -BeLike '*subnet-111*'
+    It 'Creates Subnets.txt' {
+        Out-CHARAWSNetworkingComponent -RootPath $TestDrive -Region 'us-east-1'
+        $file = Join-Path $TestDrive '123456789012/us-east-1/Subnets.txt'
+        Test-Path $file | Should -BeTrue
     }
 
-    It 'Handles accounts with no VPCs gracefully' {
+    It 'Does not throw when services return empty results' {
         Mock Get-EC2Vpc -ModuleName Audit-AWSAccount { @() }
         Mock Get-EC2Subnet -ModuleName Audit-AWSAccount { @() }
         Mock Get-EC2RouteTable -ModuleName Audit-AWSAccount { @() }
-        Mock Get-EC2InternetGateway -ModuleName Audit-AWSAccount { @() }
-        Mock Get-EC2NatGateway -ModuleName Audit-AWSAccount { @() }
 
-        { Out-CHARAWSNetworkingComponent -RootPath $TestDrive } | Should -Not -Throw
-    }
-
-    It 'Calls Get-STSCallerIdentity to identify the account' {
-        Out-CHARAWSNetworkingComponent -RootPath $TestDrive
-        Should -Invoke Get-STSCallerIdentity -ModuleName Audit-AWSAccount -Times 1
+        { Out-CHARAWSNetworkingComponent -RootPath $TestDrive -Region 'us-east-1' } | Should -Not -Throw
     }
 }

@@ -6,21 +6,27 @@ BeforeAll {
     $script:RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '../../../../../..')
     . "$script:RepoRoot/src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
     Import-Module "$script:RepoRoot/src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
+
+    # Define stub functions for AWS cmdlets not available in test environment
+    if (-not (Get-Command Get-ASAutoScalingGroup -ErrorAction SilentlyContinue)) {
+        function global:Get-ASAutoScalingGroup { param() @() }
+    }
+    if (-not (Get-Command Get-ELB2LoadBalancer -ErrorAction SilentlyContinue)) {
+        function global:Get-ELB2LoadBalancer { param() @() }
+    }
+    if (-not (Get-Command Get-ELBLoadBalancer -ErrorAction SilentlyContinue)) {
+        function global:Get-ELBLoadBalancer { param() @() }
+    }
 }
 
 Describe 'Get-CHAREC2Count' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Region -ModuleName Audit-AWSAccount {
-            @(
-                [PSCustomObject]@{ RegionName = 'us-east-1' }
-                [PSCustomObject]@{ RegionName = 'us-west-2' }
-            )
-        }
+        Mock Write-Progress -ModuleName Audit-AWSAccount {}
         Mock Get-EC2Instance -ModuleName Audit-AWSAccount {
             @(
-                [PSCustomObject]@{ InstanceId = 'i-111'; State = @{ Name = 'running' } }
-                [PSCustomObject]@{ InstanceId = 'i-222'; State = @{ Name = 'stopped' } }
+                [PSCustomObject]@{ InstanceId = 'i-111' }
+                [PSCustomObject]@{ InstanceId = 'i-222' }
             )
         }
         Mock Get-EC2Volume -ModuleName Audit-AWSAccount {
@@ -40,31 +46,30 @@ Describe 'Get-CHAREC2Count' -Tag 'Unit' {
         }
     }
 
-    It 'Returns results for each region' {
-        $results = @(Get-CHAREC2Count)
+    It 'Returns results for each specified region' {
+        $results = @(Get-CHAREC2Count -Region 'us-east-1', 'us-west-2')
         $results.Count | Should -Be 2
     }
 
     It 'Includes Region property in output' {
-        $results = @(Get-CHAREC2Count)
+        $results = @(Get-CHAREC2Count -Region 'us-east-1')
         $results[0].Region | Should -Be 'us-east-1'
-        $results[1].Region | Should -Be 'us-west-2'
     }
 
     It 'Reports instance count per region' {
-        $results = @(Get-CHAREC2Count)
+        $results = @(Get-CHAREC2Count -Region 'us-east-1')
         $results[0].InstanceCount | Should -Be 2
     }
 
     It 'Sets ScanOk to true when API calls succeed' {
-        $results = @(Get-CHAREC2Count)
+        $results = @(Get-CHAREC2Count -Region 'us-east-1')
         $results[0].ScanOk | Should -BeTrue
     }
 
     It 'Handles API errors gracefully and marks ScanOk false' {
         Mock Get-EC2Instance -ModuleName Audit-AWSAccount { throw 'Access denied' }
 
-        $results = @(Get-CHAREC2Count)
+        $results = @(Get-CHAREC2Count -Region 'us-east-1')
         $results[0].ScanOk | Should -BeFalse
     }
 }

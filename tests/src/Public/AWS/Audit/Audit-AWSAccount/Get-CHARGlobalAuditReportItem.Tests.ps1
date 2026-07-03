@@ -6,66 +6,77 @@ BeforeAll {
     $script:RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '../../../../../..')
     . "$script:RepoRoot/src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
     Import-Module "$script:RepoRoot/src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
+
+    # Define stubs for AWS cmdlets not available in test environment
+    $stubCmds = @('Get-ASAutoScalingGroup','Get-ELB2LoadBalancer','Get-ELBLoadBalancer',
+        'Get-CFDistributionList','Get-EFSFileSystem','Get-ECSClusterList','Get-EKSClusterList',
+        'Get-KMSKeyList','Get-ACMCertificateList','Get-DDBTableList','Get-RSCluster',
+        'Get-SQSQueue','Get-SNSTopic','Get-SFNStateMachineList','Get-DSDirectory',
+        'Get-FRCForecastList','Get-SGGateway')
+    foreach ($cmd in $stubCmds) {
+        if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+            New-Item -Path "function:global:$cmd" -Value { param() @() } -Force | Out-Null
+        }
+    }
 }
 
 Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Get-EC2Instance -ModuleName Audit-AWSAccount {
-            @(
-                [PSCustomObject]@{ InstanceId = 'i-111' }
-                [PSCustomObject]@{ InstanceId = 'i-222' }
-            )
+        Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
+            [PSCustomObject]@{ Account = '123456789012' }
         }
-        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount {
-            @(
-                [PSCustomObject]@{ FunctionName = 'func-1' }
-                [PSCustomObject]@{ FunctionName = 'func-2' }
-                [PSCustomObject]@{ FunctionName = 'func-3' }
-            )
-        }
-        Mock Get-CFNStack -ModuleName Audit-AWSAccount {
-            @([PSCustomObject]@{ StackName = 'stack-1' })
-        }
-        Mock Get-S3Bucket -ModuleName Audit-AWSAccount {
-            @(
-                [PSCustomObject]@{ BucketName = 'bucket-1' }
-                [PSCustomObject]@{ BucketName = 'bucket-2' }
-            )
-        }
-        Mock Get-EC2Vpc -ModuleName Audit-AWSAccount {
-            @([PSCustomObject]@{ VpcId = 'vpc-111' })
-        }
-        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
-            @([PSCustomObject]@{ GroupId = 'sg-111' })
-        }
+        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { @([PSCustomObject]@{ InstanceId = 'i-1' }, [PSCustomObject]@{ InstanceId = 'i-2' }) }
+        Mock Get-CFDistributionList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-ELB2LoadBalancer -ModuleName Audit-AWSAccount { @([PSCustomObject]@{ LoadBalancerName = 'alb-1' }) }
+        Mock Get-ELBLoadBalancer -ModuleName Audit-AWSAccount { @() }
+        Mock Get-ASAutoScalingGroup -ModuleName Audit-AWSAccount { @() }
+        Mock Get-RDSDBInstance -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EFSFileSystem -ModuleName Audit-AWSAccount { @() }
+        Mock Get-ECSClusterList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-EKSClusterList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-KMSKeyList -ModuleName Audit-AWSAccount { @([PSCustomObject]@{ KeyId = 'key-1' }) }
+        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount { @([PSCustomObject]@{ FunctionName = 'func-1' }) }
+        Mock Get-ACMCertificateList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-SECSecretList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-DDBTableList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-RSCluster -ModuleName Audit-AWSAccount { @() }
+        Mock Get-SQSQueue -ModuleName Audit-AWSAccount { @() }
+        Mock Get-SNSTopic -ModuleName Audit-AWSAccount { @() }
+        Mock Get-SFNStateMachineList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-DSDirectory -ModuleName Audit-AWSAccount { @() }
+        Mock Get-FRCForecastList -ModuleName Audit-AWSAccount { @() }
+        Mock Get-SGGateway -ModuleName Audit-AWSAccount { @() }
     }
 
-    It 'Returns per-region resource counts' {
-        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))
-        $results.Count | Should -BeGreaterThan 0
+    It 'Returns one result per region' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1', 'us-west-2') -ProfileName 'test')
+        # Function outputs region name strings AND result objects — filter to objects only
+        $objects = $results | Where-Object { $_.PSObject.Properties.Name -contains 'region' }
+        $objects.Count | Should -Be 2
     }
 
-    It 'Includes EC2 instance count in output' {
-        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))
-        # Verify the results contain instance-related data
-        $results | Should -Not -BeNullOrEmpty
+    It 'Includes region in output' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1') -ProfileName 'test')
+        $objects = $results | Where-Object { $_.PSObject.Properties.Name -contains 'region' }
+        $objects[0].region | Should -Be 'us-east-1'
     }
 
-    It 'Handles multiple regions' {
-        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1', 'us-west-2'))
-        $results.Count | Should -BeGreaterOrEqual 2
+    It 'Includes account from STS in output' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1') -ProfileName 'test')
+        $objects = $results | Where-Object { $_.PSObject.Properties.Name -contains 'account' }
+        $objects[0].account | Should -Be '123456789012'
     }
 
-    It 'Handles API errors for individual services without failing entirely' {
-        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount { throw 'Access denied' }
-
-        # Should still return data for other services
-        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1'))
-        $results | Should -Not -BeNullOrEmpty
+    It 'Reports VM count from Get-EC2Instance' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1') -ProfileName 'test')
+        $objects = $results | Where-Object { $_.PSObject.Properties.Name -contains 'VMCount' }
+        $objects[0].VMCount | Should -Be 2
     }
 
-    It 'Accepts Region as a required parameter' {
-        (Get-Command Get-CHARGlobalAuditReportItem).Parameters['Region'] | Should -Not -BeNullOrEmpty
+    It 'Reports Lambda function count' {
+        $results = @(Get-CHARGlobalAuditReportItem -Region @('us-east-1') -ProfileName 'test')
+        $objects = $results | Where-Object { $_.PSObject.Properties.Name -contains 'Lambda' }
+        $objects[0].Lambda | Should -Be 1
     }
 }

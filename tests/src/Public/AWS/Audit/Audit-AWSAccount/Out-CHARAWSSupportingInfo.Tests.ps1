@@ -19,50 +19,52 @@ Describe 'Out-CHARAWSSupportingInfo' -Tag 'Unit' {
         }
         Mock Get-SSMParameterList -ModuleName Audit-AWSAccount {
             @(
-                [PSCustomObject]@{ Name = '/app/config/db-host'; Type = 'String'; LastModifiedDate = (Get-Date) }
-                [PSCustomObject]@{ Name = '/app/config/api-key'; Type = 'SecureString'; LastModifiedDate = (Get-Date) }
+                [PSCustomObject]@{ Name = '/app/config/db-host'; Description = 'DB host' }
             )
         }
         Mock Get-SECSecretList -ModuleName Audit-AWSAccount {
             @(
-                [PSCustomObject]@{ Name = 'prod/database'; ARN = 'arn:aws:secretsmanager:us-east-1:123:secret:prod/database' }
+                [PSCustomObject]@{ Name = 'prod/database'; Description = 'DB creds' }
             )
         }
         Mock Get-CFNExport -ModuleName Audit-AWSAccount {
             @(
-                [PSCustomObject]@{ Name = 'VpcId'; Value = 'vpc-111'; ExportingStackId = 'arn:aws:cfn:us-east-1:123:stack/net/abc' }
+                [PSCustomObject]@{ Name = 'VpcId'; Value = 'vpc-111' }
             )
         }
     }
 
-    It 'Creates output files in the specified RootPath' {
-        Out-CHARAWSSupportingInfo -RootPath $TestDrive
-        $files = Get-ChildItem -Path $TestDrive -Recurse -File
-        $files.Count | Should -BeGreaterThan 0
+    It 'Creates output directory structure under RootPath' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive -Region 'us-east-1'
+        $expectedDir = Join-Path $TestDrive '123456789012/us-east-1'
+        Test-Path $expectedDir | Should -BeTrue
     }
 
-    It 'Includes SSM parameter data in output' {
-        Out-CHARAWSSupportingInfo -RootPath $TestDrive
-        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
-        $content | Should -BeLike '*/app/config*'
+    It 'Creates SSMParameters.txt' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive -Region 'us-east-1'
+        $file = Join-Path $TestDrive '123456789012/us-east-1/SSMParameters.txt'
+        Test-Path $file | Should -BeTrue
+        Get-Content $file -Raw | Should -BeLike '*/app/config*'
     }
 
-    It 'Includes CloudFormation exports in output' {
-        Out-CHARAWSSupportingInfo -RootPath $TestDrive
-        $content = Get-ChildItem -Path $TestDrive -Recurse -File | Get-Content -Raw
-        $content | Should -BeLike '*VpcId*'
+    It 'Creates Secrets.txt' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive -Region 'us-east-1'
+        $file = Join-Path $TestDrive '123456789012/us-east-1/Secrets.txt'
+        Test-Path $file | Should -BeTrue
     }
 
-    It 'Handles empty service responses gracefully' {
+    It 'Creates CFNExports.txt' {
+        Out-CHARAWSSupportingInfo -RootPath $TestDrive -Region 'us-east-1'
+        $file = Join-Path $TestDrive '123456789012/us-east-1/CFNExports.txt'
+        Test-Path $file | Should -BeTrue
+        Get-Content $file -Raw | Should -BeLike '*VpcId*'
+    }
+
+    It 'Handles empty service responses without throwing' {
         Mock Get-SSMParameterList -ModuleName Audit-AWSAccount { @() }
         Mock Get-SECSecretList -ModuleName Audit-AWSAccount { @() }
         Mock Get-CFNExport -ModuleName Audit-AWSAccount { @() }
 
-        { Out-CHARAWSSupportingInfo -RootPath $TestDrive } | Should -Not -Throw
-    }
-
-    It 'Calls Get-STSCallerIdentity for account identification' {
-        Out-CHARAWSSupportingInfo -RootPath $TestDrive
-        Should -Invoke Get-STSCallerIdentity -ModuleName Audit-AWSAccount -Times 1
+        { Out-CHARAWSSupportingInfo -RootPath $TestDrive -Region 'us-east-1' } | Should -Not -Throw
     }
 }
