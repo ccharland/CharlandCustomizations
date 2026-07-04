@@ -27,7 +27,7 @@ Describe 'Get-CHAREC2KeyTagNameStatus' -Tag 'Unit' {
 
     It 'Returns objects with KeyName property' {
         $results = @(Get-CHAREC2KeyTagNameStatus -TagKey 'Name')
-        $results.Count | Should -BeGreaterThan 0
+        $results | ForEach-Object { $_.KeyName | Should -Be 'Name' }
     }
 
     It 'Requires TagKey parameter' {

@@ -70,7 +70,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 }
             )
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance { $mockInstances } -ModuleName 'Audit-AWSAccount'
             Mock Get-SSMInstancePatch {
                 param($InstanceId)
                 switch ($InstanceId) {
@@ -178,7 +178,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 }
                 $mockPatches
             } -ModuleName Audit-AWSAccount
-            Mock Start-Sleep -ModuleName Audit-AWSAccount { } -ModuleName Audit-AWSAccount
+            Mock Start-Sleep { } -ModuleName 'Audit-AWSAccount'
 
             $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
         }

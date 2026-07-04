@@ -11,6 +11,10 @@ BeforeAll {
 Describe 'Get-CHAREC2SnapshotReport' -Tag 'Unit' {
 
     BeforeEach {
+        $global:AWShistory = [PSCustomObject]@{
+            LastServiceResponse = [PSCustomObject]@{ NextToken = $null }
+        }
+
         Mock Get-EC2Snapshot -ModuleName Audit-AWSAccount {
             @(
                 [PSCustomObject]@{

@@ -8,14 +8,22 @@ BeforeAll {
     Import-Module "$script:RepoRoot/src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
 
     # Define stubs for AWS cmdlets not available in test environment
-    $stubCmds = @('Get-ASAutoScalingGroup','Get-ELB2LoadBalancer','Get-ELBLoadBalancer',
+    $script:stubCmds = @('Get-ASAutoScalingGroup','Get-ELB2LoadBalancer','Get-ELBLoadBalancer',
         'Get-CFDistributionList','Get-EFSFileSystem','Get-ECSClusterList','Get-EKSClusterList',
         'Get-KMSKeyList','Get-ACMCertificateList','Get-DDBTableList','Get-RSCluster',
         'Get-SQSQueue','Get-SNSTopic','Get-SFNStateMachineList','Get-DSDirectory',
         'Get-FRCForecastList','Get-SGGateway')
-    foreach ($cmd in $stubCmds) {
+    foreach ($cmd in $script:stubCmds) {
         if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
             New-Item -Path "function:global:$cmd" -Value { param() @() } -Force | Out-Null
+        }
+    }
+}
+
+AfterAll {
+    foreach ($cmd in $script:stubCmds) {
+        if (Test-Path "function:global:$cmd") {
+            Remove-Item "function:global:$cmd" -ErrorAction SilentlyContinue
         }
     }
 }

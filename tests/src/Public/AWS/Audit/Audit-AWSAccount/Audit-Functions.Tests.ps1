@@ -62,9 +62,9 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
             }
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-EC2NetworkInterface -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ELB2LoadBalancer -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Instance { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2NetworkInterface { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ELB2LoadBalancer { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EC2VPCEndpoint { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-RDSDBInstance { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EC2ClientVpnEndpoint { @() } -ModuleName 'Audit-AWSAccount'
@@ -94,7 +94,7 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
         Mock Get-DAXCluster { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-TFRServerList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-GLUEConnectionList { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns a result object with SecurityGroupId and UsedByCount' {
