@@ -28,11 +28,8 @@ Describe 'SRC test layout gate' -Tag 'Unit' {
         $manifest = Import-PowerShellDataFile -Path $script:ManifestPath
         $exportedFunctions = @($manifest.FunctionsToExport)
 
-        # Build a lookup of all test file basenames under tests/src/
+        # Collect all test files under tests/src/
         $testFiles = Get-ChildItem -Path $script:TestRoot -Recurse -File -Filter '*.Tests.ps1'
-        $testBaseNames = $testFiles | ForEach-Object {
-            [System.IO.Path]::GetFileNameWithoutExtension($_.Name) -replace '\.Tests$', ''
-        }
 
         $missing = @()
         $missingIt = @()
@@ -67,9 +64,9 @@ Describe 'SRC test layout gate' -Tag 'Unit' {
         $privateDir = Join-Path $script:SourceRoot 'Private'
         $privateTestDir = Join-Path $script:TestRoot 'Private'
 
-        $privateFiles = Get-ChildItem -Path $privateDir -Filter '*.ps1' |
-            Where-Object { $_.Name -ne '.gitkeep' }
-
+        Test-Path $privateDir | Should -BeTrue -Because 'Private helpers directory must exist'
+        Test-Path $privateTestDir | Should -BeTrue -Because 'Private helper test directory must exist'
+        $privateFiles = Get-ChildItem -Path $privateDir -Filter '*.ps1' -File
         $missing = @()
         $missingIt = @()
 
@@ -100,7 +97,7 @@ Describe 'SRC test layout gate' -Tag 'Unit' {
         $testPath = Join-Path $script:TestRoot 'CharlandCustomizations.psd1.Tests.ps1'
         Test-Path $testPath | Should -BeTrue -Because 'CharlandCustomizations.psd1.Tests.ps1 must exist'
 
-        $rawTest = Get-Content -Path $testPath -Raw
+        $rawTest = Get-Content -Path $testPath -Raw -ErrorAction Stop
         $rawTest | Should -Match '(?m)^\s*It\s+[\"'']' -Because 'Manifest test must contain at least one It block'
     }
 
@@ -108,7 +105,7 @@ Describe 'SRC test layout gate' -Tag 'Unit' {
         $testPath = Join-Path $script:TestRoot 'CharlandCustomizations.psm1.Tests.ps1'
         Test-Path $testPath | Should -BeTrue -Because 'CharlandCustomizations.psm1.Tests.ps1 must exist'
 
-        $rawTest = Get-Content -Path $testPath -Raw
+        $rawTest = Get-Content -Path $testPath -Raw -ErrorAction Stop
         $rawTest | Should -Match '(?m)^\s*It\s+[\"'']' -Because 'Root module test must contain at least one It block'
     }
 }
