@@ -988,8 +988,6 @@ function Update-CHARSSOCredentialList {
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
   [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'CredentialFile',
     Justification = 'CredentialFile is a file path, not a password')]
-  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'ConfigFile',
-    Justification = 'ConfigFile is a file path, not a password')]
   param(
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
