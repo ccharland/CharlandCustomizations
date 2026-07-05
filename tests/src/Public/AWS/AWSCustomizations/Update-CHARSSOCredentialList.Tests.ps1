@@ -277,6 +277,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
 
             $script:capturedContent | Should -Match '\[sso-session CharlandOrg\]'
             $script:capturedContent | Should -Match 'sso_session = CharlandOrg'
+        }
 
         It 'Auto-derives SSOSessionName from StartUrl when not specified' {
             $capturedContent = $null
@@ -289,6 +290,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
 
             # Should strip URL parts and non-alphanumeric chars
             $script:capturedContent | Should -Match '\[sso-session d9067171d80\]'
+        }
     }
 
     Context 'ProfilePrefix and profile naming' {
@@ -303,6 +305,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
                 -ProfilePrefix 'MyOrg' -Region 'us-east-1' -Force
 
             $script:capturedContent | Should -Match '\[profile MyOrg-AWSAdministratorAccess-111111111111\]'
+        }
 
         It 'Generates profile names without prefix when ProfilePrefix is not specified' {
             $capturedContent = $null
@@ -314,6 +317,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
                 -Region 'us-east-1' -Force
 
             $script:capturedContent | Should -Match '\[profile AWSAdministratorAccess-111111111111\]'
+        }
     }
 
     Context 'ConfigFile parameter' {
