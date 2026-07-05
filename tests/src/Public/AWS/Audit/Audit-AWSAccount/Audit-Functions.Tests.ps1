@@ -54,7 +54,7 @@ AfterAll {
 Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
+        Mock Get-EC2SecurityGroup {
             [PSCustomObject]@{
                 GroupId     = 'sg-12345678'
                 GroupName   = 'test-sg'
@@ -68,7 +68,7 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
         Mock Get-EC2VPCEndpoint { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-RDSDBInstance { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EC2ClientVpnEndpoint { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-LMFunctionList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-ECCacheCluster { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-MSKClusterList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-NPTDBCluster { @() } -ModuleName 'Audit-AWSAccount'
@@ -116,7 +116,7 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
     }
 
     It 'Counts associated instances in UsedByCount' {
-        Mock Get-EC2Instance -ModuleName Audit-AWSAccount {
+        Mock Get-EC2Instance {
             @([PSCustomObject]@{
                     Instances = @([PSCustomObject]@{
                             SecurityGroups = @([PSCustomObject]@{ GroupId = 'sg-12345678' })
@@ -135,17 +135,17 @@ Describe 'Get-CHAREC2SGInUse' -Tag 'Unit' {
 Describe 'Get-CHAREC2Count' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Get-EC2Region -ModuleName Audit-AWSAccount {
+        Mock Get-EC2Region {
             @([PSCustomObject]@{ RegionName = 'us-east-1' })
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-EC2Volume -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-EC2Snapshot -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ASAutoScalingGroup -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ELB2LoadBalancer -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ELBLoadBalancer -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Instance { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Volume { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Snapshot { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ASAutoScalingGroup { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ELB2LoadBalancer { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ELBLoadBalancer { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns region data with expected properties' {
@@ -168,7 +168,7 @@ Describe 'Get-CHAREC2Count' -Tag 'Unit' {
     }
 
     It 'Sets ScanOk to false when AWS API throws' {
-        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { throw 'Access Denied' } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Instance { throw 'Access Denied' } -ModuleName 'Audit-AWSAccount'
 
         $result = Get-CHAREC2Count -Region 'us-east-1'
 
@@ -179,11 +179,11 @@ Describe 'Get-CHAREC2Count' -Tag 'Unit' {
 Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns security groups with inbound rules on database ports' {
-        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
+        Mock Get-EC2SecurityGroup {
             @([PSCustomObject]@{
                     GroupId       = 'sg-db001'
                     GroupName     = 'db-sg'
@@ -206,7 +206,7 @@ Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
     }
 
     It 'Returns nothing when no security groups have database port rules' {
-        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
+        Mock Get-EC2SecurityGroup {
             @([PSCustomObject]@{
                     GroupId       = 'sg-web001'
                     GroupName     = 'web-sg'
@@ -231,11 +231,11 @@ Describe 'Find-CHAREC2DBSG' -Tag 'Unit' {
 Describe 'Find-CHAROpenSecurityGroup' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns security groups with 0.0.0.0/0 on non-standard ports' {
-        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
+        Mock Get-EC2SecurityGroup {
             @([PSCustomObject]@{
                     GroupId       = 'sg-open001'
                     GroupName     = 'open-sg'
@@ -259,7 +259,7 @@ Describe 'Find-CHAROpenSecurityGroup' -Tag 'Unit' {
     }
 
     It 'Does not flag security groups with only port 80 and 443 open' {
-        Mock Get-EC2SecurityGroup -ModuleName Audit-AWSAccount {
+        Mock Get-EC2SecurityGroup {
             @([PSCustomObject]@{
                     GroupId       = 'sg-web001'
                     GroupName     = 'web-sg'
@@ -293,7 +293,7 @@ Describe 'Find-CHAROpenSecurityGroup' -Tag 'Unit' {
 Describe 'Get-CHAREC2KeyTagNameStatus' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns KeyPresent true when tag exists on resource' {
@@ -341,7 +341,7 @@ Describe 'Get-CHAREC2SnapshotReport' -Tag 'Unit' {
             LastServiceResponse = [PSCustomObject]@{ NextToken = $null }
         }
 
-        Mock Get-EC2Snapshot -ModuleName Audit-AWSAccount {
+        Mock Get-EC2Snapshot {
             @([PSCustomObject]@{
                     SnapshotId  = 'snap-abc123'
                     VolumeId    = 'vol-xyz789'
@@ -376,11 +376,11 @@ Describe 'Get-CHAREC2SnapshotReport' -Tag 'Unit' {
 Describe 'Get-CHAREC2VolumeReport' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns attached volumes with InstanceId' {
-        Mock Get-EC2Volume -ModuleName Audit-AWSAccount {
+        Mock Get-EC2Volume {
             @([PSCustomObject]@{
                     VolumeId    = 'vol-attached01'
                     State       = 'in-use'
@@ -402,7 +402,7 @@ Describe 'Get-CHAREC2VolumeReport' -Tag 'Unit' {
     }
 
     It 'Returns unattached volumes with NoInstance marker' {
-        Mock Get-EC2Volume -ModuleName Audit-AWSAccount {
+        Mock Get-EC2Volume {
             @([PSCustomObject]@{
                     VolumeId    = 'vol-free01'
                     State       = 'available'
@@ -449,15 +449,15 @@ Describe 'Start-CHAREC2RetryLoop' -Tag 'Unit' {
 Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Request-IAMCredentialReport -ModuleName Audit-AWSAccount {
+        Mock Request-IAMCredentialReport {
             [PSCustomObject]@{ State = 'COMPLETE' }
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-IAMCredentialReport -ModuleName Audit-AWSAccount {
+        Mock Get-IAMCredentialReport {
             @('user,arn,user_creation_time,password_enabled', 'testuser,arn:aws:iam::123:user/test,2024-01-01,true')
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Start-Sleep -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Start-Sleep {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Calls Request-IAMCredentialReport and Get-IAMCredentialReport for each profile' {
@@ -473,23 +473,23 @@ Describe 'Get-CHARIAMAuditList' -Tag 'Unit' {
 Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
+        Mock Get-STSCallerIdentity {
             [PSCustomObject]@{ Account = '123456789012' }
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-EC2Instance -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Instance { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-CFDistributionList { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ELB2LoadBalancer -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ELBLoadBalancer -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-ASAutoScalingGroup -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ELB2LoadBalancer { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ELBLoadBalancer { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-ASAutoScalingGroup { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-RDSDBInstance { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EFSFileSystem { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-ECSClusterList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EKSClusterList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-KMSKeyList { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-LMFunctionList -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-LMFunctionList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-ACMCertificateList { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-SECSecretList -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-SECSecretList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-DDBTableList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-RSCluster { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-SQSQueue { @() } -ModuleName 'Audit-AWSAccount'
@@ -498,7 +498,7 @@ Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
         Mock Get-DSDirectory { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-FRCForecastList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-SGGateway { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Write-Progress -ModuleName Audit-AWSAccount {} -ModuleName 'Audit-AWSAccount'
+        Mock Write-Progress {} -ModuleName 'Audit-AWSAccount'
     }
 
     It 'Returns audit data with account and region properties' {
@@ -526,23 +526,23 @@ Describe 'Get-CHARGlobalAuditReportItem' -Tag 'Unit' {
 Describe 'Out-CHARAWSSupportingInfo' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
+        Mock Get-STSCallerIdentity {
             [PSCustomObject]@{ Account = '111222333444' }
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-DefaultAWSRegion -ModuleName Audit-AWSAccount {
+        Mock Get-DefaultAWSRegion {
             [PSCustomObject]@{ Region = 'us-east-1' }
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-SSMParameterList -ModuleName Audit-AWSAccount {
+        Mock Get-SSMParameterList {
             @([PSCustomObject]@{ Name = '/app/param1'; Description = 'Test param' })
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-SECSecretList -ModuleName Audit-AWSAccount {
+        Mock Get-SECSecretList {
             @([PSCustomObject]@{ Name = 'my-secret'; Description = 'Test secret' })
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-CFNExport -ModuleName Audit-AWSAccount {
+        Mock Get-CFNExport {
             @([PSCustomObject]@{ Name = 'VpcId'; Value = 'vpc-123' })
         } -ModuleName 'Audit-AWSAccount'
 
@@ -569,18 +569,18 @@ Describe 'Out-CHARAWSSupportingInfo' -Tag 'Unit' {
 Describe 'Out-CHARAWSNetworkingComponent' -Tag 'Unit' {
 
     BeforeAll {
-        Mock Get-STSCallerIdentity -ModuleName Audit-AWSAccount {
+        Mock Get-STSCallerIdentity {
             [PSCustomObject]@{ Account = '111222333444' }
         } -ModuleName 'Audit-AWSAccount'
 
-        Mock Get-DefaultAWSRegion -ModuleName Audit-AWSAccount {
+        Mock Get-DefaultAWSRegion {
             [PSCustomObject]@{ Region = 'us-east-1' }
         } -ModuleName 'Audit-AWSAccount'
 
         Mock Get-EC2VpnConnection { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-EC2Vpc -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-EC2Subnet -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
-        Mock Get-EC2RouteTable -ModuleName Audit-AWSAccount { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Vpc { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2Subnet { @() } -ModuleName 'Audit-AWSAccount'
+        Mock Get-EC2RouteTable { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EC2ManagedPrefixList { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EC2TransitGatewayRouteTable { @() } -ModuleName 'Audit-AWSAccount'
         Mock Get-EC2TransitGatewayAttachment { @() } -ModuleName 'Audit-AWSAccount'
