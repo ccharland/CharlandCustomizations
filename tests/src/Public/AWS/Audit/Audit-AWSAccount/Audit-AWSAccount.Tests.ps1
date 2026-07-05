@@ -4,6 +4,7 @@
 #>
 BeforeAll {
     $script:RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '../../../../../..')
+    . "$script:RepoRoot/src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
     $script:ModulePath = Join-Path $script:RepoRoot 'src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1'
 }
 

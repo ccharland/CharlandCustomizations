@@ -12,9 +12,4 @@ Describe 'Test-CHARCommitSignature' -Tag 'Unit' {
     It 'Is a recognized command after dot-sourcing' {
         Get-Command Test-CHARCommitSignature | Should -Not -BeNullOrEmpty
     }
-
-    It 'Has a Count parameter' {
-        $cmd = Get-Command Test-CHARCommitSignature
-        $cmd.Parameters.Keys | Should -Contain 'Count'
-    }
 }

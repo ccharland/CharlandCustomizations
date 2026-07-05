@@ -15,14 +15,19 @@ Describe 'GitCustomizations module' -Tag 'Unit' {
         $errors | Should -BeNullOrEmpty
     }
 
-    It 'Exports Install-CHARGitHook when imported' {
+    It 'Exports expected functions when imported' {
         Import-Module $script:ModulePath -Force
-        Get-Command -Module GitCustomizations -Name 'Install-CHARGitHook' |
-            Should -Not -BeNullOrEmpty
+        $commands = Get-Command -Module GitCustomizations
+        $commands.Count | Should -BeGreaterThan 0
     }
 
-    It 'Exports Test-CHARCommitSignature when imported' {
-        Get-Command -Module GitCustomizations -Name 'Test-CHARCommitSignature' |
-            Should -Not -BeNullOrEmpty
+    It 'Exports Install-CHARGitHook' {
+        Import-Module $script:ModulePath -Force
+        Get-Command Install-CHARGitHook -Module GitCustomizations | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Exports Test-CHARCommitSignature' {
+        Import-Module $script:ModulePath -Force
+        Get-Command Test-CHARCommitSignature -Module GitCustomizations | Should -Not -BeNullOrEmpty
     }
 }

@@ -14,7 +14,6 @@ Describe 'Test-CHARAuthenticodeSignature' -Tag 'Unit' {
     }
 
     It 'Has a Path parameter' {
-        $cmd = Get-Command Test-CHARAuthenticodeSignature
-        $cmd.Parameters.Keys | Should -Contain 'Path'
+        (Get-Command Test-CHARAuthenticodeSignature).Parameters.Keys | Should -Contain 'Path'
     }
 }

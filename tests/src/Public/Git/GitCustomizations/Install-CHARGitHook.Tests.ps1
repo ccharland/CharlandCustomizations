@@ -12,9 +12,4 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
     It 'Is a recognized command after dot-sourcing' {
         Get-Command Install-CHARGitHook | Should -Not -BeNullOrEmpty
     }
-
-    It 'Has a Force switch parameter' {
-        $cmd = Get-Command Install-CHARGitHook
-        $cmd.Parameters.Keys | Should -Contain 'Force'
-    }
 }

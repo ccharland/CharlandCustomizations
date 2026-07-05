@@ -1,4 +1,4 @@
-function Invoke-CHARScriptMultiRegionProfile {
+﻿function Invoke-CHARScriptMultiRegionProfile {
   <#
 .SYNOPSIS
     Invokes AWS commands across multiple AWS Profiles and regions to gather data.
@@ -14,6 +14,24 @@ function Invoke-CHARScriptMultiRegionProfile {
     (AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_SESSION_TOKEN or AWS_PROFILE, plus
     AWS_DEFAULT_REGION) set for each account/region iteration.
 
+    The function injects $Region, $ProfileName, and $PSDefaultParameterValues into
+    the ScriptBlock scope automatically. This means any AWS cmdlet or wrapper function
+    accepting -Region or -ProfileName picks up the current iteration values without
+    requiring the user to pass them explicitly.
+
+    Error Handling:
+    - If a ScriptBlock throws (e.g., SCP denial, access denied, service unavailable),
+      the error is caught and a result object with the Error property populated is
+      emitted for that profile/region combination. Processing continues with the
+      next region or profile.
+    - If a ScriptBlock returns no data, an empty tracking object is emitted so
+      every profile/region combination produces at least one output row.
+    - Every output object includes an Error property (null on success) so that
+      Format-Table and other formatters display columns consistently regardless
+      of whether some iterations failed.
+    - Authentication failures (invalid profile credentials) skip the entire profile
+      with a warning and continue processing subsequent profiles.
+
     Use -OutputSubTemplate to emit a starter script template that calls this function,
     which you can customize for your specific data-gathering scenario.
 
@@ -26,6 +44,9 @@ function Invoke-CHARScriptMultiRegionProfile {
 
 .PARAMETER ScriptBlock
     The ScriptBlock to execute for each account/region combination.
+    $Region and $ProfileName variables are automatically available inside the block.
+    $PSDefaultParameterValues is injected so cmdlets with -Region/-ProfileName parameters
+    receive the correct values without explicit passing.
 
 .PARAMETER IncludeAccountId
     When specified, adds an AccountId property to each output object.
@@ -66,10 +87,40 @@ function Invoke-CHARScriptMultiRegionProfile {
     Invoke-CHARScriptMultiRegionProfile -ProfileName 'dev','prod' -Region 'us-east-1' `
         -ScriptBlock { Get-STSCallerIdentity } -IncludeRegion -IncludeProfileName
 
+    Calls Get-STSCallerIdentity for each profile in us-east-1, adding Region and
+    ProfileName columns to the output.
+
 .EXAMPLE
-    Get-AWSCredential -ListProfileDetail | Select-Object -ExpandProperty ProfileName |
-        Invoke-CHARScriptMultiRegionProfile -Region 'us-east-1' `
-            -ScriptBlock { Get-S3Bucket } -IncludeAccountId -IncludeProfileName
+    Invoke-CHARScriptMultiRegionProfile -ProfileName 'prod' `
+        -Region 'us-east-1','eu-west-1','ap-southeast-1' `
+        -ScriptBlock { Get-LMFunctionList | Select-Object FunctionName, Runtime } `
+        -IncludeRegion -IncludeAccountId | Format-Table
+
+    Lists Lambda functions across three regions. Regions blocked by SCP will show
+    an Error value instead of function data, while allowed regions return normally.
+
+.EXAMPLE
+    Invoke-CHARScriptMultiRegionProfile -ProfileName 'dev','staging','prod' `
+        -Region 'us-east-1' `
+        -ScriptBlock { Get-CHARDeprecatedLMFunctionList } `
+        -IncludeProfileName -IncludeAccountId | Where-Object { -not $_.Error }
+
+    Calls a wrapper function across three accounts. The wrapper receives -Region
+    and -ProfileName automatically via $PSDefaultParameterValues injection. Results
+    are filtered to exclude any accounts where the call failed.
+
+.EXAMPLE
+    $results = Invoke-CHARScriptMultiRegionProfile -ProfileName 'prod' `
+        -Region 'us-east-1','eu-west-1' `
+        -ScriptBlock { Get-S3Bucket } `
+        -IncludeRegion -IncludeProfileName
+
+    $results | Where-Object { $_.Error } | Format-Table Region, ProfileName, Error
+    $results | Where-Object { -not $_.Error } | Format-Table BucketName, Region
+
+    Separates successful results from failures for independent processing.
+    Regions denied by SCP produce rows with Error populated; allowed regions
+    produce rows with bucket data and Error set to null.
 
 .EXAMPLE
     Invoke-CHARScriptMultiRegionProfile -OutputSubTemplate
@@ -122,7 +173,7 @@ function Invoke-CHARScriptMultiRegionProfile {
     [string]$SessionToken,
 
     [Parameter(ParameterSetName = 'Execute')]
-    $Credential,
+    [SecureString] $Credential,
 
     [Parameter(ParameterSetName = 'Execute')]
     [string]$ProfileLocation,
@@ -134,6 +185,7 @@ function Invoke-CHARScriptMultiRegionProfile {
   begin {
     # When -OutputSubTemplate is specified, emit a function stub for use as a ScriptBlock
     if ($OutputSubTemplate) {
+      Write-Verbose 'Emitting sub-template for ScriptBlock'
       $subTemplate = @'
 {
     <#
@@ -177,7 +229,7 @@ function Invoke-CHARScriptMultiRegionProfile {
       Write-Output $subTemplate
       return
     }
-
+    Write-Debug 'Start Begin'
     # Build base AWS splat from credential parameters then remove ProfileName/Region
     # since those are arrays used for iteration in this function, not single-value
     # credential params to pass to AWS cmdlets directly.
@@ -186,41 +238,50 @@ function Invoke-CHARScriptMultiRegionProfile {
     $awsParams.Remove('Region') | Out-Null
     if (-not $ProfileName) {
       # Try the shell's current stored credential profile name
+      Write-Debug 'ProfileName not specified'
       $currentProfile = $null
       if ($StoredAWSCredentials) {
+        Write-Debug "Found StoredAWSCredentials: $StoredAWSCredentials"
         $currentProfile = $StoredAWSCredentials
       }
       if (-not $currentProfile) {
+        Write-Debug 'Checking for default profile'
         # Fall back: check if there's a default profile in the credential store
         $defaultProfile = (Get-AWSCredential -ListProfileDetail |
-          Where-Object { $_.ProfileName -eq 'default' } |
-          Select-Object -First 1 -ExpandProperty ProfileName)
+            Where-Object { $_.ProfileName -eq 'default' } |
+            Select-Object -First 1 -ExpandProperty ProfileName)
         if ($defaultProfile) {
+          Write-Debug "Default profile found: $defaultProfile"
           $currentProfile = $defaultProfile
         }
       }
       if ($currentProfile) {
+        Write-Verbose "Using current profile: $currentProfile"
         $ProfileName = @($currentProfile)
-      }
-      else {
-        Write-Error "No ProfileName specified and no current AWS profile found. Use -ProfileName or Set-AWSCredential."
+      } else {
+        Write-Error 'No ProfileName specified and no current AWS profile found. Use -ProfileName or Set-AWSCredential.'
         return
       }
-    }
 
-    if (-not $Region) {
+    }
+    Write-Debug "Region checks : $Region"
+
+    if ($Region.count -eq 0) {
+      Write-Verbose 'Region not specified - trying default region'
       $defaultRegion = (Get-DefaultAWSRegion).Region
       if ($defaultRegion) {
+        Write-Verbose "Using current/default region: $defaultRegion"
         $Region = @($defaultRegion)
-      }
-      else {
-        Write-Error "No region specified and no default AWS region set. Use -Region or Set-DefaultAWSRegion."
+      } else {
+        Write-Error 'No region specified and no default AWS region set. Use -Region or Set-DefaultAWSRegion.'
         return
       }
+    } else {
+      Write-Verbose "region specified: $Region"
     }
     $profileCount = 0
     $regionTotal = $Region.Count
-
+    Write-Verbose "Executing against $($ProfileName.Count) profile(s) across $regionTotal region(s) each"
     # Match common AWS.Tools missing-region failures:
     # - "No region..." text
     # - "RegionEndpoint" / "ServiceURL" configuration errors
@@ -234,27 +295,36 @@ function Invoke-CHARScriptMultiRegionProfile {
       'region.*not.*(configured|specified|set)'
     )
     $missingRegionPattern = '(?i)(' + ($missingRegionPatternAlternatives -join '|') + ')'
+    Write-Debug 'end begin'
   }
 
   process {
     foreach ($prof in $ProfileName) {
+      Write-Verbose "Processing profile: $prof"
       $profileCount++
       if (-not $NoProgress) {
-        Write-Progress -Id 1 -Activity "Processing AWS Profiles" `
+        Write-Progress -Id 1 -Activity 'Processing AWS Profiles' `
           -Status "Profile: $prof (#$profileCount)" `
-          -CurrentOperation "Authenticating..."
+          -CurrentOperation 'Authenticating...'
       }
 
       # Validate credentials before doing any work for this profile
       # Override ProfileName per iteration; base awsParams carries other credential params
+      # Use the first region from the list for validation since Region was removed from awsParams
       $iterParams = $awsParams.Clone()
       $iterParams['ProfileName'] = $prof
+      if ($Region -and $Region.Count -gt 0) {
+        $iterParams['Region'] = $Region[0]
+      } else {
+        Write-Error "Region array is empty or null for profile '$prof'"
+        continue
+      }
+      Write-Verbose "Validating profile '$prof' with region '$($iterParams.Region)'"
       try {
         $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
         $accountId = $identity.Account
         Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
-      }
-      catch {
+      } catch {
         if ($_.Exception.Message -match $missingRegionPattern) {
           $missingRegionError = [System.Management.Automation.ErrorRecord]::new(
             $_.Exception,
@@ -276,7 +346,7 @@ function Invoke-CHARScriptMultiRegionProfile {
         # Get-AWSCredential -ProfileName with the profile's location resolves correctly
         # because it reads directly from the ini file, not from the SSO token cache.
         $profileDetail = Get-AWSCredential -ListProfileDetail |
-        Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
+          Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
 
         if ($profileDetail -and $profileDetail.ProfileLocation) {
           $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
@@ -292,8 +362,7 @@ function Invoke-CHARScriptMultiRegionProfile {
             $resolvedCreds = $credObj.GetCredentials()
           }
         }
-      }
-      catch {
+      } catch {
         Write-Verbose "Could not resolve credentials for profile '$prof': $_"
       }
 
@@ -308,11 +377,16 @@ function Invoke-CHARScriptMultiRegionProfile {
         }
 
         Write-Verbose "Executing against Profile='$prof', Region='$r'"
+        # Save current AWS session state
+        $origStoredRegion = $global:StoredAWSRegion
+        $origStoredCreds = $global:StoredAWSCredentials
+        $origEnvRegion = $env:AWS_DEFAULT_REGION
+        $origEnvAccessKey = $env:AWS_ACCESS_KEY_ID
+        $origEnvSecretKey = $env:AWS_SECRET_ACCESS_KEY
+        $origEnvSessionToken = $env:AWS_SESSION_TOKEN
 
         try {
-          # Save current AWS session state
-          $origStoredRegion = $global:StoredAWSRegion
-          $origStoredCreds = $global:StoredAWSCredentials
+          Write-Verbose 'saving state'
 
           if ($resolvedCreds -and $resolvedCreds.AccessKey) {
             # Use Set-AWSCredential to properly register credentials in the SDK session cache
@@ -324,32 +398,90 @@ function Invoke-CHARScriptMultiRegionProfile {
               $setCmdParams['SessionToken'] = $resolvedCreds.Token
             }
             Set-AWSCredential @setCmdParams
-          }
-          else {
+
+            # Also set environment variables so the SDK resolves region/creds
+            # consistently even when module-level globals are not picked up
+            $env:AWS_ACCESS_KEY_ID = $resolvedCreds.AccessKey
+            $env:AWS_SECRET_ACCESS_KEY = $resolvedCreds.SecretKey
+            if ($resolvedCreds.Token) {
+              $env:AWS_SESSION_TOKEN = $resolvedCreds.Token
+            } else {
+              $env:AWS_SESSION_TOKEN = $null
+            }
+          } else {
             Set-AWSCredential -ProfileName $prof
           }
           Set-DefaultAWSRegion -Region $r
+          # Set env var as a fallback for SDK region resolution
+          $env:AWS_DEFAULT_REGION = $r
 
           Write-Verbose "Invoking scriptblock for Profile='$prof', Region='$r'"
-          $results = & $ScriptBlock
+          # Force non-terminating errors (e.g., SCP access denied) to become
+          # terminating so they hit the catch block and don't return results
+          # from a fallback region
+          $origErrorAction = $ErrorActionPreference
+          $ErrorActionPreference = 'Stop'
+          try {
+            $results = $NULL
+            Write-Verbose "Try to invoke script: Results before script: $results"
+            Write-Verbose "Region:  $r"
+            # $results = & $ScriptBlock
+            # $results = & $ScriptBlock -Region $r -ProfileName $prof
+            # Inject Region and ProfileName as automatic variables so simple
+            # ScriptBlocks can reference them directly (e.g. -Region $Region).
+            # Also inject $PSDefaultParameterValues so any cmdlet or wrapper
+            # accepting -Region/-ProfileName picks them up implicitly during
+            # parameter binding — this avoids requiring users to thread the
+            # values through every wrapper call.
+            $iterationDefaults = @{
+              '*:Region'      = $r
+              '*:ProfileName' = $prof
+            }
+            $vars = [System.Collections.Generic.List[psvariable]]::new()
+            $vars.Add([psvariable]::new('Region', $r))
+            $vars.Add([psvariable]::new('ProfileName', $prof))
+            $vars.Add([psvariable]::new('PSDefaultParameterValues', $iterationDefaults))
+            $results = @($ScriptBlock.InvokeWithContext($null, $vars))
 
+            if ($results.Count -eq 0) {
+              Write-Verbose "No results returned for Profile='$prof', Region='$r'"
+              Write-Verbose 'emit a single item for tracking'
+              $results = [PSCustomObject]@{}
+            }
+          } catch {
+            # script failed to execute, record error and continue
+            Write-Warning "ScriptBlock failed for Profile='${prof}', Region='${r}': $_"
+            $results = [PSCustomObject]@{
+              Error = $_.Exception.Message
+            }
+          } finally {
+            Write-Verbose 'finally block'
+            Write-Verbose "Results: $results"
+            $ErrorActionPreference = $origErrorAction
+          }
+          # Results should NEVER be empty
           if ($results) {
+            Write-Verbose "Results for Profile='$prof', Region='$r'"
+            Write-Verbose "results:  $results"
             foreach ($item in $results) {
+              Write-Debug "Returning result for Profile='$prof', Region='$r': $item"
               $props = [ordered]@{}
 
               # If the item is a simple type (string, number, etc.), wrap it so enrichment works
               if ($item -is [string]) {
+                Write-Debug 'item: string'
                 $props['Value'] = $item
-              }
-              elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
+              } elseif ($item.GetType().IsPrimitive -or $item -is [decimal]) {
+                Write-Debug 'item: primitive'
                 $props['Value'] = $item
-              }
-              else {
+              } else {
+                Write-Debug 'item: psobject'
                 foreach ($p in $item.PSObject.Properties) {
                   $props[$p.Name] = $p.Value
                 }
               }
-
+              # if error not present, insert a placeholder for it
+              if (-not $props.Contains('Error')) { $props['Error'] = $null }
               if ($IncludeAccountId) { $props['AccountId'] = $accountId }
               if ($IncludeRegion) { $props['Region'] = $r }
               if ($IncludeProfileName) { $props['ProfileName'] = $prof }
@@ -364,28 +496,28 @@ function Invoke-CHARScriptMultiRegionProfile {
 
               $enriched
             }
+          } else {
+            throw 'Error- Results empty, aborting'
           }
-          else {
-            Write-Verbose "No results returned for Profile='$prof', Region='$r'"
-          }
-        }
-        catch {
+        } catch {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
-        }
-        finally {
+        } finally {
           # Restore original AWS session state
           if ($origStoredCreds) {
             Set-AWSCredential -ProfileName $origStoredCreds
-          }
-          else {
+          } else {
             Clear-AWSCredential
           }
           if ($origStoredRegion) {
             Set-DefaultAWSRegion -Region $origStoredRegion
-          }
-          else {
+          } else {
             Clear-DefaultAWSRegion
           }
+          # Restore environment variables
+          $env:AWS_DEFAULT_REGION = $origEnvRegion
+          $env:AWS_ACCESS_KEY_ID = $origEnvAccessKey
+          $env:AWS_SECRET_ACCESS_KEY = $origEnvSecretKey
+          $env:AWS_SESSION_TOKEN = $origEnvSessionToken
         }
 
       }
@@ -397,7 +529,7 @@ function Invoke-CHARScriptMultiRegionProfile {
 
   end {
     if (-not $NoProgress) {
-      Write-Progress -Id 1 -Activity "Processing AWS Profiles" -Completed
+      Write-Progress -Id 1 -Activity 'Processing AWS Profiles' -Completed
     }
   }
 }
