@@ -2,17 +2,21 @@
 
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
-## Unreleased
+## [0.4.0] - 2026-07-05
+
+### Added
+
+- `Get-CHARDeprecatedLMFunctionList` — date-aware Lambda deprecated runtime filter command (#21)
+- `Update-CHARSSOCredentialList` refactored to write SSO profiles to the shared AWS credential file for use with `aws sso login` workflows (#68)
+- Dependabot configuration with GitHub Actions pinned to full commit SHAs for supply-chain security (#53)
+- Branch path policy now separates test ownership by branch type — code branches own `tests/src/`, infrastructure branches own `tests/scripts/` (#60)
+- Comprehensive Pester test coverage added for previously untested functions (#66)
+- `Test-ManifestCompliance.ps1` script to validate manifest export alignment and sorted array formatting (#39)
 
 ### Changed
 
-- Manifest compliance now enforces sorted `.psd1` arrays and `.psm1` `Export-ModuleMember -Function` arrays with one element per line to reduce merge conflicts in frequently edited export lists.
-
-## [0.4.0] - 2026-06-16
-
-### Changed
-
-- **Breaking:** Renamed all 40 public functions from `CC` prefix to `CHAR` prefix (e.g., `Get-CCAWSMFASession` → `Get-CHARAWSMFASession`, `Find-CCCFNStackError` → `Find-CHARCFNStackError`, `Clear-CCS3Bucket` → `Clear-CHARS3Bucket`)
+- **Breaking:** Renamed all 40 public functions from `CC` prefix to `CHAR` prefix (e.g., `Get-CCAWSMFASession` → `Get-CHARAWSMFASession`, `Find-CCCFNStackError` → `Find-CHARCFNStackError`, `Clear-CCS3Bucket` → `Clear-CHARS3Bucket`) (#48)
+- **Breaking:** Renamed `Invoke-CCScriptMultiAccountRegion` → `Invoke-CHARScriptMultiRegionProfile` (verb-noun alignment + prefix rename) (#43, #48)
 - Renamed all standalone `.ps1` files to match new CHAR-prefixed function names (8 files)
 - Updated all nested module `Export-ModuleMember` declarations to export CHAR-prefixed names
 - Updated module manifest `FunctionsToExport` and `AliasesToExport` to use CHAR-prefixed names (`Set-CHARFileSignature`, `Test-CHARAuthenticodeSignatures`)
@@ -20,13 +24,31 @@ All notable changes to the CharlandCustomizations module will be documented in t
 - Updated all documentation to reflect new function names
 - Simplified `$script:CCIsWindows` to `$script:IsWindows` in applicable scripts
 - Stripped all Authenticode signature blocks from source files (to be re-signed in a future release)
+- `Invoke-CHARScriptMultiRegionProfile` — improved credential and region handling for multi-account execution (#62)
+- Manifest compliance now enforces sorted `.psd1` arrays and `.psm1` `Export-ModuleMember -Function` arrays with one element per line to reduce merge conflicts (#39)
+- Reorganized test directory structure — module tests moved to `tests/src/`, script tests moved to `tests/scripts/` (#61, #63)
+- Improved build process with enhanced validation and CI gates (#45, #52)
+- Promoted module from beta to stable release (removed `Prerelease` tag from manifest)
+
+### Fixed
+
+- Lambda `Get-CHARDeprecatedLMFunctionList` — `Runtime` property is now converted to string before comparison to prevent type mismatch errors (#64)
+- Various test fixes for source-mirrored test layout (#67)
+
+### Infrastructure
+
+- Added repository rulesets for branch naming and path controls (#49)
+- Added Kiro and AI-assistant configuration files (#42)
+- GitHub Actions workflows pinned to full commit SHAs (#53)
 
 ### Notes
 
 - **Breaking change for end users** — all exported command names now use the `CHAR` prefix instead of `CC`. Users must update scripts that reference the old names.
+- **Breaking rename** — `Invoke-CCScriptMultiAccountRegion` is now `Invoke-CHARScriptMultiRegionProfile`. The new name better reflects that it iterates regions per profile.
 - Private/internal functions (`New-AWSParamSplat`, `CFNPrivateFunctions`) were not renamed; only their comment references were updated.
 - The `CHAR` prefix was chosen to be more unique, clearly identifying these as Charland's custom functions, and avoiding potential naming conflicts with other modules.
 - Files will be re-signed with Authenticode certificates in a subsequent release.
+- This is the first stable (non-beta) release.
 
 ## [0.3.1] - 2026-06-13
 

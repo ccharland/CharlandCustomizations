@@ -149,7 +149,6 @@ PrivateData = @{
         Tags = @(
             'Automation',
             'AWS',
-            'Beta',
             'CloudFormation',
             'PowerShell',
             'Utilities'
@@ -168,7 +167,7 @@ PrivateData = @{
         ReleaseNotes = 'https://github.com/ccharland/CharlandCustomizations/blob/main/docs/CHANGELOG.md'
 
         # Prerelease string of this module
-        Prerelease = 'beta'
+        # Prerelease = 'beta'
 
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false
