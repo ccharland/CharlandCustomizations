@@ -17,6 +17,7 @@ BeforeAll {
 
     $script:RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '../../../../../..')
     . "$script:RepoRoot/src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
+    Get-Module Audit-AWSAccount -All | Remove-Module -Force -ErrorAction SilentlyContinue
     Import-Module "$script:RepoRoot/src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1" -Force
 }
 

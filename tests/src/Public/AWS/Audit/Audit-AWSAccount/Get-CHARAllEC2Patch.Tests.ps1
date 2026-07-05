@@ -132,7 +132,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 )
             }
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances }
             Mock Get-SSMInstancePatch { @() } -ModuleName Audit-AWSAccount
 
             $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
@@ -170,7 +170,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
             # Track calls to simulate one throttle then success
             $script:throttleCallCount = 0
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances }
             Mock Get-SSMInstancePatch {
                 $script:throttleCallCount++
                 if ($script:throttleCallCount -eq 1) {
@@ -207,9 +207,9 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 )
             }
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances }
             Mock Get-SSMInstancePatch { throw 'Rate exceeded' } -ModuleName Audit-AWSAccount
-            Mock Start-Sleep -ModuleName Audit-AWSAccount { } -ModuleName Audit-AWSAccount
+            Mock Start-Sleep -ModuleName Audit-AWSAccount { }
 
             $script:result = Get-CHARAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
             $script:warnings = $warnOut
@@ -238,7 +238,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 )
             }
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances }
             Mock Get-SSMInstancePatch { throw 'AccessDeniedException: User is not authorized' } -ModuleName Audit-AWSAccount
 
             $script:result = Get-CHARAllEC2Patch -Region 'us-east-1' -WarningVariable warnOut 3>$null
@@ -268,7 +268,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 )
             }
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances }
             Mock Get-SSMInstancePatch { @() } -ModuleName Audit-AWSAccount
 
             Get-CHARAllEC2Patch -Region 'eu-west-1' -ProfileName 'testprofile'
@@ -306,7 +306,7 @@ Describe 'Get-CHARAllEC2Patch' -Tag 'Unit' {
                 Instances = @()
             }
 
-            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances } -ModuleName Audit-AWSAccount
+            Mock Get-EC2Instance -ModuleName Audit-AWSAccount { $mockInstances }
             Mock Get-SSMInstancePatch { } -ModuleName Audit-AWSAccount
 
             $script:result = Get-CHARAllEC2Patch -Region 'us-east-1'
