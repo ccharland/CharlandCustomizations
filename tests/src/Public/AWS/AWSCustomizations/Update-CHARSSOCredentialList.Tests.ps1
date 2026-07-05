@@ -275,11 +275,8 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
                 -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -Force
 
-            InModuleScope $moduleName {
-                $script:capturedContent | Should -Match '\[sso-session CharlandOrg\]'
-                $script:capturedContent | Should -Match 'sso_session = CharlandOrg'
-            }
-        }
+            $script:capturedContent | Should -Match '\[sso-session CharlandOrg\]'
+            $script:capturedContent | Should -Match 'sso_session = CharlandOrg'
 
         It 'Auto-derives SSOSessionName from StartUrl when not specified' {
             $capturedContent = $null
@@ -290,11 +287,8 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
                 -Region 'us-east-1' -Force
 
-            InModuleScope $moduleName {
-                # Should strip URL parts and non-alphanumeric chars
-                $script:capturedContent | Should -Match '\[sso-session d9067171d80\]'
-            }
-        }
+            # Should strip URL parts and non-alphanumeric chars
+            $script:capturedContent | Should -Match '\[sso-session d9067171d80\]'
     }
 
     Context 'ProfilePrefix and profile naming' {
@@ -308,10 +302,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
                 -ProfilePrefix 'MyOrg' -Region 'us-east-1' -Force
 
-            InModuleScope $moduleName {
-                $script:capturedContent | Should -Match '\[profile MyOrg-AWSAdministratorAccess-111111111111\]'
-            }
-        }
+            $script:capturedContent | Should -Match '\[profile MyOrg-AWSAdministratorAccess-111111111111\]'
 
         It 'Generates profile names without prefix when ProfilePrefix is not specified' {
             $capturedContent = $null
@@ -322,10 +313,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
                 -Region 'us-east-1' -Force
 
-            InModuleScope $moduleName {
-                $script:capturedContent | Should -Match '\[profile AWSAdministratorAccess-111111111111\]'
-            }
-        }
+            $script:capturedContent | Should -Match '\[profile AWSAdministratorAccess-111111111111\]'
     }
 
     Context 'ConfigFile parameter' {

@@ -1168,11 +1168,8 @@ sso_registration_scopes = sso:account:access
     }
 
     # Only add sso-session block if not already present
-    if ($configContent -notmatch "\[sso-session $([regex]::Escape($SSOSessionName))\]") {
-      if ($configContent -and -not $configContent.EndsWith("`n")) {
-        $configContent += "`n"
-      }
-      $configContent += "$ssoSessionBlock`n`n"
+    if ($configContent -notmatch "(?m)^\[sso-session $([regex]::Escape($SSOSessionName))\]") {
+      $configContent = "$ssoSessionBlock`n`n$configContent"
       Write-Verbose "Added [sso-session $SSOSessionName] block to config."
     }
 
@@ -1268,8 +1265,10 @@ region = $Region
     }
 
     # Write config file
-    Set-Content -Path $ConfigFile -Value $configContent.TrimEnd() -Encoding UTF8
-    Write-Verbose "Config written to: $ConfigFile"
+    if ($Force -or $PSCmdlet.ShouldProcess("AWS config file '$ConfigFile'", 'Write updated SSO configuration')) {
+      Set-Content -Path $ConfigFile -Value $configContent.TrimEnd() -Encoding UTF8
+      Write-Verbose "Config written to: $ConfigFile"
+    }
 
     # Summary
     $remaining = $tokenExpire - (Get-Date)
