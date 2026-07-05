@@ -62,6 +62,10 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
                 [PSCustomObject]@{
                     AccountId   = '111111111111'
                     AccountName = 'dev-account'
+                },
+                [PSCustomObject]@{
+                    AccountId   = '222222222222'
+                    AccountName = 'prod-account'
                 }
             )
         }
@@ -72,7 +76,10 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             -RemoveParameterValidation $removeValidation {
             @(
                 [PSCustomObject]@{
-                    RoleName = 'AdminRole'
+                    RoleName = 'AWSAdministratorAccess'
+                },
+                [PSCustomObject]@{
+                    RoleName = 'AWSReadOnlyAccess'
                 }
             )
         }
@@ -93,9 +100,11 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             -RemoveParameterType $removeTypes `
             -RemoveParameterValidation $removeValidation {}
 
-        # Mock filesystem operations for credential directory
+        # Mock filesystem operations
         Mock Test-Path -ModuleName $moduleName { $true }
         Mock New-Item -ModuleName $moduleName {}
+        Mock Get-Content -ModuleName $moduleName { '' }
+        Mock Set-Content -ModuleName $moduleName {}
 
         # Clear the module-level token cache before tests
         InModuleScope $moduleName {
@@ -175,26 +184,236 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             $callOrder[1] | Should -Be 'Authorize'
             $callOrder[2] | Should -Be 'Token'
         }
+
+        It 'Reuses cached SSO token on subsequent calls within session' {
+            # First call populates cache
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+            # Second call should reuse token
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+
+            # Register should only be called once (first call)
+            Should -Invoke Register-SSOOIDCClient -ModuleName $moduleName -Times 1 -Exactly
+        }
     }
 
-    Context 'Credential writing' {
+    Context 'Default behavior (no SaveCredentials)' {
 
-        It 'Retrieves credentials via Get-SSORoleCredential' {
+        It 'Does NOT call Get-SSORoleCredential when SaveCredentials is not specified' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
-            Should -Invoke Get-SSORoleCredential -ModuleName $moduleName -Times 1 -Exactly
+            Should -Invoke Get-SSORoleCredential -ModuleName $moduleName -Times 0 -Exactly
         }
 
-        It 'Writes credentials using Set-AWSCredential' {
+        It 'Does NOT call Set-AWSCredential when SaveCredentials is not specified' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
-            Should -Invoke Set-AWSCredential -ModuleName $moduleName -Times 1 -Exactly
+            Should -Invoke Set-AWSCredential -ModuleName $moduleName -Times 0 -Exactly
         }
 
-        It 'Returns a summary object with ProfilesUpdated count' {
+        It 'Writes config file via Set-Content' {
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+
+            Should -Invoke Set-Content -ModuleName $moduleName -Times 1 -Exactly
+        }
+
+        It 'Returns summary with SavedCredentials = False' {
             $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
-            $result.ProfilesUpdated | Should -Be 1
+            $result.SavedCredentials | Should -BeFalse
+        }
+
+        It 'Returns summary with ProfilesUpdated matching role count across accounts' {
+            # 2 accounts x 2 roles = 4 profiles
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+
+            $result.ProfilesUpdated | Should -Be 4
+        }
+
+        It 'Returns summary without CredentialFile property' {
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+
+            $result.PSObject.Properties.Name | Should -Not -Contain 'CredentialFile'
+        }
+    }
+
+    Context 'SaveCredentials behavior' {
+
+        It 'Calls Get-SSORoleCredential for each role when SaveCredentials is specified' {
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -SaveCredentials -Force
+
+            # 2 accounts x 2 roles = 4 calls
+            Should -Invoke Get-SSORoleCredential -ModuleName $moduleName -Times 4 -Exactly
+        }
+
+        It 'Calls Set-AWSCredential for each role when SaveCredentials is specified' {
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -SaveCredentials -Force
+
+            Should -Invoke Set-AWSCredential -ModuleName $moduleName -Times 4 -Exactly
+        }
+
+        It 'Returns summary with SavedCredentials = True' {
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -SaveCredentials -Force
+
+            $result.SavedCredentials | Should -BeTrue
+        }
+
+        It 'Returns summary with CredentialFile property' {
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -SaveCredentials -Force
+
+            $result.CredentialFile | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    Context 'SSOSessionName parameter' {
+
+        It 'Uses explicit SSOSessionName in config output' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -Force
+
+            InModuleScope $moduleName {
+                $script:capturedContent | Should -Match '\[sso-session CharlandOrg\]'
+                $script:capturedContent | Should -Match 'sso_session = CharlandOrg'
+            }
+        }
+
+        It 'Auto-derives SSOSessionName from StartUrl when not specified' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+                -Region 'us-east-1' -Force
+
+            InModuleScope $moduleName {
+                # Should strip URL parts and non-alphanumeric chars
+                $script:capturedContent | Should -Match '\[sso-session d9067171d80\]'
+            }
+        }
+    }
+
+    Context 'ProfilePrefix and profile naming' {
+
+        It 'Generates profile names with hyphen-separated prefix when ProfilePrefix is specified' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -ProfilePrefix 'MyOrg' -Region 'us-east-1' -Force
+
+            InModuleScope $moduleName {
+                $script:capturedContent | Should -Match '\[profile MyOrg-AWSAdministratorAccess-111111111111\]'
+            }
+        }
+
+        It 'Generates profile names without prefix when ProfilePrefix is not specified' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -Force
+
+            InModuleScope $moduleName {
+                $script:capturedContent | Should -Match '\[profile AWSAdministratorAccess-111111111111\]'
+            }
+        }
+    }
+
+    Context 'ConfigFile parameter' {
+
+        It 'Writes to the specified ConfigFile path' {
+            Mock Set-Content -ModuleName $moduleName {}
+
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -ConfigFile '/tmp/test-config' -Force
+
+            Should -Invoke Set-Content -ModuleName $moduleName -Times 1 -Exactly -ParameterFilter {
+                $Path -eq '/tmp/test-config'
+            }
+        }
+
+        It 'Returns ConfigFile in the summary object' {
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -ConfigFile '/tmp/test-config' -Force
+
+            $result.ConfigFile | Should -Be '/tmp/test-config'
+        }
+    }
+
+    Context 'Filtering' {
+
+        It 'Applies RoleFilter to restrict which roles are written' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -RoleFilter 'AWSAdministrator*' -Force
+
+            # 2 accounts x 1 matching role = 2 profiles
+            $result.ProfilesUpdated | Should -Be 2
+        }
+
+        It 'Applies AccountFilter to restrict which accounts are processed' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -AccountFilter '111111111111' -Force
+
+            # 1 account x 2 roles = 2 profiles
+            $result.ProfilesUpdated | Should -Be 2
+        }
+    }
+
+    Context 'Error handling' {
+
+        It 'Returns ProfilesFailed count when credential retrieval fails' {
+            Mock Get-SSORoleCredential -ModuleName $moduleName `
+                -RemoveParameterType $removeTypes `
+                -RemoveParameterValidation $removeValidation {
+                throw 'Access denied'
+            }
+
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -SaveCredentials -Force -WarningAction SilentlyContinue
+
+            $result.ProfilesFailed | Should -BeGreaterThan 0
+        }
+
+        It 'Continues processing remaining accounts when one fails role listing' {
+            Mock Get-SSOAccountRoleList -ModuleName $moduleName `
+                -RemoveParameterType $removeTypes `
+                -RemoveParameterValidation $removeValidation {
+                throw 'Failed to list roles'
+            }
+
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -Force -WarningAction SilentlyContinue
+
+            # Should not throw, just warn and continue
+            $result.ProfilesUpdated | Should -Be 0
+        }
+    }
+
+    Context 'Token expiration output' {
+
+        It 'Returns TokenExpires datetime in the summary' {
+            $result = Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+
+            $result.TokenExpires | Should -BeOfType [DateTime]
         }
     }
 }
