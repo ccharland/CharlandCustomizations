@@ -859,36 +859,62 @@ function Use-CHARAssumedRole($Role) {
 function Update-CHARSSOCredentialList {
   <#
 .SYNOPSIS
-    Retrieves SSO credentials for all accounts/roles and updates ~/.aws/credentials.
+    Enumerates SSO accounts/roles and writes AWS CLI-compatible SSO profiles to a config file.
 
 .DESCRIPTION
-    Authenticates via AWS IAM Identity Center (SSO), enumerates all accounts and roles
-    the user has access to, retrieves short-term credentials for each, and writes them
-    as named profiles to ~/.aws/credentials.
+    Authenticates via AWS IAM Identity Center (SSO) using the OIDC device authorization
+    flow, enumerates all accounts and roles the caller has access to, and writes
+    SSO-style named profiles to the specified config file (default: ~/.aws/config).
+
+    Each generated profile contains sso_session, sso_account_id, sso_role_name, and region.
+    A shared [sso-session] block is written once at the top of the config file.
+
+    By default, NO temporary credentials (access key / secret key / session token) are
+    persisted. Use -SaveCredentials to opt into saving them to the credentials file.
+
+    Generated profile names follow the pattern:
+        [ProfilePrefix-]<RoleName>-<AccountId>
 
 .PARAMETER StartUrl
     The AWS SSO start URL (e.g., https://d-1234567890.awsapps.com/start).
 
+.PARAMETER SSOSessionName
+    The sso_session name written into the config file and referenced by each profile.
+    If not specified, a sanitized name is derived from the StartUrl host
+    (e.g., 'd9067171d80' from https://d-9067171d80.awsapps.com/start).
+
 .PARAMETER Region
-    The AWS region where IAM Identity Center is configured.
+    The AWS region where IAM Identity Center is configured (e.g., us-east-1).
 
 .PARAMETER ProfileName
-    AWS profile name. Optional.
+    AWS credential profile used for initial authentication. Optional.
 
 .PARAMETER ProfilePrefix
-    Optional prefix for generated profile names.
+    Optional prefix prepended to each generated profile name, separated by a hyphen.
+    Example: -ProfilePrefix 'CharlandOrg' produces 'CharlandOrg-AWSAdminAccess-123456789012'.
 
 .PARAMETER RoleFilter
-    Optional filter for specific role names. Accepts wildcards.
+    Optional filter for specific role names. Accepts wildcards (e.g., 'Admin*').
+    Only matching roles are written as profiles.
 
 .PARAMETER AccountFilter
-    Optional filter for specific account IDs or names. Accepts wildcards.
+    Optional filter for specific account IDs or account names. Accepts wildcards.
+    Only matching accounts are processed.
+
+.PARAMETER ConfigFile
+    Path to the AWS config file where SSO profiles are written.
+    Defaults to ~/.aws/config. Supports both absolute and relative paths.
 
 .PARAMETER CredentialFile
-    Path to the AWS credentials file. Defaults to ~/.aws/credentials.
+    Path to the AWS credentials file. Only used when -SaveCredentials is specified.
+    Defaults to ~/.aws/credentials.
+
+.PARAMETER SaveCredentials
+    When specified, also retrieves temporary access key, secret key, and session token
+    for each role and persists them to the credentials file. By default these are NOT saved.
 
 .PARAMETER Force
-    Skip confirmation and overwrite existing profiles without prompting.
+    Skip confirmation prompts and overwrite existing profiles without asking.
 
 .PARAMETER AccessKey
     AWS access key. Optional.
@@ -903,17 +929,61 @@ function Update-CHARSSOCredentialList {
     Pre-built AWS credential object. Optional.
 
 .PARAMETER ProfileLocation
-    Custom credential file path. Optional.
+    Custom credential file path. When specified, overrides CredentialFile for
+    storing temporary credentials (only relevant with -SaveCredentials).
 
 .PARAMETER EndpointUrl
     Custom AWS service endpoint URL. Optional.
 
 .EXAMPLE
-    Update-CHARSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' -Region 'us-east-1'
+    Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+        -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -Force
+
+    Writes SSO-style profiles to ~/.aws/config using 'CharlandOrg' as the sso_session name.
+    Output:
+        [sso-session CharlandOrg]
+        sso_start_url = https://d-9067171d80.awsapps.com/start
+        sso_region = us-east-1
+        ...
+
+        [profile AWSAdministratorAccess-217552586751]
+        sso_session = CharlandOrg
+        sso_account_id = 217552586751
+        sso_role_name = AWSAdministratorAccess
+        region = us-east-1
 
 .EXAMPLE
-    Update-CHARSSOCredentialList -StartUrl 'https://mycompany.awsapps.com/start' -Region 'us-east-1' `
-        -RoleFilter 'Admin*' -ProfilePrefix 'sso-'
+    Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+        -SSOSessionName 'CharlandOrg' -ProfilePrefix 'CharlandOrg' -Region 'us-east-1' -Force
+
+    Produces profiles named 'CharlandOrg-<RoleName>-<AccountId>'.
+
+.EXAMPLE
+    Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+        -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -SaveCredentials
+
+    Writes SSO profiles AND persists temporary access key/secret/token to ~/.aws/credentials.
+
+.EXAMPLE
+    Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+        -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -RoleFilter 'AWSAdministrator*' `
+        -AccountFilter '217552586751'
+
+    Only writes profiles matching the specified role and account filters.
+
+.EXAMPLE
+    Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+        -SSOSessionName 'CharlandOrg' -Region 'us-east-1' `
+        -ConfigFile '~/custom-aws/config' -Force
+
+    Writes SSO profiles to a custom config file location.
+
+.NOTES
+    Generated by Kiro using Claude Sonnet 4, reviewed by ccharland
+
+    The function caches the SSO token in module scope for the session duration,
+    so subsequent calls within the same PowerShell session will reuse the token
+    until it expires.
 #>
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
   [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'CredentialFile',
@@ -922,6 +992,9 @@ function Update-CHARSSOCredentialList {
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
     [string]$StartUrl,
+
+    [Parameter()]
+    [string]$SSOSessionName,
 
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
@@ -940,7 +1013,13 @@ function Update-CHARSSOCredentialList {
     [string[]]$AccountFilter,
 
     [Parameter()]
+    [string]$ConfigFile = (Join-Path $HOME '.aws' 'config'),
+
+    [Parameter()]
     [string]$CredentialFile = (Join-Path $HOME '.aws' 'credentials'),
+
+    [Parameter()]
+    [switch]$SaveCredentials,
 
     [Parameter()]
     [switch]$Force,
@@ -969,172 +1048,245 @@ function Update-CHARSSOCredentialList {
     $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
 
     # SSO OIDC calls require pseudo credentials and only need Region/ProfileName
-    # Build a subset splat for SSO-specific cmdlets
     $SsoParams = @{}
     if ($awsParams.ContainsKey('Region')) { $SsoParams['Region'] = $awsParams['Region'] }
     if ($awsParams.ContainsKey('ProfileName')) { $SsoParams['ProfileName'] = $awsParams['ProfileName'] }
+
+    # ProfileLocation overrides CredentialFile when saving temporary credentials
+    $effectiveCredentialFile = if ($ProfileLocation) { $ProfileLocation } else { $CredentialFile }
+
+    # Derive SSOSessionName from StartUrl host if not explicitly provided
+    if (-not $SSOSessionName) {
+      $SSOSessionName = ($StartUrl -replace 'https?://', '' -replace '\.awsapps\.com.*', '' -replace '[^a-zA-Z0-9]', '')
+    }
   }
 
   process {
-  # Pseudo credentials required by the SSO OIDC API
-  $pseudoCreds = @{
-    AccessKey = 'AKAEXAMPLE123ACCESS'
-    SecretKey = 'PseudoS3cret4cceSSKey123PseudoS3cretKey'
-  }
+    # Pseudo credentials required by the SSO OIDC API
+    $pseudoCreds = @{
+      AccessKey = 'AKAEXAMPLE123ACCESS'
+      SecretKey = 'PseudoS3cret4cceSSKey123PseudoS3cretKey'
+    }
 
-  # Ensure credentials directory exists
-  $credDir = Split-Path $CredentialFile -Parent
-  if (-not (Test-Path $credDir)) {
-    New-Item -ItemType Directory -Path $credDir -Force | Out-Null
-    Write-Verbose "Created directory: $credDir"
-  }
+    # Ensure config directory exists (skip if path has no parent, e.g., relative filename)
+    $configDir = Split-Path $ConfigFile -Parent
+    if ($configDir -and -not (Test-Path $configDir)) {
+      New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+      Write-Verbose "Created directory: $configDir"
+    }
 
-  # Check for cached SSO token in session
-  $cacheKey = 'SSOToken_' + ($StartUrl -replace '[^a-zA-Z0-9]', '')
-
-  $cachedToken = $null
-  $cachedExpire = $null
-  if ($script:SSOTokenCache.ContainsKey($cacheKey)) {
-    $cachedToken = $script:SSOTokenCache[$cacheKey].Token
-    $cachedExpire = $script:SSOTokenCache[$cacheKey].Expires
-  }
-
-  $needsAuth = (-not $cachedToken) -or (-not $cachedExpire) -or ($cachedExpire -lt (Get-Date))
-
-  if ($needsAuth) {
-    Write-Verbose "SSO token not found or expired. Initiating authentication..."
-
-    $client = Register-SSOOIDCClient -ClientName 'powershell-sso-updater' -ClientType 'public' @SsoParams @pseudoCreds
-    $device = $client | Start-SSOOIDCDeviceAuthorization -StartUrl $StartUrl @SsoParams @pseudoCreds
-
-    Write-Verbose "Opening browser for SSO authentication..."
-    Write-Output "Opening browser for SSO login. Please authorize the request."
-    Start-Process $device.VerificationUriComplete
-
-    $ssoToken = $null
-    while (-not $ssoToken) {
-      try {
-        $ssoToken = $client | New-SSOOIDCToken `
-          -DeviceCode $device.DeviceCode `
-          -GrantType 'urn:ietf:params:oauth:grant-type:device_code' `
-          @SsoParams @pseudoCreds
-      }
-      catch {
-        if ($_.Exception.Message -notlike '*AuthorizationPendingException*') {
-          throw $_
-        }
-        Start-Sleep -Seconds 2
+    # Ensure credentials directory exists when saving credentials
+    if ($SaveCredentials) {
+      $credDir = Split-Path $effectiveCredentialFile -Parent
+      if ($credDir -and -not (Test-Path $credDir)) {
+        New-Item -ItemType Directory -Path $credDir -Force | Out-Null
+        Write-Verbose "Created credentials directory: $credDir"
       }
     }
 
-    $tokenExpire = (Get-Date).AddSeconds($ssoToken.ExpiresIn)
-    $script:SSOTokenCache[$cacheKey] = @{ Token = $ssoToken; Expires = $tokenExpire }
-    Write-Verbose "SSO token obtained. Expires at: $tokenExpire"
-  }
-  else {
-    $ssoToken = $cachedToken
-    $tokenExpire = $cachedExpire
-    $remaining = $tokenExpire - (Get-Date)
-    Write-Verbose "Using cached SSO token. Expires in: $($remaining.ToString('hh\:mm\:ss'))"
-  }
+    # Check for cached SSO token in session
+    $cacheKey = 'SSOToken_' + ($StartUrl -replace '[^a-zA-Z0-9]', '')
 
-  # Enumerate all accounts
-  Write-Verbose "Listing SSO accounts..."
-  $accounts = Get-SSOAccountList -AccessToken $ssoToken.AccessToken @SsoParams @pseudoCreds
-
-  if (-not $accounts) {
-    Write-Warning "No accounts found for this SSO session."
-    return
-  }
-
-  Write-Verbose "Found $($accounts.Count) account(s)."
-
-  # Apply account filter
-  if ($AccountFilter) {
-    $accounts = $accounts | Where-Object {
-      $acct = $_
-      $AccountFilter | Where-Object { $acct.AccountId -like $_ -or $acct.AccountName -like $_ }
-    }
-    Write-Verbose "After filtering: $($accounts.Count) account(s)."
-  }
-
-  # Process each account
-  $profilesUpdated = 0
-  $profilesFailed = 0
-
-  foreach ($account in $accounts) {
-    Write-Verbose "Processing account: $($account.AccountName) ($($account.AccountId))"
-
-    try {
-      $roles = Get-SSOAccountRoleList -AccessToken $ssoToken.AccessToken `
-        -AccountId $account.AccountId @SsoParams @pseudoCreds
-    }
-    catch {
-      Write-Warning "Failed to list roles for account $($account.AccountName) ($($account.AccountId)): $_"
-      continue
+    $cachedToken = $null
+    $cachedExpire = $null
+    if ($script:SSOTokenCache.ContainsKey($cacheKey)) {
+      $cachedToken = $script:SSOTokenCache[$cacheKey].Token
+      $cachedExpire = $script:SSOTokenCache[$cacheKey].Expires
     }
 
-    if (-not $roles) {
-      Write-Verbose "No roles found for account $($account.AccountName)."
-      continue
-    }
+    $needsAuth = (-not $cachedToken) -or (-not $cachedExpire) -or ($cachedExpire -lt (Get-Date))
 
-    # Apply role filter
-    $filteredRoles = $roles
-    if ($RoleFilter) {
-      $filteredRoles = $roles | Where-Object {
-        $roleName = $_.RoleName
-        $RoleFilter | Where-Object { $roleName -like $_ }
-      }
-    }
+    if ($needsAuth) {
+      Write-Verbose "SSO token not found or expired. Initiating authentication..."
 
-    foreach ($role in $filteredRoles) {
-      $accountPart = if ($account.AccountName) {
-        ($account.AccountName -replace '[^a-zA-Z0-9\-]', '-').ToLower().Trim('-')
-      }
-      else {
-        $account.AccountId
-      }
-      $generatedProfileName = "$ProfilePrefix$accountPart-$($role.RoleName)"
+      $client = Register-SSOOIDCClient -ClientName 'powershell-sso-updater' -ClientType 'public' @SsoParams @pseudoCreds
+      $device = $client | Start-SSOOIDCDeviceAuthorization -StartUrl $StartUrl @SsoParams @pseudoCreds
 
-      $target = "Profile '$generatedProfileName' (Account: $($account.AccountId), Role: $($role.RoleName))"
+      Write-Verbose "Opening browser for SSO authentication..."
+      Write-Output "Opening browser for SSO login. Please authorize the request."
+      Start-Process $device.VerificationUriComplete
 
-      if ($Force -or $PSCmdlet.ShouldProcess($target, "Update credentials")) {
+      $ssoToken = $null
+      while (-not $ssoToken) {
         try {
-          Write-Verbose "Retrieving credentials for $target"
-
-          $creds = Get-SSORoleCredential -AccessToken $ssoToken.AccessToken `
-            -AccountId $account.AccountId `
-            -RoleName $role.RoleName `
+          $ssoToken = $client | New-SSOOIDCToken `
+            -DeviceCode $device.DeviceCode `
+            -GrantType 'urn:ietf:params:oauth:grant-type:device_code' `
             @SsoParams @pseudoCreds
-
-          [PSCustomObject]@{
-            AccessKey    = $creds.AccessKeyId
-            SecretKey    = $creds.SecretAccessKey
-            SessionToken = $creds.SessionToken
-          } | Set-AWSCredential -StoreAs $generatedProfileName -ProfileLocation $CredentialFile
-
-          $profilesUpdated++
-          Write-Verbose "Updated profile: $generatedProfileName"
         }
         catch {
-          $profilesFailed++
-          Write-Warning "Failed to get credentials for $target : $_"
+          if ($_.Exception.Message -notlike '*AuthorizationPendingException*') {
+            throw $_
+          }
+          Start-Sleep -Seconds 2
+        }
+      }
+
+      $tokenExpire = (Get-Date).AddSeconds($ssoToken.ExpiresIn)
+      $script:SSOTokenCache[$cacheKey] = @{ Token = $ssoToken; Expires = $tokenExpire }
+      Write-Verbose "SSO token obtained. Expires at: $tokenExpire"
+    }
+    else {
+      $ssoToken = $cachedToken
+      $tokenExpire = $cachedExpire
+      $remaining = $tokenExpire - (Get-Date)
+      Write-Verbose "Using cached SSO token. Expires in: $($remaining.ToString('hh\:mm\:ss'))"
+    }
+
+    # Enumerate all accounts
+    Write-Verbose "Listing SSO accounts..."
+    $accounts = Get-SSOAccountList -AccessToken $ssoToken.AccessToken @SsoParams @pseudoCreds
+
+    if (-not $accounts) {
+      Write-Warning "No accounts found for this SSO session."
+      return
+    }
+
+    Write-Verbose "Found $($accounts.Count) account(s)."
+
+    # Apply account filter
+    if ($AccountFilter) {
+      $accounts = $accounts | Where-Object {
+        $acct = $_
+        $AccountFilter | Where-Object { $acct.AccountId -like $_ -or $acct.AccountName -like $_ }
+      }
+      Write-Verbose "After filtering: $($accounts.Count) account(s)."
+    }
+
+    # Write sso-session block to config file (only once, at the top if not already present)
+    $ssoSessionBlock = @"
+[sso-session $SSOSessionName]
+sso_start_url = $StartUrl
+sso_region = $Region
+sso_registration_scopes = sso:account:access
+"@
+
+    # Read existing config or start fresh
+    $configContent = ''
+    if (Test-Path $ConfigFile) {
+      $configContent = Get-Content $ConfigFile -Raw
+    }
+
+    # Only add sso-session block if not already present
+    if ($configContent -notmatch "(?m)^\[sso-session $([regex]::Escape($SSOSessionName))\]") {
+      $configContent = "$ssoSessionBlock`n`n$configContent"
+      Write-Verbose "Added [sso-session $SSOSessionName] block to config."
+    }
+
+    # Process each account
+    $profilesUpdated = 0
+    $profilesFailed = 0
+
+    foreach ($account in $accounts) {
+      Write-Verbose "Processing account: $($account.AccountName) ($($account.AccountId))"
+
+      try {
+        $roles = Get-SSOAccountRoleList -AccessToken $ssoToken.AccessToken `
+          -AccountId $account.AccountId @SsoParams @pseudoCreds
+      }
+      catch {
+        Write-Warning "Failed to list roles for account $($account.AccountName) ($($account.AccountId)): $_"
+        continue
+      }
+
+      if (-not $roles) {
+        Write-Verbose "No roles found for account $($account.AccountName)."
+        continue
+      }
+
+      # Apply role filter
+      $filteredRoles = $roles
+      if ($RoleFilter) {
+        $filteredRoles = $roles | Where-Object {
+          $roleName = $_.RoleName
+          $RoleFilter | Where-Object { $roleName -like $_ }
+        }
+      }
+
+      foreach ($role in $filteredRoles) {
+        $generatedProfileName = if ($ProfilePrefix) {
+          "$ProfilePrefix-$($role.RoleName)-$($account.AccountId)"
+        } else {
+          "$($role.RoleName)-$($account.AccountId)"
+        }
+
+        $target = "Profile '$generatedProfileName' (Account: $($account.AccountId), Role: $($role.RoleName))"
+
+        if ($Force -or $PSCmdlet.ShouldProcess($target, "Update SSO profile")) {
+          try {
+            Write-Verbose "Writing SSO profile for $target"
+
+            # Build SSO-style profile entry for config file
+            $profileSection = "[profile $generatedProfileName]"
+            $profileBlock = @"
+$profileSection
+sso_session = $SSOSessionName
+sso_account_id = $($account.AccountId)
+sso_role_name = $($role.RoleName)
+region = $Region
+"@
+
+            # Replace existing profile block or append new one
+            $escapedSection = [regex]::Escape($profileSection)
+            if ($configContent -match "(?m)$escapedSection") {
+              $configContent = $configContent -replace "(?ms)$escapedSection.*?(?=\r?\n\[|\z)", "$profileBlock`n"
+            }
+            else {
+              if ($configContent -and -not $configContent.EndsWith("`n")) {
+                $configContent += "`n"
+              }
+              $configContent += "$profileBlock`n`n"
+            }
+
+            # Optionally save temporary credentials to credentials file
+            if ($SaveCredentials) {
+              $creds = Get-SSORoleCredential -AccessToken $ssoToken.AccessToken `
+                -AccountId $account.AccountId `
+                -RoleName $role.RoleName `
+                @SsoParams @pseudoCreds
+
+              [PSCustomObject]@{
+                AccessKey    = $creds.AccessKeyId
+                SecretKey    = $creds.SecretAccessKey
+                SessionToken = $creds.SessionToken
+              } | Set-AWSCredential -StoreAs $generatedProfileName -ProfileLocation $effectiveCredentialFile
+              Write-Verbose "Saved temporary credentials for: $generatedProfileName"
+            }
+
+            $profilesUpdated++
+            Write-Verbose "Updated profile: $generatedProfileName"
+          }
+          catch {
+            $profilesFailed++
+            Write-Warning "Failed to process $target : $_"
+          }
         }
       }
     }
-  }
 
-  # Summary
-  $remaining = $tokenExpire - (Get-Date)
-  Write-Verbose "Credential update complete. Token expires in: $($remaining.ToString('hh\:mm\:ss'))"
+    # Write config file
+    if ($Force -or $PSCmdlet.ShouldProcess("AWS config file '$ConfigFile'", 'Write updated SSO configuration')) {
+      Set-Content -Path $ConfigFile -Value $configContent.TrimEnd() -Encoding UTF8
+      Write-Verbose "Config written to: $ConfigFile"
+    }
 
-  [PSCustomObject]@{
-    ProfilesUpdated = $profilesUpdated
-    ProfilesFailed  = $profilesFailed
-    CredentialFile  = $CredentialFile
-    TokenExpires    = $tokenExpire
-  }
+    # Summary
+    $remaining = $tokenExpire - (Get-Date)
+    Write-Verbose "Profile update complete. Token expires in: $($remaining.ToString('hh\:mm\:ss'))"
+
+    $result = [PSCustomObject]@{
+      ProfilesUpdated  = $profilesUpdated
+      ProfilesFailed   = $profilesFailed
+      ConfigFile       = $ConfigFile
+      SavedCredentials = $SaveCredentials.IsPresent
+      TokenExpires     = $tokenExpire
+    }
+
+    if ($SaveCredentials) {
+      $result | Add-Member -NotePropertyName 'CredentialFile' -NotePropertyValue $effectiveCredentialFile
+    }
+
+    $result
   }
 }
 
