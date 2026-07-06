@@ -23,7 +23,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 - Renamed all unit test files and updated internal references to use CHAR-prefixed function names (24 test files)
 - Updated all documentation to reflect new function names
 - Simplified `$script:CCIsWindows` to `$script:IsWindows` in applicable scripts
-- Stripped all Authenticode signature blocks from source files (to be re-signed in a future release)
+- Stripped all Authenticode signature blocks from source files and re-signed them for this release
 - `Invoke-CHARScriptMultiRegionProfile` — improved credential and region handling for multi-account execution (#62)
 - Manifest compliance now enforces sorted `.psd1` arrays and `.psm1` `Export-ModuleMember -Function` arrays with one element per line to reduce merge conflicts (#39)
 - Reorganized test directory structure — module tests moved to `tests/src/`, script tests moved to `tests/scripts/` (#61, #63)
@@ -47,7 +47,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 - **Breaking rename** — `Invoke-CCScriptMultiAccountRegion` is now `Invoke-CHARScriptMultiRegionProfile`. The new name better reflects that it iterates regions per profile.
 - Private/internal functions (`New-AWSParamSplat`, `CFNPrivateFunctions`) were not renamed; only their comment references were updated.
 - The `CHAR` prefix was chosen to be more unique, clearly identifying these as Charland's custom functions, and avoiding potential naming conflicts with other modules.
-- Files will be re-signed with Authenticode certificates in a subsequent release.
+- All source files have been signed with Authenticode certificates in this release.
 - This is the first stable (non-beta) release.
 
 ## [0.3.1] - 2026-06-13
