@@ -4,7 +4,9 @@
 
 This is my public release for my PowerShell module and related automation. These functions are primarily for my own use, and are public so I can easily use them in CloudShell, AWS WorkSpaces, and other environments without needing to clone this repository.
 
-All public commands use the "CHAR" prefix before the noun of the command (e.g., `Find-CHARCFNStackError`, `Set-CHARAWSEnv`)
+All public commands use the "CHAR" prefix before the noun of the command (e.g., `Find-CHARCFNStackError`, `Set-CHARAWSEnv`).
+
+> **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
 ## Goals
 
