@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-The release process requires touching multiple areas of the repository in a single workflow:
+The release process typically requires touching multiple areas of the repository in a single workflow:
 
 1. **`src/`** — Bump manifest version, re-sign source files.
 2. **`docs/`** — Update CHANGELOG.md.
