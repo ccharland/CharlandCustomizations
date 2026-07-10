@@ -113,22 +113,25 @@ jobs:
             exit 1
           fi
 
+          printf '%s' "$GPG_PASSPHRASE" >"$RUNNER_TEMP/gpg-passphrase.txt"
+          chmod 600 "$RUNNER_TEMP/gpg-passphrase.txt"
+
           cat >"$RUNNER_TEMP/gpg-loopback.sh" <<'EOF'
           #!/usr/bin/env bash
-          exec gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" "$@"
+          exec gpg --batch --yes --pinentry-mode loopback --passphrase-file "$GPG_PASSPHRASE_FILE" "$@"
           EOF
           chmod 700 "$RUNNER_TEMP/gpg-loopback.sh"
 
           {
             echo "GNUPGHOME=$GNUPGHOME"
             echo "GPG_KEY_ID=$GPG_KEY_ID"
+            echo "GPG_PASSPHRASE_FILE=$RUNNER_TEMP/gpg-passphrase.txt"
             echo "GPG_WRAPPER=$RUNNER_TEMP/gpg-loopback.sh"
           } >> "$GITHUB_ENV"
 
       - name: Create and push signed tag
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          GPG_PASSPHRASE: ${{ secrets.TAG_SIGNING_GPG_PASSPHRASE }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
