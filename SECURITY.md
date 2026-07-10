@@ -2,10 +2,10 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 0.4.x   | Yes       |
-| < 0.4   | No        |
+| Version          | Supported |
+|------------------|-----------|
+| Latest release   | Yes       |
+| Earlier releases | No        |
 
 Only the latest published version receives security fixes.
 
@@ -16,7 +16,7 @@ If you discover a security issue in this module, **please do not open a public G
 Instead, report it privately:
 
 1. Use [GitHub's private vulnerability reporting](https://github.com/ccharland/CharlandCustomizations/security/advisories/new) (preferred)
-2. Or email the maintainer directly
+2. Or contact the maintainer through GitHub profile contact details: https://github.com/ccharland
 
 Include:
 
