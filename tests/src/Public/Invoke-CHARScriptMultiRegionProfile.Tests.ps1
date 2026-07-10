@@ -593,6 +593,117 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
         }
     }
 
+    Context 'SuppressEmptyResult parameter' {
+
+        It 'Does not emit output when ScriptBlock returns nothing and -SuppressEmptyResult is specified' {
+            $sb = { }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult)
+
+            $results.Count | Should -Be 0
+        }
+
+        It 'Suppresses empty results across multiple regions' {
+            $sb = { }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1', 'us-west-2', 'eu-west-1' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult)
+
+            $results.Count | Should -Be 0
+        }
+
+        It 'Suppresses empty results across multiple profiles and regions' {
+            $sb = { }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'dev', 'prod' `
+                -Region 'us-east-1', 'eu-west-1' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult)
+
+            $results.Count | Should -Be 0
+        }
+
+        It 'Still emits results when ScriptBlock returns data with -SuppressEmptyResult' {
+            $sb = { [PSCustomObject]@{ Name = 'TestResource' } }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult)
+
+            $results.Count | Should -Be 1
+            $results[0].Name | Should -Be 'TestResource'
+        }
+
+        It 'Emits only non-empty results when some regions return data and some do not' {
+            # Simulate: first region returns data, second returns nothing
+            $script:regionCallIndex = 0
+            $sb = {
+                $script:regionCallIndex++
+                if ($script:regionCallIndex -eq 1) {
+                    [PSCustomObject]@{ Name = 'FoundResource' }
+                }
+                # Second call returns nothing
+            }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1', 'us-west-2' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult)
+
+            $results.Count | Should -Be 1
+            $results[0].Name | Should -Be 'FoundResource'
+        }
+
+        It 'Enrichment switches still work with -SuppressEmptyResult on non-empty results' {
+            Mock Get-STSCallerIdentity {
+                [PSCustomObject]@{ Account = '999888777666'; Arn = 'arn:aws:iam::999888777666:user/test' }
+            }
+
+            $sb = { [PSCustomObject]@{ Name = 'MyFunc' } }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'eu-west-1' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult `
+                -IncludeAccountId -IncludeRegion -IncludeProfileName)
+
+            $results.Count | Should -Be 1
+            $results[0].AccountId | Should -Be '999888777666'
+            $results[0].Region | Should -Be 'eu-west-1'
+            $results[0].ProfileName | Should -Be 'myprofile'
+        }
+
+        It 'Error results are still emitted when ScriptBlock throws with -SuppressEmptyResult' {
+            $sb = { throw 'SCP denied access' }
+
+            $results = @(Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                -Region 'us-east-1' `
+                -ScriptBlock $sb `
+                -SuppressEmptyResult `
+                -WarningVariable w 3>$null)
+
+            $results.Count | Should -Be 1
+            $results[0].Error | Should -BeLike '*SCP denied access*'
+        }
+
+        It 'Does not throw when all results are empty and -SuppressEmptyResult is specified' {
+            $sb = { }
+
+            {
+                Invoke-CHARScriptMultiRegionProfile -ProfileName 'myprofile' `
+                    -Region 'us-east-1' `
+                    -ScriptBlock $sb `
+                    -SuppressEmptyResult
+            } | Should -Not -Throw
+        }
+    }
+
     Context 'IncludeRegion and IncludeProfileName switches' {
 
         It 'Adds Region property when -IncludeRegion is specified' {
