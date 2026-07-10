@@ -118,8 +118,10 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
 
     Context 'No profile configured writes non-terminating error (Req 8.2)' {
 
-        It 'Writes error when no ProfileName specified and no default profile found' {
+        It 'Writes error when no ProfileName specified and no default profile or ambient credentials found' {
             Mock Get-AWSCredential { @() } -ParameterFilter { $ListProfileDetail -eq $true }
+            # Override the default STS mock: fail when no ProfileName is passed (ambient check)
+            Mock Get-STSCallerIdentity { throw 'Unable to find credentials' } -ParameterFilter { -not $ProfileName }
 
             # Temporarily clear StoredAWSCredentials at all accessible scopes
             $originalStored = $null
@@ -147,6 +149,111 @@ Describe 'Invoke-CHARScriptMultiRegionProfile' -Tag 'Unit' {
                     Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Global -Force -ErrorAction SilentlyContinue
                 }
                 else {
+                    Remove-Variable StoredAWSCredentials -Scope Global -ErrorAction SilentlyContinue
+                }
+            }
+        }
+    }
+
+    Context 'Ambient credentials fallback (CloudShell, instance roles)' {
+
+        It 'Uses ambient credentials when no ProfileName and no stored profile exist' {
+            Mock Get-AWSCredential { @() } -ParameterFilter { $ListProfileDetail -eq $true }
+
+            $originalStored = $null
+            $hadVariable = Test-Path variable:StoredAWSCredentials
+            if ($hadVariable) { $originalStored = $StoredAWSCredentials }
+            Set-Variable -Name StoredAWSCredentials -Value $null -Scope Global -Force -ErrorAction SilentlyContinue
+
+            $sb = { [PSCustomObject]@{ Name = 'AmbientResult' } }
+
+            try {
+                $results = Invoke-CHARScriptMultiRegionProfile -Region 'us-east-1' `
+                    -ScriptBlock $sb
+
+                $results | Should -Not -BeNullOrEmpty
+                $results.Name | Should -Be 'AmbientResult'
+            }
+            finally {
+                if ($hadVariable) {
+                    Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Global -Force -ErrorAction SilentlyContinue
+                } else {
+                    Remove-Variable StoredAWSCredentials -Scope Global -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        It 'Shows (ambient) in ProfileName enrichment when using ambient credentials' {
+            Mock Get-AWSCredential { @() } -ParameterFilter { $ListProfileDetail -eq $true }
+
+            $originalStored = $null
+            $hadVariable = Test-Path variable:StoredAWSCredentials
+            if ($hadVariable) { $originalStored = $StoredAWSCredentials }
+            Set-Variable -Name StoredAWSCredentials -Value $null -Scope Global -Force -ErrorAction SilentlyContinue
+
+            $sb = { [PSCustomObject]@{ Name = 'Thing' } }
+
+            try {
+                $results = Invoke-CHARScriptMultiRegionProfile -Region 'us-east-1' `
+                    -ScriptBlock $sb -IncludeProfileName
+
+                $results.ProfileName | Should -Be '(ambient)'
+            }
+            finally {
+                if ($hadVariable) {
+                    Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Global -Force -ErrorAction SilentlyContinue
+                } else {
+                    Remove-Variable StoredAWSCredentials -Scope Global -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        It 'Does not inject ProfileName into PSDefaultParameterValues when ambient' {
+            Mock Get-AWSCredential { @() } -ParameterFilter { $ListProfileDetail -eq $true }
+
+            $originalStored = $null
+            $hadVariable = Test-Path variable:StoredAWSCredentials
+            if ($hadVariable) { $originalStored = $StoredAWSCredentials }
+            Set-Variable -Name StoredAWSCredentials -Value $null -Scope Global -Force -ErrorAction SilentlyContinue
+
+            $sb = { [PSCustomObject]@{ Defaults = $PSDefaultParameterValues } }
+
+            try {
+                $results = Invoke-CHARScriptMultiRegionProfile -Region 'us-east-1' `
+                    -ScriptBlock $sb
+
+                $results.Defaults.Keys | Should -Contain '*:Region'
+                $results.Defaults.Keys | Should -Not -Contain '*:ProfileName'
+            }
+            finally {
+                if ($hadVariable) {
+                    Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Global -Force -ErrorAction SilentlyContinue
+                } else {
+                    Remove-Variable StoredAWSCredentials -Scope Global -ErrorAction SilentlyContinue
+                }
+            }
+        }
+
+        It 'Includes AccountId from ambient STS identity' {
+            Mock Get-AWSCredential { @() } -ParameterFilter { $ListProfileDetail -eq $true }
+
+            $originalStored = $null
+            $hadVariable = Test-Path variable:StoredAWSCredentials
+            if ($hadVariable) { $originalStored = $StoredAWSCredentials }
+            Set-Variable -Name StoredAWSCredentials -Value $null -Scope Global -Force -ErrorAction SilentlyContinue
+
+            $sb = { [PSCustomObject]@{ Name = 'Resource' } }
+
+            try {
+                $results = Invoke-CHARScriptMultiRegionProfile -Region 'us-east-1' `
+                    -ScriptBlock $sb -IncludeAccountId
+
+                $results.AccountId | Should -Be '123456789012'
+            }
+            finally {
+                if ($hadVariable) {
+                    Set-Variable -Name StoredAWSCredentials -Value $originalStored -Scope Global -Force -ErrorAction SilentlyContinue
+                } else {
                     Remove-Variable StoredAWSCredentials -Scope Global -ErrorAction SilentlyContinue
                 }
             }
