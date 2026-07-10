@@ -20,8 +20,8 @@ As AI tools (Copilot, Kiro, Codex) are used alongside manual development, there'
 
 Enforce a branch path separation policy:
 
-- **Code branches** (`feature/*`, `bugfix/*`, etc.) can only modify `src/`, `tests/src/`, `docs/`, and `assets/`.
-- **Infrastructure branches** (`workflow/*`, `infra/*`, `ci/*`, etc.) can only modify `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/`, `docs/`, and `assets/`. They **cannot** modify `src/` or `tests/src/`.
+- **Code branches** (`feature/*`, `bugfix/*`, etc.) are blocked from modifying `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, and `tests/scripts/`. Everything else (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) is allowed.
+- **Infrastructure branches** (`workflow/*`, `infra/*`, `ci/*`, etc.) are blocked from modifying `src/` and `tests/src/`. Everything else (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) is allowed.
 
 Enforcement happens at two levels:
 

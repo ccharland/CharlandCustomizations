@@ -237,7 +237,7 @@ git commit -m "Release v0.3.0"
 
 # 5. Create immutable release tag from manifest version/prerelease
 $manifest = Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1
-$releaseTag = $manifest.Version.ToString()
+$releaseTag = 'v' + $manifest.Version.ToString()
 if ($manifest.PrivateData.PSData.Prerelease) {
    $releaseTag = "$releaseTag-$($manifest.PrivateData.PSData.Prerelease)"
 }

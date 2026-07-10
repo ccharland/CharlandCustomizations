@@ -56,22 +56,23 @@ All branches must use an approved prefix. The pre-commit hook and CI will reject
 - `breaking/<description>` — Breaking changes
 - `kiro-code/<description>` — Kiro-assisted code changes
 - `copilot-code/<description>` — Copilot-assisted code changes
+- `codex-code/<description>` — Codex-assisted code changes
 
 **Infrastructure branches** (modify `.github/`, `Scripts/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/`):
 
 - `workflow/<description>` or `workflows/<description>`
 - `infrastructure/<description>` or `infra/<description>`
 - `ci/<description>`
-- `kiro-infra/<description>` or `copilot-infra/<description>`
+- `kiro-infra/<description>` or `copilot-infra/<description>` or `codex-infra/<description>`
 
 ### Path Separation Policy
 
-The pre-commit hook enforces separation between code and infrastructure work:
+The pre-commit hook enforces separation between code and infrastructure work. The policy works as a **blocklist** — everything not explicitly blocked is allowed:
 
-| Branch Type | Can Modify | Cannot Modify |
-|-------------|-----------|---------------|
-| Code branches | `src/`, `tests/src/`, `docs/`, `assets/` | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/` |
-| Infrastructure branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, `assets/` | `src/`, `tests/src/` |
+| Branch Type | Blocked Paths | Everything Else |
+|-------------|---------------|-----------------|
+| Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) |
+| Infrastructure branches | `src/`, `tests/src/` | Allowed (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) |
 
 For exceptional mixed-scope commits, use the override deliberately:
 
