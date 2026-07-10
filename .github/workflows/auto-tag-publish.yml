@@ -54,6 +54,24 @@ jobs:
           fi
           echo "Tag $TAG is available."
 
+      - name: Verify changelog has entry for this version
+        shell: pwsh
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $version = $env:TAG -replace '^v', ''
+          $changelog = Get-Content './docs/CHANGELOG.md' -Raw
+
+          # Match a heading like ## [0.5.0] or ## [0.5.0-beta1]
+          $pattern = "## \[$([regex]::Escape($version))\]"
+
+          if ($changelog -notmatch $pattern) {
+              Write-Error "Changelog does not contain a section for version $version. Add a '## [$version]' entry to docs/CHANGELOG.md before publishing."
+              exit 1
+          }
+
+          Write-Host "Changelog entry found for version $version."
+
       - name: Create and push tag
         env:
           TAG: ${{ steps.version.outputs.tag }}
