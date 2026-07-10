@@ -71,7 +71,7 @@ The pre-commit hook enforces separation between code and infrastructure work:
 | Branch Type | Can Modify | Cannot Modify |
 |-------------|-----------|---------------|
 | Code branches | `src/`, `tests/src/`, `docs/`, `assets/` | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/` |
-| Infrastructure branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/` | `src/`, `tests/src/` |
+| Infrastructure branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, `assets/` | `src/`, `tests/src/` |
 
 For exceptional mixed-scope commits, use the override deliberately:
 
@@ -235,7 +235,7 @@ Invoke-Pester -Path ./tests/src/Public/AWS/AWSCustomizations/Update-CHARSSOCrede
 
 ## Code Signing
 
-All `.ps1`, `.psm1`, and `.psd1` files under `Scripts/` and `src/` must be Authenticode-signed before merge.
+All `.ps1`, `.psm1`, and `.psd1` files under `Scripts/` and `src/` must be Authenticode-signed before publishing. `Scripts/` signing is enforced at PR merge time (via the Signature Compliance workflow). `src/` signing is enforced before publishing — the publish workflow and `Publish-CharlandCustomizations.ps1` both validate all signatures before releasing.
 
 ### Editing Signed Files
 
@@ -335,6 +335,14 @@ When behavior changes, update the relevant docs:
 - `docs/CHANGELOG.md` — All user-visible changes
 - `docs/QUICK-REFERENCE.md` — Command quick reference
 - Function comment-based help — Keep examples current
+
+## Architecture Decisions
+
+Significant design choices are recorded as Architecture Decision Records (ADRs) in [`docs/architecture-decisions/`](docs/architecture-decisions/). When you make a decision that affects module structure, conventions, or workflows, add a new ADR using the template at `docs/architecture-decisions/000-template.md`.
+
+## Security
+
+To report a security vulnerability, see [SECURITY.md](SECURITY.md). Do not open a public issue for security concerns.
 
 ## Questions?
 
