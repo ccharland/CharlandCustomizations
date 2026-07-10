@@ -135,6 +135,14 @@ src/CharlandCustomizations/
 
 ## Code Standards
 
+### PowerShell References
+
+If you're newer to PowerShell module development, these Microsoft docs are helpful:
+
+- [Approved Verbs for PowerShell Commands](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands) — Use `Get-Verb` locally to see the full list
+- [About Comment-Based Help](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comment_based_help) — Syntax and placement for `.SYNOPSIS`, `.PARAMETER`, `.EXAMPLE`, etc.
+- [Strongly Encouraged Development Guidelines](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/strongly-encouraged-development-guidelines?view=powershell-7.6) — Microsoft's recommended patterns for cmdlet design, error handling, and parameter naming
+
 ### Comment-Based Help
 
 Every public function and script requires:
