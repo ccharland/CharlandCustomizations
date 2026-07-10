@@ -22,7 +22,7 @@ Enforce a branch path separation policy:
 
 - **Code branches** (`feature/*`, `bugfix/*`, etc.) are blocked from modifying `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, and `tests/scripts/`. Everything else (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) is allowed.
 - **Infrastructure branches** (`workflow/*`, `infra/*`, `ci/*`, etc.) are blocked from modifying `src/` and `tests/src/`. Everything else (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) is allowed.
-- **Publish branches** (`publish/*`) are blocked from modifying `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, and `tests/`. Only release-prep paths are allowed: `src/` (manifest version, re-signing) and `docs/` (changelog).
+- **Publish branches** (`publish/*`) are blocked from modifying `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, and `tests/`. Everything else is allowed, including `src/`, `docs/`, root files, and `assets/`.
 
 Enforcement happens at two levels:
 

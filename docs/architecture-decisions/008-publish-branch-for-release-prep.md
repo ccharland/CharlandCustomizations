@@ -14,9 +14,8 @@ The release process requires touching multiple areas of the repository in a sing
 
 1. **`src/`** — Bump manifest version, re-sign source files.
 2. **`docs/`** — Update CHANGELOG.md.
-3. **`Scripts/`** — Potentially update build tooling if the release process evolves.
 
-The existing branch path policy (ADR-002) separates code branches from infrastructure branches. Neither type has full access to all three areas:
+The existing branch path policy (ADR-002) separates code branches from infrastructure branches. Neither type has full access to both areas:
 
 - Code branches can't touch `Scripts/`.
 - Infrastructure branches can't touch `src/`.
