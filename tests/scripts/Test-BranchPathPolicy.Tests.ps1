@@ -106,4 +106,53 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
     }
+
+    Context 'Publish branch policy' {
+
+        It 'Allows source changes on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @(
+                    'src/CharlandCustomizations/CharlandCustomizations.psd1'
+                )
+            } | Should -Not -Throw
+        }
+
+        It 'Allows docs changes on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @(
+                    'docs/CHANGELOG.md'
+                )
+            } | Should -Not -Throw
+        }
+
+        It 'Blocks .github changes on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('.github/workflows/publish.yml')
+            } | Should -Throw '*publish/release branch*'
+        }
+
+        It 'Blocks Scripts changes on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('Scripts/Build-Module.ps1')
+            } | Should -Throw '*publish/release branch*'
+        }
+
+        It 'Blocks tests changes on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('tests/src/Something.Tests.ps1')
+            } | Should -Throw '*publish/release branch*'
+        }
+
+        It 'Blocks .kiro changes on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('.kiro/settings/mcp.json')
+            } | Should -Throw '*publish/release branch*'
+        }
+
+        It 'Allows root files on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('README.md')
+            } | Should -Not -Throw
+        }
+    }
 }
