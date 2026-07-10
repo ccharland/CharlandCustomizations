@@ -239,7 +239,6 @@
       Write-Output $subTemplate
       return
     }
-    Write-Debug 'Start Begin'
     # Build base AWS splat from credential parameters then remove ProfileName/Region
     # since those are arrays used for iteration in this function, not single-value
     # credential params to pass to AWS cmdlets directly.
@@ -305,7 +304,6 @@
       'region.*not.*(configured|specified|set)'
     )
     $missingRegionPattern = '(?i)(' + ($missingRegionPatternAlternatives -join '|') + ')'
-    Write-Debug 'end begin'
   }
 
   process {
@@ -386,7 +384,6 @@
             -PercentComplete $regionPercent
         }
 
-        Write-Verbose "Executing against Profile='$prof', Region='$r'"
         # Save current AWS session state
         $origStoredRegion = $global:StoredAWSRegion
         $origStoredCreds = $global:StoredAWSCredentials
@@ -396,7 +393,6 @@
         $origEnvSessionToken = $env:AWS_SESSION_TOKEN
 
         try {
-          Write-Verbose 'saving state'
 
           if ($resolvedCreds -and $resolvedCreds.AccessKey) {
             # Use Set-AWSCredential to properly register credentials in the SDK session cache
@@ -433,10 +429,6 @@
           $ErrorActionPreference = 'Stop'
           try {
             $results = $NULL
-            Write-Verbose "Try to invoke script: Results before script: $results"
-            Write-Verbose "Region:  $r"
-            # $results = & $ScriptBlock
-            # $results = & $ScriptBlock -Region $r -ProfileName $prof
             # Inject Region and ProfileName as automatic variables so simple
             # ScriptBlocks can reference them directly (e.g. -Region $Region).
             # Also inject $PSDefaultParameterValues so any cmdlet or wrapper
@@ -459,7 +451,6 @@
                 Write-Verbose "SuppressEmptyResult: skipping empty result for Profile='$prof', Region='$r'"
                 $results = $null
               } else {
-                Write-Verbose 'emit a single item for tracking'
                 $results = [PSCustomObject]@{}
               }
             }
@@ -470,14 +461,10 @@
               Error = $_.Exception.Message
             }
           } finally {
-            Write-Verbose 'finally block'
-            Write-Verbose "Results: $results"
             $ErrorActionPreference = $origErrorAction
           }
           # Results should NEVER be empty unless intentionally suppressed
           if ($results) {
-            Write-Verbose "Results for Profile='$prof', Region='$r'"
-            Write-Verbose "results:  $results"
             foreach ($item in $results) {
               Write-Debug "Returning result for Profile='$prof', Region='$r': $item"
               $props = [ordered]@{}
