@@ -91,16 +91,52 @@ jobs:
 
           Write-Host "Changelog entry found for version $version."
 
+      - name: Import release tag signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.TAG_SIGNING_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.TAG_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "::error::TAG_SIGNING_GPG_PRIVATE_KEY secret is not configured."
+            exit 1
+          fi
+
+          export GNUPGHOME="$RUNNER_TEMP/release-tag-signing"
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
+
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+          GPG_KEY_ID=$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
+          if [ -z "$GPG_KEY_ID" ]; then
+            echo "::error::No secret GPG key was imported for tag signing."
+            exit 1
+          fi
+
+          cat >"$RUNNER_TEMP/gpg-loopback.sh" <<'EOF'
+          #!/usr/bin/env bash
+          exec gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" "$@"
+          EOF
+          chmod 700 "$RUNNER_TEMP/gpg-loopback.sh"
+
+          {
+            echo "GNUPGHOME=$GNUPGHOME"
+            echo "GPG_KEY_ID=$GPG_KEY_ID"
+            echo "GPG_WRAPPER=$RUNNER_TEMP/gpg-loopback.sh"
+          } >> "$GITHUB_ENV"
+
       - name: Create and push signed tag
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
+          GPG_PASSPHRASE: ${{ secrets.TAG_SIGNING_GPG_PASSPHRASE }}
         run: |
-          # Create tag via GitHub API — GitHub signs it automatically,
-          # satisfying the required_signatures ruleset on version tags.
-          gh api "repos/${{ github.repository }}/git/refs" \
-            --method POST \
-            -f ref="refs/tags/$TAG" \
-            -f sha="${{ github.event.pull_request.merge_commit_sha }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config gpg.program "$GPG_WRAPPER"
+          git config gpg.format openpgp
+          git config user.signingkey "$GPG_KEY_ID"
+
+          git tag -s "$TAG" -m "Release $TAG"
+          git push origin "refs/tags/$TAG"
 
           echo "::notice::Created signed tag $TAG — publish workflow will trigger."
