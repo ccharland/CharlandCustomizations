@@ -26,7 +26,8 @@
         "refs/heads/kiro-code/*",
         "refs/heads/codex-infra/*",
         "refs/heads/copilot-infra/*",
-        "refs/heads/kiro-infra/*"
+        "refs/heads/kiro-infra/*",
+        "refs/heads/publish/*"
       ]
     }
   },
