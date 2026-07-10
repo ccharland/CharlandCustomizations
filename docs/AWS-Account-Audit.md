@@ -1,12 +1,10 @@
 # AWS Account Audit
 
-These commands are now exported by the main `CharlandCustomizations` module. Import `CharlandCustomizations` and use these functions directly; you do not need to import a separate audit module.
-
-This module provides a collection of PowerShell functions for auditing AWS accounts and resources. It includes functions for analyzing EC2 instances, security groups, IAM resources, S3 buckets, and other AWS services **without working with CloudFormation templates**.
+These commands are exported by the main `CharlandCustomizations` module. Import `CharlandCustomizations` and use these functions directly; you do not need to import a separate audit module.
 
 ## Overview
 
-The `audit-AWSAccount.psm1` module was created by extracting and consolidating non-CloudFormation PowerShell scripts from the aws-templates-tools-snippets repository. CloudFormation template processing functions are available separately in the `TemplateProcessing.psm1` module.
+The audit functions provide PowerShell tools for auditing AWS accounts and resources — EC2 instances, security groups, IAM resources, and more — **without working with CloudFormation templates**. CloudFormation template processing functions are documented separately in [CloudFormation-TemplateProcessing.md](CloudFormation-TemplateProcessing.md).
 
 ## Functions Included
 
@@ -24,29 +22,6 @@ The `audit-AWSAccount.psm1` module was created by extracting and consolidating n
 - **`Get-CHARGlobalAuditReportItem`** - Creates a count of various AWS resources across regions
 - **`Out-CHARAWSSupportingInfo`** - Collects and saves AWS account-specific supporting information
 - **`Out-CHARAWSNetworkingComponent`** - Exports VPC, subnet, route table, VPN, prefix list, and transit gateway details
-
-## Prerequisites
-
-- AWS PowerShell module (`AWSPowerShell.NetCore` or `AWSPowerShell`)
-- Valid AWS credentials configured
-- PowerShell 7.2 or later
-
-## Installation
-
-1. Install or copy the `CharlandCustomizations` module to one of your PowerShell modules directories:
-
-   ```powershell
-   # Find your modules path
-   $env:PSModulePath -split [IO.Path]::PathSeparator
-
-   # Copy the CharlandCustomizations module folder to one of the module paths
-   # For example: C:\Users\<username>\Documents\PowerShell\Modules\CharlandCustomizations\
-   ```
-
-2. Import the main module, which exports these audit functions:
-   ```powershell
-   Import-Module CharlandCustomizations
-   ```
 
 ## Usage Examples
 
@@ -127,32 +102,8 @@ This module consolidates the following scripts from the original repository:
 - `Get-CHAREC2VolumeReport.ps1`
 - `Start-CHAREC2RetryLoop.ps1`
 
-## Excluded Scripts
+## Related
 
-The following CloudFormation-related scripts are **NOT** included in this module:
-
-- `New-CHARCFNStackFromDirectory.ps1`
-- `Test-CHARCFNStackFromDirectory.ps1`
-- `Update-CHARCFNStackFromDirectory.ps1`
-- `Out-CHARCFNStackInfo.ps1`
-- `New-CHARCFNStackDirectory.ps1`
-- `Edit-CHARCFTTEbsVolume.ps1`
-
-These are available separately in the `TemplateProcessing.psm1` module.
-
-## Version History
-
-- **v1.0.0** - Initial release with core audit functions extracted from aws-templates-tools-snippets repository
-
-## Contributing
-
-These functions were ported from a private repository and added to this module. To contribute improvements:
-
-1. Update the function source files under `src/CharlandCustomizations/Public/AWS/Audit/`
-2. Add or update Pester tests under `tests/`
-3. Run `./Scripts/Build-Module.ps1 -Install` to validate
-4. Submit a pull request following the branch naming conventions in the README
-
-## License
-
-See [LICENSE](../LICENSE) in the repository root.
+- [CloudFormation-TemplateProcessing.md](CloudFormation-TemplateProcessing.md) — CloudFormation stack management functions
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — How to contribute changes
+- [INSTALLATION.md](INSTALLATION.md) — Module installation

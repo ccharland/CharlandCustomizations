@@ -50,42 +50,10 @@ CharlandCustomizations/
 
 ## Branch standards
 
-### Naming convention
+All branches must use a `type/description` format (e.g., `feature/alarm-management`). The repository ruleset blocks branches that don't match an approved prefix, and a path policy prevents mixing source and infrastructure changes in the same branch.
 
-All branches must use a `type/description` format with a forward slash separator. The repository ruleset blocks creation of branches that don't match an approved prefix:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full list of approved prefixes, path policy details, and override instructions.
 
-| Prefix | Purpose |
-|--------|---------|
-| `feature/*` | New functionality or module commands |
-| `bugfix/*` | Bug fixes |
-| `hotfix/*` | Urgent production fixes |
-| `workflow/*` / `workflows/*` | GitHub Actions workflow changes |
-| `infrastructure/*` / `infra/*` / `ci/*` | CI/CD and tooling changes |
-| `architecture/*` | Structural or design changes |
-| `breaking/*` | Breaking changes |
-| `docs/*` | Documentation-only changes |
-| `chore/*` | Routine maintenance |
-| `codex-code/*`, `copilot-code/*`, `kiro-code/*` | AI-assisted code branches |
-| `codex-infra/*`, `copilot-infra/*`, `kiro-infra/*` | AI-assisted infrastructure branches |
-
-### Path policy
-
-Branches are scoped to specific areas of the codebase. The branch path policy (enforced via pre-commit hook and CI workflow) prevents mixing infrastructure and source changes:
-
-- **Code branches** (`feature/*`, `bugfix/*`, etc., and `*-code` AI prefixes) — can modify `src/` and `tests/src/`, but **cannot** touch `.github/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `Scripts/`, or `tests/scripts/`.
-- **Infrastructure branches** (`workflow/*`, `infrastructure/*`, `ci/*`, etc., and `*-infra` AI prefixes) — can modify `.github/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `Scripts/`, and `tests/scripts/`, but **cannot** touch `src/` or `tests/src/`.
-
-Branch prefixes are strictly validated. If a branch prefix is not in the approved list above, all changes are blocked until the branch is renamed.
-
-AI-assisted branch prefixes must match one of:
-`codex-code/*`, `copilot-code/*`, `kiro-code/*`, `codex-infra/*`, `copilot-infra/*`, `kiro-infra/*`.
-
-`*-code` branches are treated as code branches, and `*-infra` branches are treated as infrastructure branches.
-
-To bypass the policy for exceptional cases, set the environment variable before committing:
-
-Bash/sh:     CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1 git commit -m "mixed change with justification"
-PowerShell:  $env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1; git commit -m "mixed change with justification"
 ## Release safety
 
 ### Version tags
@@ -94,23 +62,12 @@ Release tags follow the pattern `v<major>.<minor>.<patch>` (e.g., `v0.3.0`) or `
 
 - **Immutability** — tags cannot be deleted, updated, or force-pushed.
 - **Signed commits** — the tagged commit must have a verified signature.
-- **Required status checks** — all of the following must pass on the tagged commit before the tag is accepted:
-  - Pester Tests
-  - PSScriptAnalyzer
-  - Comment-Based Help
-  - Manifest Compliance
-  - CodeQL Analyze (actions)
+- **Required status checks** — Pester Tests, PSScriptAnalyzer, Comment-Based Help, Manifest Compliance, and CodeQL must all pass.
 - **No bypass actors** — no users or apps can skip these requirements.
 
 The tag version must match the `ModuleVersion` (and optional `Prerelease`) in the module manifest. The publish workflow validates this before releasing to the PowerShell Gallery.
 
-For release workflow details, see the documentation in [docs/BUILD-PROCESS.md](docs/BUILD-PROCESS.md) and [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
-
-High-level guardrails:
-
-- Source signing compliance check before release publication.
-- Build and package from the validated module output.
-- PowerShell Gallery publishing gated to `main` with an immutable tag check.
+For release workflow details, see [docs/BUILD-PROCESS.md](docs/BUILD-PROCESS.md).
 
 ## Use of AI:
 
