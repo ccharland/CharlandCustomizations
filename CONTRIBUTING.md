@@ -65,6 +65,10 @@ All branches must use an approved prefix. The pre-commit hook and CI will reject
 - `ci/<description>`
 - `kiro-infra/<description>` or `copilot-infra/<description>` or `codex-infra/<description>`
 
+**Publish branches** (restricted to release prep — signing, changelog, version bump only):
+
+- `publish/<description>` — Release preparation only: version bump, re-signing, changelog (e.g., `publish/v0.5.0`)
+
 ### Path Separation Policy
 
 The pre-commit hook enforces separation between code and infrastructure work. The policy works as a **blocklist** — everything not explicitly blocked is allowed:
@@ -73,6 +77,7 @@ The pre-commit hook enforces separation between code and infrastructure work. Th
 |-------------|---------------|-----------------|
 | Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) |
 | Infrastructure branches | `src/`, `tests/src/` | Allowed (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) |
+| Publish branches | `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, `tests/` | Allowed (only `src/`, `docs/`, root files, `assets/`) |
 
 For exceptional mixed-scope commits, use the override deliberately:
 
@@ -321,11 +326,12 @@ Releases are triggered by version tags (`v*.*.*`). The publish workflow verifies
 
 Typical sequence:
 
-1. Bump version and update `docs/CHANGELOG.md`
-2. Re-sign source files (`./Scripts/Build-Module.ps1 -UpdateAllSignatures -Install`)
-3. Commit, merge to `main`
-4. Push a version tag (`git tag v0.5.0 && git push --tags`)
-5. The publish workflow runs automatically
+1. Create a `publish/v0.5.0` branch
+2. Bump version and update `docs/CHANGELOG.md`
+3. Re-sign source files (`./Scripts/Build-Module.ps1 -UpdateAllSignatures -Install`)
+4. Commit unsigned first (clean diffs), then commit signed
+5. Open PR to `main`, quality gates pass, merge
+6. The `auto-tag-publish` workflow creates the version tag automatically, triggering the publish workflow
 
 See `docs/BUILD-PROCESS.md` for the complete release workflow.
 

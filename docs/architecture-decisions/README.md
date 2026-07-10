@@ -26,6 +26,7 @@ Each ADR follows a lightweight template:
 | [005](005-aws-common-parameter-splatting.md) | AWS common parameter splatting pattern | Accepted | 2026-06-12 |
 | [006](006-enforce-quality-gates-early.md) | Enforce quality gates early, even for a small project | Accepted | 2026-07-04 |
 | [007](007-intentional-ai-assisted-development.md) | Intentional AI-assisted development | Accepted | 2026-07-04 |
+| [008](008-publish-branch-for-release-prep.md) | Publish branch for release preparation | Accepted | 2026-07-04 |
 
 ## Creating a New ADR
 

@@ -1,0 +1,150 @@
+# Auto-tag when a publish/* branch merges to main.
+# Reads the module version from the manifest and creates a v-prefixed tag,
+# which triggers the existing publish.yml workflow.
+
+name: Auto-Tag on Publish Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    name: Create version tag from manifest
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'publish/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main at merge commit
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Read version from manifest
+        id: version
+        shell: pwsh
+        run: |
+          $manifestPath = './src/CharlandCustomizations/CharlandCustomizations.psd1'
+
+          if (-not (Test-Path $manifestPath)) {
+              Write-Error "Manifest not found at $manifestPath. Cannot determine version for tagging."
+              exit 1
+          }
+
+          try {
+              $manifest = Import-PowerShellDataFile -Path $manifestPath -ErrorAction Stop
+          }
+          catch {
+              Write-Error "Failed to parse manifest at $manifestPath: $_"
+              exit 1
+          }
+
+          $version = $manifest.ModuleVersion
+          if (-not $version) {
+              Write-Error "ModuleVersion is missing or empty in $manifestPath."
+              exit 1
+          }
+
+          $prerelease = $manifest.PrivateData.PSData.Prerelease
+
+          if ($prerelease) {
+              $tag = "v$version-$prerelease"
+          } else {
+              $tag = "v$version"
+          }
+
+          Write-Host "Resolved tag: $tag"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Verify tag does not already exist
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+            echo "::error::Tag $TAG already exists. Aborting."
+            exit 1
+          fi
+          echo "Tag $TAG is available."
+
+      - name: Verify changelog has entry for this version
+        shell: pwsh
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $version = $env:TAG -replace '^v', ''
+          $changelog = Get-Content './docs/CHANGELOG.md' -Raw
+
+          # Match a heading like ## [0.5.0] or ## [0.5.0-beta1]
+          $pattern = "## \[$([regex]::Escape($version))\]"
+
+          if ($changelog -notmatch $pattern) {
+              Write-Error "Changelog does not contain a section for version $version. Add a '## [$version]' entry to docs/CHANGELOG.md before publishing."
+              exit 1
+          }
+
+          Write-Host "Changelog entry found for version $version."
+
+      - name: Import release tag signing key
+        env:
+          # Repository secrets must contain the armored private key and optional passphrase
+          # for a GitHub-verified GPG key that is allowed to create signed release tags.
+          GPG_PRIVATE_KEY: ${{ secrets.TAG_SIGNING_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.TAG_SIGNING_GPG_PASSPHRASE }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "::error::TAG_SIGNING_GPG_PRIVATE_KEY secret is not configured."
+            exit 1
+          fi
+
+          export GNUPGHOME="$RUNNER_TEMP/release-tag-signing"
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
+
+          if ! printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import; then
+            echo "::error::Failed to import TAG_SIGNING_GPG_PRIVATE_KEY."
+            exit 1
+          fi
+
+          GPG_KEY_ID=$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
+          if [ -z "$GPG_KEY_ID" ]; then
+            echo "::error::No secret GPG key was imported for tag signing."
+            exit 1
+          fi
+
+          printf '%s' "$GPG_PASSPHRASE" >"$RUNNER_TEMP/gpg-passphrase.txt"
+          chmod 600 "$RUNNER_TEMP/gpg-passphrase.txt"
+
+          cat >"$RUNNER_TEMP/gpg-loopback.sh" <<'EOF'
+          #!/usr/bin/env bash
+          exec gpg --batch --yes --pinentry-mode loopback --passphrase-file "$GPG_PASSPHRASE_FILE" "$@"
+          EOF
+          chmod 700 "$RUNNER_TEMP/gpg-loopback.sh"
+
+          {
+            echo "GNUPGHOME=$GNUPGHOME"
+            echo "GPG_KEY_ID=$GPG_KEY_ID"
+            echo "GPG_PASSPHRASE_FILE=$RUNNER_TEMP/gpg-passphrase.txt"
+            echo "GPG_WRAPPER=$RUNNER_TEMP/gpg-loopback.sh"
+          } >> "$GITHUB_ENV"
+
+      - name: Create and push signed tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config gpg.program "$GPG_WRAPPER"
+          git config gpg.format openpgp
+          git config user.signingkey "$GPG_KEY_ID"
+
+          git tag -s "$TAG" -m "Release $TAG"
+          git push origin "refs/tags/$TAG"
+
+          echo "::notice::Created signed tag $TAG — publish workflow will trigger."
