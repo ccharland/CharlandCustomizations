@@ -19,6 +19,11 @@
     accepting -Region or -ProfileName picks up the current iteration values without
     requiring the user to pass them explicitly.
 
+    When no -ProfileName is specified and no stored profile is found, the function
+    checks for ambient credentials (AWS CloudShell, EC2 instance roles, ECS task
+    roles, or environment variables). If ambient credentials are detected via a
+    successful Get-STSCallerIdentity call, execution proceeds without a named profile.
+
     Error Handling:
     - If a ScriptBlock throws (e.g., SCP denial, access denied, service unavailable),
       the error is caught and a result object with the Error property populated is
@@ -268,8 +273,33 @@
         Write-Verbose "Using current profile: $currentProfile"
         $ProfileName = @($currentProfile)
       } else {
-        Write-Error 'No ProfileName specified and no current AWS profile found. Use -ProfileName or Set-AWSCredential.'
-        return
+        # No named profile found — check if ambient credentials are available
+        # (e.g., CloudShell, EC2 instance role, ECS task role, environment variables).
+        # Only attempt this when no explicit credential parameters were provided;
+        # if the user passed -AccessKey/-SecretKey/-Credential they expect a profile
+        # to pair them with, so ambient fallback would be incorrect.
+        $hasExplicitCreds = $PSBoundParameters.ContainsKey('AccessKey') -or
+          $PSBoundParameters.ContainsKey('SecretKey') -or
+          $PSBoundParameters.ContainsKey('SessionToken') -or
+          $PSBoundParameters.ContainsKey('Credential')
+
+        if (-not $hasExplicitCreds) {
+          Write-Debug 'No named profile found, checking for ambient credentials'
+          try {
+            $ambientIdentity = Get-STSCallerIdentity -ErrorAction Stop
+            if ($ambientIdentity) {
+              Write-Verbose "Using ambient credentials (no named profile): $($ambientIdentity.Arn)"
+              $ProfileName = @('__ambient__')
+            }
+          } catch {
+            Write-Debug "Ambient credential check failed: $_"
+          }
+        }
+
+        if (-not $ProfileName) {
+          Write-Error 'No ProfileName specified and no current AWS profile or ambient credentials found. Use -ProfileName or Set-AWSCredential.'
+          return
+        }
       }
 
     }
@@ -320,18 +350,22 @@
       # Override ProfileName per iteration; base awsParams carries other credential params
       # Use the first region from the list for validation since Region was removed from awsParams
       $iterParams = $awsParams.Clone()
-      $iterParams['ProfileName'] = $prof
+      $isAmbient = ($prof -eq '__ambient__')
+      if (-not $isAmbient) {
+        $iterParams['ProfileName'] = $prof
+      }
       if ($Region -and $Region.Count -gt 0) {
         $iterParams['Region'] = $Region[0]
       } else {
         Write-Error "Region array is empty or null for profile '$prof'"
         continue
       }
-      Write-Verbose "Validating profile '$prof' with region '$($iterParams.Region)'"
+      $displayProfile = if ($isAmbient) { '(ambient credentials)' } else { $prof }
+      Write-Verbose "Validating profile '$displayProfile' with region '$($iterParams.Region)'"
       try {
         $identity = Get-STSCallerIdentity @iterParams -ErrorAction Stop
         $accountId = $identity.Account
-        Write-Verbose "Profile '$prof' resolved to AccountId: $accountId"
+        Write-Verbose "Profile '$displayProfile' resolved to AccountId: $accountId"
       } catch {
         if ($_.Exception.Message -match $missingRegionPattern) {
           $missingRegionError = [System.Management.Automation.ErrorRecord]::new(
@@ -349,29 +383,32 @@
       # Resolve the profile into concrete AccessKey/SecretKey/SessionToken.
       # For profiles stored in the credentials file (e.g., from Update-CHARSSOCredentialList),
       # read the keys directly. This avoids SSO token re-resolution and SDK caching issues.
+      # For ambient credentials (CloudShell, instance roles), skip resolution entirely.
       $resolvedCreds = $null
-      try {
-        # Get-AWSCredential -ProfileName with the profile's location resolves correctly
-        # because it reads directly from the ini file, not from the SSO token cache.
-        $profileDetail = Get-AWSCredential -ListProfileDetail |
-          Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
+      if (-not $isAmbient) {
+        try {
+          # Get-AWSCredential -ProfileName with the profile's location resolves correctly
+          # because it reads directly from the ini file, not from the SSO token cache.
+          $profileDetail = Get-AWSCredential -ListProfileDetail |
+            Where-Object { $_.ProfileName -eq $prof } | Select-Object -First 1
 
-        if ($profileDetail -and $profileDetail.ProfileLocation) {
-          $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
-          if ($credObj -and $credObj.GetCredentials) {
-            $resolvedCreds = $credObj.GetCredentials()
+          if ($profileDetail -and $profileDetail.ProfileLocation) {
+            $credObj = Get-AWSCredential -ProfileName $prof -ProfileLocation $profileDetail.ProfileLocation
+            if ($credObj -and $credObj.GetCredentials) {
+              $resolvedCreds = $credObj.GetCredentials()
+            }
           }
-        }
 
-        if (-not $resolvedCreds) {
-          # Fall back: try without explicit ProfileLocation
-          $credObj = Get-AWSCredential -ProfileName $prof
-          if ($credObj -and $credObj.GetCredentials) {
-            $resolvedCreds = $credObj.GetCredentials()
+          if (-not $resolvedCreds) {
+            # Fall back: try without explicit ProfileLocation
+            $credObj = Get-AWSCredential -ProfileName $prof
+            if ($credObj -and $credObj.GetCredentials) {
+              $resolvedCreds = $credObj.GetCredentials()
+            }
           }
+        } catch {
+          Write-Verbose "Could not resolve credentials for profile '$prof': $_"
         }
-      } catch {
-        Write-Verbose "Could not resolve credentials for profile '$prof': $_"
       }
 
       $regionIndex = 0
@@ -414,7 +451,7 @@
             } else {
               $env:AWS_SESSION_TOKEN = $null
             }
-          } else {
+          } elseif (-not $isAmbient) {
             Set-AWSCredential -ProfileName $prof
           }
           Set-DefaultAWSRegion -Region $r
@@ -436,12 +473,14 @@
             # parameter binding — this avoids requiring users to thread the
             # values through every wrapper call.
             $iterationDefaults = @{
-              '*:Region'      = $r
-              '*:ProfileName' = $prof
+              '*:Region' = $r
+            }
+            if (-not $isAmbient) {
+              $iterationDefaults['*:ProfileName'] = $prof
             }
             $vars = [System.Collections.Generic.List[psvariable]]::new()
             $vars.Add([psvariable]::new('Region', $r))
-            $vars.Add([psvariable]::new('ProfileName', $prof))
+            $vars.Add([psvariable]::new('ProfileName', $(if ($isAmbient) { $null } else { $prof })))
             $vars.Add([psvariable]::new('PSDefaultParameterValues', $iterationDefaults))
             $results = @($ScriptBlock.InvokeWithContext($null, $vars))
 
@@ -486,7 +525,7 @@
               if (-not $props.Contains('Error')) { $props['Error'] = $null }
               if ($IncludeAccountId) { $props['AccountId'] = $accountId }
               if ($IncludeRegion) { $props['Region'] = $r }
-              if ($IncludeProfileName) { $props['ProfileName'] = $prof }
+              if ($IncludeProfileName) { $props['ProfileName'] = if ($isAmbient) { '(ambient)' } else { $prof } }
 
               $enriched = [PSCustomObject]$props
 
@@ -504,12 +543,11 @@
         } catch {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
         } finally {
-          # Restore original AWS session state
-          if ($origStoredCreds) {
-            Set-AWSCredential -ProfileName $origStoredCreds
-          } else {
-            Clear-AWSCredential
-          }
+          # Restore original AWS session state by directly reassigning the globals.
+          # $StoredAWSCredentials may hold a profile name string OR a credential object
+          # (e.g., BasicAWSCredentials from SSO), so we cannot assume Set-AWSCredential
+          # -ProfileName will work. Direct assignment is the safe restore path.
+          $global:StoredAWSCredentials = $origStoredCreds
           if ($origStoredRegion) {
             Set-DefaultAWSRegion -Region $origStoredRegion
           } else {
