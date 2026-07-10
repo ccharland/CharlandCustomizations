@@ -93,6 +93,8 @@ jobs:
 
       - name: Import release tag signing key
         env:
+          # Repository secrets must contain the armored private key and optional passphrase
+          # for a GitHub-verified GPG key that is allowed to create signed release tags.
           GPG_PRIVATE_KEY: ${{ secrets.TAG_SIGNING_GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.TAG_SIGNING_GPG_PASSPHRASE }}
         run: |
@@ -105,7 +107,10 @@ jobs:
           mkdir -p "$GNUPGHOME"
           chmod 700 "$GNUPGHOME"
 
-          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          if ! printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import; then
+            echo "::error::Failed to import TAG_SIGNING_GPG_PRIVATE_KEY."
+            exit 1
+          fi
 
           GPG_KEY_ID=$(gpg --batch --list-secret-keys --with-colons | awk -F: '/^sec:/ { print $5; exit }')
           if [ -z "$GPG_KEY_ID" ]; then
