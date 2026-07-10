@@ -12,7 +12,7 @@ fi
 BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)"
 STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMRD)"
 
-APPROVED_PREFIX_TEXT="'feature/*', 'bugfix/*', 'hotfix/*', 'workflow/*', 'workflows/*', 'infrastructure/*', 'infra/*', 'ci/*', 'architecture/*', 'breaking/*', 'docs/*', 'chore/*', 'codex-code/*', 'copilot-code/*', 'kiro-code/*', 'codex-infra/*', 'copilot-infra/*', and 'kiro-infra/*'"
+APPROVED_PREFIX_TEXT="'feature/*', 'bugfix/*', 'hotfix/*', 'workflow/*', 'workflows/*', 'infrastructure/*', 'infra/*', 'ci/*', 'architecture/*', 'breaking/*', 'docs/*', 'chore/*', 'publish/*', 'codex-code/*', 'copilot-code/*', 'kiro-code/*', 'codex-infra/*', 'copilot-infra/*', and 'kiro-infra/*'"
 
 if [ -z "$STAGED_FILES" ]; then
     exit 0
@@ -30,6 +30,13 @@ classify_branch_policy() {
             POLICY_NAME='workflow/infrastructure branch'
             BLOCKED_PATTERN='^(src|tests/src)(/|$)'
             BLOCKED_PATHS='src/ and tests/src/'
+            return 0
+            ;;
+        publish/*)
+            POLICY_NAME='publish/release branch'
+            # Publish branches are restricted to release prep only: signing, manifest, changelog
+            BLOCKED_PATTERN='^(\.github|\.githooks|\.kiro|\.vscode|Scripts|tests)(/|$)'
+            BLOCKED_PATHS='.github/, .githooks/, .kiro/, .vscode/, Scripts/, and tests/'
             return 0
             ;;
         *)

@@ -1,0 +1,64 @@
+# Auto-tag when a publish/* branch merges to main.
+# Reads the module version from the manifest and creates a v-prefixed tag,
+# which triggers the existing publish.yml workflow.
+
+name: Auto-Tag on Publish Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  auto-tag:
+    name: Create version tag from manifest
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'publish/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main at merge commit
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Read version from manifest
+        id: version
+        shell: pwsh
+        run: |
+          $manifest = Import-PowerShellDataFile -Path './src/CharlandCustomizations/CharlandCustomizations.psd1'
+          $version = $manifest.ModuleVersion
+          $prerelease = $manifest.PrivateData.PSData.Prerelease
+
+          if ($prerelease) {
+              $tag = "v$version-$prerelease"
+          } else {
+              $tag = "v$version"
+          }
+
+          Write-Host "Resolved tag: $tag"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Verify tag does not already exist
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists. Aborting."
+            exit 1
+          fi
+          echo "Tag $TAG is available."
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag "$TAG" "${{ github.event.pull_request.merge_commit_sha }}"
+          git push origin "$TAG"
+          echo "::notice::Created and pushed tag $TAG — publish workflow will trigger."
