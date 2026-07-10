@@ -31,8 +31,27 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $manifest = Import-PowerShellDataFile -Path './src/CharlandCustomizations/CharlandCustomizations.psd1'
+          $manifestPath = './src/CharlandCustomizations/CharlandCustomizations.psd1'
+
+          if (-not (Test-Path $manifestPath)) {
+              Write-Error "Manifest not found at $manifestPath. Cannot determine version for tagging."
+              exit 1
+          }
+
+          try {
+              $manifest = Import-PowerShellDataFile -Path $manifestPath -ErrorAction Stop
+          }
+          catch {
+              Write-Error "Failed to parse manifest at $manifestPath: $_"
+              exit 1
+          }
+
           $version = $manifest.ModuleVersion
+          if (-not $version) {
+              Write-Error "ModuleVersion is missing or empty in $manifestPath."
+              exit 1
+          }
+
           $prerelease = $manifest.PrivateData.PSData.Prerelease
 
           if ($prerelease) {
