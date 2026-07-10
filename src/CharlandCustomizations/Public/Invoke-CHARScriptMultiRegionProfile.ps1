@@ -533,12 +533,11 @@
         } catch {
           Write-Warning "Error executing ScriptBlock for Profile='${prof}', Region='${r}': $_"
         } finally {
-          # Restore original AWS session state
-          if ($origStoredCreds) {
-            Set-AWSCredential -ProfileName $origStoredCreds
-          } else {
-            Clear-AWSCredential
-          }
+          # Restore original AWS session state by directly reassigning the globals.
+          # $StoredAWSCredentials may hold a profile name string OR a credential object
+          # (e.g., BasicAWSCredentials from SSO), so we cannot assume Set-AWSCredential
+          # -ProfileName will work. Direct assignment is the safe restore path.
+          $global:StoredAWSCredentials = $origStoredCreds
           if ($origStoredRegion) {
             Set-DefaultAWSRegion -Region $origStoredRegion
           } else {
