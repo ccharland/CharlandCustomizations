@@ -1,4 +1,4 @@
-function Invoke-CHARScriptMultiRegionProfile {
+﻿function Invoke-CHARScriptMultiRegionProfile {
   <#
 .SYNOPSIS
     Invokes AWS commands across multiple AWS Profiles and regions to gather data.
@@ -25,7 +25,8 @@ function Invoke-CHARScriptMultiRegionProfile {
       emitted for that profile/region combination. Processing continues with the
       next region or profile.
     - If a ScriptBlock returns no data, an empty tracking object is emitted so
-      every profile/region combination produces at least one output row.
+      every profile/region combination produces at least one output row. Use
+      -SuppressEmptyResult to skip these placeholders when you only want real data.
     - Every output object includes an Error property (null on success) so that
       Format-Table and other formatters display columns consistently regardless
       of whether some iterations failed.
@@ -56,6 +57,12 @@ function Invoke-CHARScriptMultiRegionProfile {
 
 .PARAMETER IncludeProfileName
     When specified, adds a ProfileName property to each output object.
+
+.PARAMETER SuppressEmptyResult
+    When specified, does not emit an object to the pipeline for profile/region
+    combinations where the ScriptBlock returned no data. By default an empty
+    tracking object is emitted so every iteration produces at least one output row;
+    this switch suppresses that placeholder when you only want real results.
 
 .PARAMETER NoProgress
     Suppress progress bar output.
@@ -155,6 +162,9 @@ function Invoke-CHARScriptMultiRegionProfile {
 
     [Parameter(ParameterSetName = 'Execute')]
     [switch]$IncludeProfileName,
+
+    [Parameter(ParameterSetName = 'Execute')]
+    [switch]$SuppressEmptyResult,
 
     [Parameter(ParameterSetName = 'Execute')]
     [switch]$NoProgress,
@@ -445,8 +455,13 @@ function Invoke-CHARScriptMultiRegionProfile {
 
             if ($results.Count -eq 0) {
               Write-Verbose "No results returned for Profile='$prof', Region='$r'"
-              Write-Verbose 'emit a single item for tracking'
-              $results = [PSCustomObject]@{}
+              if ($SuppressEmptyResult) {
+                Write-Verbose "SuppressEmptyResult: skipping empty result for Profile='$prof', Region='$r'"
+                $results = $null
+              } else {
+                Write-Verbose 'emit a single item for tracking'
+                $results = [PSCustomObject]@{}
+              }
             }
           } catch {
             # script failed to execute, record error and continue
@@ -459,7 +474,7 @@ function Invoke-CHARScriptMultiRegionProfile {
             Write-Verbose "Results: $results"
             $ErrorActionPreference = $origErrorAction
           }
-          # Results should NEVER be empty
+          # Results should NEVER be empty unless intentionally suppressed
           if ($results) {
             Write-Verbose "Results for Profile='$prof', Region='$r'"
             Write-Verbose "results:  $results"
@@ -496,7 +511,7 @@ function Invoke-CHARScriptMultiRegionProfile {
 
               $enriched
             }
-          } else {
+          } elseif (-not $SuppressEmptyResult) {
             throw 'Error- Results empty, aborting'
           }
         } catch {
