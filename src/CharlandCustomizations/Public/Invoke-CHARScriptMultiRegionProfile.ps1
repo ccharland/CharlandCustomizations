@@ -274,16 +274,26 @@
         $ProfileName = @($currentProfile)
       } else {
         # No named profile found — check if ambient credentials are available
-        # (e.g., CloudShell, EC2 instance role, ECS task role, environment variables)
-        Write-Debug 'No named profile found, checking for ambient credentials'
-        try {
-          $ambientIdentity = Get-STSCallerIdentity -ErrorAction Stop
-          if ($ambientIdentity) {
-            Write-Verbose "Using ambient credentials (no named profile): $($ambientIdentity.Arn)"
-            $ProfileName = @('__ambient__')
+        # (e.g., CloudShell, EC2 instance role, ECS task role, environment variables).
+        # Only attempt this when no explicit credential parameters were provided;
+        # if the user passed -AccessKey/-SecretKey/-Credential they expect a profile
+        # to pair them with, so ambient fallback would be incorrect.
+        $hasExplicitCreds = $PSBoundParameters.ContainsKey('AccessKey') -or
+          $PSBoundParameters.ContainsKey('SecretKey') -or
+          $PSBoundParameters.ContainsKey('SessionToken') -or
+          $PSBoundParameters.ContainsKey('Credential')
+
+        if (-not $hasExplicitCreds) {
+          Write-Debug 'No named profile found, checking for ambient credentials'
+          try {
+            $ambientIdentity = Get-STSCallerIdentity -ErrorAction Stop
+            if ($ambientIdentity) {
+              Write-Verbose "Using ambient credentials (no named profile): $($ambientIdentity.Arn)"
+              $ProfileName = @('__ambient__')
+            }
+          } catch {
+            Write-Debug "Ambient credential check failed: $_"
           }
-        } catch {
-          Write-Debug "Ambient credential check failed: $_"
         }
 
         if (-not $ProfileName) {
