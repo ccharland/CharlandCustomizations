@@ -71,6 +71,15 @@ Set-Variable -Name WorkflowInfrastructureBranchBlockedPath -Option Constant -Val
     'tests/src'
 )
 
+Set-Variable -Name PublishBranchBlockedPath -Option Constant -Value @(
+    '.github'
+    '.githooks'
+    '.kiro'
+    '.vscode'
+    'Scripts'
+    'tests'
+)
+
 $approvedBranchPrefixes = @(
     [pscustomobject]@{
         BranchPrefix = 'feature/'
@@ -161,6 +170,11 @@ $approvedBranchPrefixes = @(
         BranchPrefix = 'kiro-infra/'
         BlockedPath = $WorkflowInfrastructureBranchBlockedPath
         BranchType = 'workflow/infrastructure branch'
+    },
+    [pscustomobject]@{
+        BranchPrefix = 'publish/'
+        BlockedPath = $PublishBranchBlockedPath
+        BranchType = 'publish/release branch'
     }
 )
 
