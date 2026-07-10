@@ -1,12 +1,10 @@
 # CloudFormation Template Processing
 
-These commands are now exported by the main `CharlandCustomizations` module. Import `CharlandCustomizations` and use these functions directly; you do not need to import a separate CloudFormation module.
-
-This module provides a comprehensive collection of PowerShell functions for working with AWS CloudFormation templates, stacks, and directory-based stack management. It focuses specifically on CloudFormation operations and template processing workflows.
+These commands are exported by the main `CharlandCustomizations` module. Import `CharlandCustomizations` and use these functions directly; you do not need to import a separate CloudFormation module.
 
 ## Overview
 
-The CloudFormation command set was created by extracting and consolidating CloudFormation-related PowerShell scripts from the aws-templates-tools-snippets repository. It complements the AWS account audit commands in `CharlandCustomizations`, which handle general AWS account auditing functions.
+The CloudFormation command set provides PowerShell functions for working with AWS CloudFormation templates, stacks, and directory-based stack management. It complements the AWS account audit commands documented in [AWS-Account-Audit.md](AWS-Account-Audit.md).
 
 ## Functions Included
 
@@ -19,7 +17,6 @@ The CloudFormation command set was created by extracting and consolidating Cloud
 ### Template and Directory Utilities
 - **`New-CHARCFNStackDirectory`** - Creates directory structure for new CloudFormation stacks
 - **`Edit-CHARCFTTEbsVolume`** - Modifies EBS volume configuration in CloudFormation templates
-
 
 ## Directory Structure Convention
 
@@ -36,37 +33,13 @@ This module uses a standardized directory structure for CloudFormation stack man
       └── outputs.json           # Stack outputs (created by Out-CHARCFNStackInfo)
 ```
 
-## Prerequisites
-
-- AWS PowerShell module (`AWSPowerShell.NetCore` or `AWS.Tools`)
-- Valid AWS credentials configured
-- PowerShell 7.2 or later
-- S3 bucket for CloudFormation templates (cf-templates-*<region>)
-
-## Installation
-
-Install or make available the main `CharlandCustomizations` module in one of the paths listed in `$env:PSModulePath`.
-
-1. Verify your PowerShell module paths if needed:
-   ```powershell
-   $env:PSModulePath -split ';'
-   ```
-
-2. Import the main module:
-   ```powershell
-   Import-Module CharlandCustomizations
-   ```
-
-The CloudFormation functions documented here are exported by `CharlandCustomizations` via its module manifest, so no separate `CloudFormation-TemplateProcessing` import is required.
-
 ## Common Parameters
-Region:  AWS Region
-Path: Path of directory containing stacks , typically "account-number/region/"
-StackName: directory name to put stack specific information into.
+
+- `Region` — AWS Region
+- `Path` — Path of directory containing stacks, typically `account-number/region/`
+- `StackName` — Directory name to put stack-specific information into
 
 ## Usage Examples
-
-
 
 ### Stack Creation
 ```powershell
@@ -126,7 +99,6 @@ New-CHARCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent
 New-CHARCFNStackDirectory -StackName "NewStack" -TemplateBody $templateContent -Path "C:\Stacks"
 ```
 
-
 ## Advanced Workflows
 
 ### Complete Stack Lifecycle
@@ -166,23 +138,13 @@ foreach ($region in $regions) {
 
 ## Function Details
 
-Each function includes comprehensive help documentation. Use `Get-Help` to learn more:
+Each function includes comprehensive help documentation:
 
 ```powershell
 Get-Help New-CHARCFNStackFromDirectory -Detailed
 Get-Help Update-CHARCFNStackFromDirectory -Examples
 Get-Help Test-CHARCFNStackFromDirectory -Full
 ```
-
-## Source Scripts
-
-This module consolidates the following CloudFormation-related scripts:
-- `New-CHARCFNStackFromDirectory.ps1`
-- `Verify-CFNStackFromDirectory.ps1` (renamed to `Test-CHARCFNStackFromDirectory`)
-- `Update-CHARCFNStackFromDirectory.ps1`
-- `Out-CHARCFNStackInfo.ps1`
-- `New-CHARCFNStackDirectory.ps1`
-- `Edit-CHARCFTTEbsVolume.ps1`
 
 ## Error Handling and Best Practices
 
@@ -228,20 +190,8 @@ The module automatically uploads templates to S3 for CloudFormation operations. 
    ```
    Solution: Use `New-CHARCFNStackFromDirectory` to create new stacks, not `Update-CHARCFNStackFromDirectory`.
 
+## Related
 
-## Version History
-
-- **v1.0.0** - Initial release with core CloudFormation template processing functions
-
-## Contributing
-
-These functions were ported from a private repository and added to this module. To contribute improvements:
-
-1. Update the function source files under `src/CharlandCustomizations/Public/AWS/CloudFormation/`
-2. Add or update Pester tests under `tests/`
-3. Run `./Scripts/Build-Module.ps1 -Install` to validate
-4. Submit a pull request following the branch naming conventions in the README
-
-## License
-
-See [LICENSE](../LICENSE) in the repository root.
+- [AWS-Account-Audit.md](AWS-Account-Audit.md) — Non-CloudFormation AWS audit functions
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — How to contribute changes
+- [INSTALLATION.md](INSTALLATION.md) — Module installation

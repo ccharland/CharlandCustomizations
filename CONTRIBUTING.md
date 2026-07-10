@@ -240,8 +240,9 @@ All `.ps1`, `.psm1`, and `.psd1` files under `Scripts/` and `src/` must be Authe
 ### Editing Signed Files
 
 1. **Remove** the existing signature block before modifying the file.
-2. Make your changes.
-3. **Re-sign** through the build workflow:
+2. **Commit the unsigned version** — this makes your actual code changes visible in diffs rather than buried under signature block noise.
+3. Make your changes.
+4. **Re-sign** through the build workflow:
 
 ```powershell
 ./Scripts/Build-Module.ps1 -Install
@@ -310,12 +311,20 @@ Invoke-Pester -Path ./tests -Output Detailed
 
 ### Release Flow
 
-Releases are triggered by version tags (`v*.*.*`). The publish workflow validates that all PR quality gate checks passed on the tagged commit before publishing to PSGallery.
+Releases are triggered by version tags (`v*.*.*`). The publish workflow verifies that all PR quality gate checks passed on the tagged commit before publishing to PSGallery. You can also trigger it manually via `workflow_dispatch` with a dry-run option.
 
 ```powershell
 # Bump version, prepare changelog, build, and install
 ./Scripts/Build-Module.ps1 -BumpVersion Patch -PrepareRelease -Clean -Install
 ```
+
+Typical sequence:
+
+1. Bump version and update `docs/CHANGELOG.md`
+2. Re-sign source files (`./Scripts/Build-Module.ps1 -UpdateAllSignatures -Install`)
+3. Commit, merge to `main`
+4. Push a version tag (`git tag v0.5.0 && git push --tags`)
+5. The publish workflow runs automatically
 
 See `docs/BUILD-PROCESS.md` for the complete release workflow.
 
