@@ -146,32 +146,7 @@ Default gate scope:
 
 The gate validates `.ps1`, `.psm1`, and `.psd1` files and fails if any signature status is not `Valid`.
 
-## Git Hook Path Policy
-
-Install the local pre-commit hook after cloning or when `.githooks/pre-commit` changes:
-
-~~~powershell
-Install-CHARGitHook -Force
-~~~
-
-The hook keeps code work and repository automation work separated by branch type:
-
-- Normal code branches block staged changes under `.github/`, `.kiro/`, `.vscode/`, and `Scripts/`.
-- Workflow or infrastructure branches block staged changes under `src/` and `tests/`.
-- Branch names containing `workflow`, `workflows`, `infra`, or `infrastructure` are treated as workflow/infrastructure branches.
-- Branch names that use `ci` as a branch segment or token, such as `ci/update` or `chore-ci-config`, are also treated as workflow/infrastructure branches.
-
-For an exceptional mixed-scope commit, make the override deliberate and visible:
-
-```powershell
-$env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE = '1'
-git commit -m 'Explain why this mixed-scope commit is necessary'
-Remove-Item Env:\CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE
-```
-
-Use the override only when splitting the commit would make the history harder to review.
-
-### Manifest Compliance Gate
+## Manifest Compliance Gate
 
 Validate the module manifest before packaging/publishing:
 
@@ -262,7 +237,7 @@ git commit -m "Release v0.3.0"
 
 # 5. Create immutable release tag from manifest version/prerelease
 $manifest = Test-ModuleManifest ./src/CharlandCustomizations/CharlandCustomizations.psd1
-$releaseTag = $manifest.Version.ToString()
+$releaseTag = 'v' + $manifest.Version.ToString()
 if ($manifest.PrivateData.PSData.Prerelease) {
    $releaseTag = "$releaseTag-$($manifest.PrivateData.PSData.Prerelease)"
 }
@@ -324,3 +299,78 @@ Remove-Item $HOME/Documents/PowerShell/Modules/CharlandCustomizations -Recurse
 - Certificate must not be expired
 - Certificate must have private key
 - Use `-SkipSigning` to bypass
+
+## Distribution
+
+### API Key Storage
+
+The publish script looks for a PSGallery API key in this order:
+
+1. `PSGALLERY_API_KEY` environment variable
+2. `Get-Secret PSGalleryApiKey` (SecretManagement module)
+3. Interactive prompt
+
+Do not commit the API key to this repository, a module manifest, a script, or a tracked `.psd1` file.
+
+```powershell
+# Environment variable
+$env:PSGALLERY_API_KEY = 'paste-key-here'
+
+# SecretManagement
+Set-Secret -Name PSGalleryApiKey -Secret 'paste-key-here'
+```
+
+### Private Distribution
+
+If the module must stay private, publish to a private NuGet-compatible repository:
+
+- Azure Artifacts
+- JFrog Artifactory
+- ProGet
+- Nexus
+
+Register the feed once, then publish with `-Repository <FeedName>` instead of `PSGallery`.
+
+### Verifying Packages
+
+```powershell
+# Verify hash
+$hash = Get-FileHash build/packages/CharlandCustomizations-0.3.0.zip -Algorithm SHA256
+Get-Content build/packages/CharlandCustomizations-0.3.0.zip.sha256
+
+# Verify signatures after extraction
+Expand-Archive build/packages/CharlandCustomizations-0.3.0.zip -DestinationPath temp/
+Get-ChildItem temp/0.3.0/ -Include *.ps1,*.psm1,*.psd1 -Recurse | ForEach-Object {
+    $sig = Get-AuthenticodeSignature $_.FullName
+    [PSCustomObject]@{
+        File   = $_.Name
+        Status = $sig.Status
+        Signer = $sig.SignerCertificate.Subject
+    }
+} | Format-Table
+```
+
+### Consumer Installation
+
+#### From PowerShell Gallery
+
+```powershell
+Install-PSResource CharlandCustomizations -Repository PSGallery -Scope CurrentUser
+Import-Module CharlandCustomizations
+```
+
+#### From Package File
+
+```powershell
+# 1. Verify hash
+Get-FileHash CharlandCustomizations-0.3.0.zip -Algorithm SHA256
+Get-Content CharlandCustomizations-0.3.0.zip.sha256
+
+# 2. Extract and install
+Expand-Archive CharlandCustomizations-0.3.0.zip -DestinationPath .
+Copy-Item -Recurse 0.3.0 $HOME/Documents/PowerShell/Modules/CharlandCustomizations/
+
+# 3. Import and verify
+Import-Module CharlandCustomizations
+Get-Command -Module CharlandCustomizations
+```

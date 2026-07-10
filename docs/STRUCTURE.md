@@ -105,24 +105,4 @@ Local git hooks installed via `Install-CHARGitHook`. The `pre-commit` hook enfor
 
 Kiro IDE configuration including feature specifications and development steering files.
 
-## Module Loading
-
-The module loader (`CharlandCustomizations.psm1`) initializes script-based functions, while the module manifest controls nested modules and exports:
-
-1. Dot-sources all `.ps1` files in `Private/`
-2. Dot-sources all `.ps1` files in `Public/`
-3. Loads nested modules through the manifest's `NestedModules` entry
-4. Limits exported commands through the manifest's `FunctionsToExport` entry
-
-## Command Prefix
-
-The CHAR prefix is hardcoded directly into every public function name. The source code function names match exactly what users type at the command line:
-
-```powershell
-# Function name in source and at the command line are identical
-Find-CHARCFNStackError
-Get-CHAREC2SGInUse
-Clear-CHARAuthenticodeSignature
-```
-
-No `DefaultCommandPrefix` is used. This makes function names explicit and discoverable without relying on PowerShell's implicit prefix mechanism.
+For details on module loading, the CHAR prefix convention, and architecture rules, see [CONTRIBUTING.md](../CONTRIBUTING.md#module-architecture).
