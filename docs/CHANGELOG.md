@@ -40,8 +40,8 @@ All notable changes to the CharlandCustomizations module will be documented in t
 - Ruleset activation logs updated for publish branch additions (#73)
 ### Workflow Testing
 
-- Testing/validating workflow to trigger publish workflow on merge.
-  
+- Workflow test added to validate that merging triggers the publish workflow
+
 ## [0.4.0] - 2026-07-05
 
 ### Added
