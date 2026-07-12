@@ -16,18 +16,25 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run without pushing the tag (test mode)'
+        type: boolean
+        default: true
+
 permissions:
   contents: write
 
 jobs:
   tag-publish-merge:
     name: Tag publish/* merge (skips other merges)
-    # Only run when the triggering workflow succeeded AND the head commit came
-    # from a publish/* branch merge. We check the head branch of the triggering
-    # run's head_commit via the associated PR.
+    # Only run when: (a) workflow_dispatch (manual/dry-run), or
+    # (b) the triggering workflow_run succeeded from a push event.
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
 
     steps:
@@ -36,7 +43,15 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
-            // Find PRs merged at this commit
+            // For manual dispatch, always proceed (user is explicitly testing)
+            if (context.eventName === 'workflow_dispatch') {
+              core.setOutput('is_publish', 'true');
+              core.setOutput('merge_sha', context.sha);
+              core.info(`Manual dispatch: using HEAD sha ${context.sha}`);
+              return;
+            }
+
+            // For workflow_run: find PRs merged at this commit
             const sha = context.payload.workflow_run.head_sha;
             const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               owner: context.repo.owner,
@@ -174,6 +189,7 @@ jobs:
         if: steps.check-publish.outputs.is_publish == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -182,6 +198,11 @@ jobs:
           git config user.signingkey "$GPG_KEY_ID"
 
           git tag -s "$TAG" -m "Release $TAG"
-          git push origin "refs/tags/$TAG"
 
-          echo "::notice::Created signed tag $TAG — publish workflow will trigger."
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::warning::DRY RUN — would push tag $TAG but skipping."
+            echo "::notice::Tag $TAG created locally (not pushed). Workflow validated successfully."
+          else
+            git push origin "refs/tags/$TAG"
+            echo "::notice::Created signed tag $TAG — publish workflow will trigger."
+          fi
