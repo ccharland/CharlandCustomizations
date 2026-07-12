@@ -2,6 +2,43 @@
 
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
+## [0.4.1] - 2026-07-12
+
+### Added
+
+- `Invoke-CHARScriptMultiRegionProfile` — ambient credentials support: when no `-ProfileName` is specified and no stored profile exists, the function now detects and uses ambient credentials (AWS CloudShell, EC2 instance roles, ECS task roles, environment variables) via a `Get-STSCallerIdentity` probe (#77)
+- `Invoke-CHARScriptMultiRegionProfile` — `-SuppressEmptyResult` parameter to skip emitting placeholder objects for profile/region combinations that return no data (#76)
+- `publish/*` branch type added to branch path policy — scoped to release-prep paths only (`src/`, `docs/`, root files, `assets/`), blocked from `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, and `tests/` (#73)
+- `auto-tag-publish.yml` workflow — automatically creates a signed version tag when a `publish/*` PR merges to `main`, triggering the existing publish workflow (#73)
+- GPG tag signature verification step added to `publish.yml` — publish workflow now validates the tag was signed by the authorized release key before proceeding (#73)
+- `CONTRIBUTING.md` — comprehensive contributor guide covering prerequisites, branching, code standards, testing, signing, and release flow (#72)
+- `SECURITY.md` — security policy with private vulnerability reporting instructions (#72)
+- Architecture Decision Records (ADRs) added in `docs/architecture-decisions/` — documenting the CHAR prefix convention, branch path policy, Authenticode signing workflow, SSO config decision, AWS parameter splatting, quality gates philosophy, AI-assisted development approach, and publish branch design (#72)
+
+### Changed
+
+- `Invoke-CHARScriptMultiRegionProfile` — AWS session state restore now uses direct global variable assignment instead of `Set-AWSCredential -ProfileName`, fixing issues where `$StoredAWSCredentials` held a credential object rather than a profile name string (#77)
+- `Invoke-CHARScriptMultiRegionProfile` — `$PSDefaultParameterValues` injected into ScriptBlock no longer includes `*:ProfileName` when running with ambient credentials (#77)
+- `Invoke-CHARScriptMultiRegionProfile` — removed excessive `Write-Debug`/`Write-Verbose` noise from inner loops (#77)
+- README branch standards section condensed — detailed branching and path policy docs moved to `CONTRIBUTING.md` (#72)
+- `docs/BUILD-PROCESS.md` — consolidated distribution content from deleted `docs/DISTRIBUTION.md`; fixed release tag construction to include `v` prefix (#72)
+- `docs/AWS-Account-Audit.md` and `docs/CloudFormation-TemplateProcessing.md` — trimmed redundant prerequisites, installation, and contributing sections; added cross-reference links (#72)
+- `docs/STRUCTURE.md` — moved module-loading and prefix details to `CONTRIBUTING.md` (#72)
+- `Test-BranchPathPolicy.ps1` — added `publish/*` blocked paths and branch prefix entry; re-signed (#73)
+- Branch name ruleset updated to include `refs/heads/publish/*` (#73)
+- Pre-commit hook updated with `publish/*` branch classification and approved-prefix text (#73)
+- Module manifest version bumped to `0.4.1`
+
+### Removed
+
+- `docs/DISTRIBUTION.md` — content merged into `docs/BUILD-PROCESS.md` (#72)
+- `docs/parameter-reference.md` — raw parameter documentation removed (covered by `Get-Help` and `docs/NEW-FEATURE-PARAMETERS.md`) (#72)
+
+### Infrastructure
+
+- Kiro steering and development-standards documentation updated (#72)
+- Ruleset activation logs updated for publish branch additions (#73)
+
 ## [0.4.0] - 2026-07-05
 
 ### Added
