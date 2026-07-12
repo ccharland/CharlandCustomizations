@@ -1,12 +1,18 @@
 # Auto-tag when a publish/* branch merges to main.
 # Reads the module version from the manifest and creates a v-prefixed tag,
 # which triggers the existing publish.yml workflow.
+#
+# Triggered after Main Branch Status Checks complete successfully, ensuring
+# the tag ruleset requirement (all required checks green) is satisfied before
+# the tag push is attempted.
 
 name: Auto-Tag on Publish Merge
 
 on:
-  pull_request:
-    types: [closed]
+  workflow_run:
+    workflows: ["Main Branch Status Checks"]
+    types:
+      - completed
     branches:
       - main
 
@@ -16,18 +22,45 @@ permissions:
 jobs:
   auto-tag:
     name: Create version tag from manifest
+    # Only run when the triggering workflow succeeded AND the head commit came
+    # from a publish/* branch merge. We check the head branch of the triggering
+    # run's head_commit via the associated PR.
     if: >-
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'publish/')
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check if merge came from a publish branch
+        id: check-publish
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            // Find PRs merged at this commit
+            const sha = context.payload.workflow_run.head_sha;
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            const publishPR = prs.find(pr => pr.merged_at && pr.head.ref.startsWith('publish/'));
+            if (publishPR) {
+              core.setOutput('is_publish', 'true');
+              core.setOutput('merge_sha', sha);
+              core.info(`Found merged publish PR #${publishPR.number} from branch ${publishPR.head.ref}`);
+            } else {
+              core.setOutput('is_publish', 'false');
+              core.info('No merged publish/* PR found for this commit. Skipping.');
+            }
+
       - name: Checkout main at merge commit
+        if: steps.check-publish.outputs.is_publish == 'true'
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ steps.check-publish.outputs.merge_sha }}
 
       - name: Read version from manifest
+        if: steps.check-publish.outputs.is_publish == 'true'
         id: version
         shell: pwsh
         run: |
@@ -64,6 +97,7 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
 
       - name: Verify tag does not already exist
+        if: steps.check-publish.outputs.is_publish == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
@@ -74,6 +108,7 @@ jobs:
           echo "Tag $TAG is available."
 
       - name: Verify changelog has entry for this version
+        if: steps.check-publish.outputs.is_publish == 'true'
         shell: pwsh
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -92,6 +127,7 @@ jobs:
           Write-Host "Changelog entry found for version $version."
 
       - name: Import release tag signing key
+        if: steps.check-publish.outputs.is_publish == 'true'
         env:
           # Repository secrets must contain the armored private key and optional passphrase
           # for a GitHub-verified GPG key that is allowed to create signed release tags.
@@ -135,6 +171,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Create and push signed tag
+        if: steps.check-publish.outputs.is_publish == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
