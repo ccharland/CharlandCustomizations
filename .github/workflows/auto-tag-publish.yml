@@ -42,7 +42,7 @@ jobs:
               $manifest = Import-PowerShellDataFile -Path $manifestPath -ErrorAction Stop
           }
           catch {
-              Write-Error "Failed to parse manifest at $manifestPath: $_"
+              Write-Error "Failed to parse manifest at ${manifestPath}: $_"
               exit 1
           }
 
