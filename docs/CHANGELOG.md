@@ -38,6 +38,9 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - Kiro steering and development-standards documentation updated (#72)
 - Ruleset activation logs updated for publish branch additions (#73)
+### Workflow Testing
+
+- Workflow test added to validate that merging triggers the publish workflow
 
 ## [0.4.0] - 2026-07-05
 
