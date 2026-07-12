@@ -20,8 +20,8 @@ permissions:
   contents: write
 
 jobs:
-  auto-tag:
-    name: Create version tag from manifest
+  tag-publish-merge:
+    name: Tag publish/* merge (skips other merges)
     # Only run when the triggering workflow succeeded AND the head commit came
     # from a publish/* branch merge. We check the head branch of the triggering
     # run's head_commit via the associated PR.
