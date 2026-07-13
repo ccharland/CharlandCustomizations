@@ -1,33 +1,86 @@
 # Auto-tag when a publish/* branch merges to main.
 # Reads the module version from the manifest and creates a v-prefixed tag,
 # which triggers the existing publish.yml workflow.
+#
+# Triggered after Main Branch Status Checks complete successfully, ensuring
+# the tag ruleset requirement (all required checks green) is satisfied before
+# the tag push is attempted.
 
 name: Auto-Tag on Publish Merge
 
 on:
-  pull_request:
-    types: [closed]
+  workflow_run:
+    workflows: ["Main Branch Status Checks"]
+    types:
+      - completed
     branches:
       - main
 
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run without pushing the tag (test mode)'
+        type: boolean
+        default: true
+
 permissions:
   contents: write
-
+  pull-requests: read
 jobs:
-  auto-tag:
-    name: Create version tag from manifest
+  tag-publish-merge:
+    name: Tag publish/* merge (skips other merges)
+    # Only run when: (a) workflow_dispatch (manual/dry-run), or
+    # (b) the triggering workflow_run succeeded from a push event.
     if: >-
-      github.event.pull_request.merged == true &&
-      startsWith(github.event.pull_request.head.ref, 'publish/')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check if merge came from a publish branch
+        id: check-publish
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          script: |
+            // For manual dispatch, proceed only in dry-run mode to avoid bypassing publish/* gating
+            if (context.eventName === 'workflow_dispatch') {
+              const dryRun = String(context.payload.inputs?.dry_run ?? 'true') === 'true';
+              if (!dryRun) {
+                core.setFailed('Refusing to push tags from workflow_dispatch; use dry_run=true or trigger via a merged publish/* PR.');
+                return;
+              }
+              core.setOutput('is_publish', 'true');
+              core.setOutput('merge_sha', context.sha);
+              core.info(`Manual dispatch (dry-run): using HEAD sha ${context.sha}`);
+              return;
+            }
+
+            // For workflow_run: find PRs merged at this commit
+            const sha = context.payload.workflow_run.head_sha;
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            const publishPR = prs.find(pr => pr.merged_at && pr.head.ref.startsWith('publish/') && pr.merge_commit_sha === sha);
+            if (publishPR) {
+              core.setOutput('is_publish', 'true');
+              core.setOutput('merge_sha', sha);
+              core.info(`Found merged publish PR #${publishPR.number} from branch ${publishPR.head.ref}`);
+            } else {
+              core.setOutput('is_publish', 'false');
+              core.info('No merged publish/* PR found for this commit. Skipping.');
+            }
+
       - name: Checkout main at merge commit
+        if: steps.check-publish.outputs.is_publish == 'true'
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ steps.check-publish.outputs.merge_sha }}
 
       - name: Read version from manifest
+        if: steps.check-publish.outputs.is_publish == 'true'
         id: version
         shell: pwsh
         run: |
@@ -64,6 +117,7 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
 
       - name: Verify tag does not already exist
+        if: steps.check-publish.outputs.is_publish == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
@@ -74,6 +128,7 @@ jobs:
           echo "Tag $TAG is available."
 
       - name: Verify changelog has entry for this version
+        if: steps.check-publish.outputs.is_publish == 'true'
         shell: pwsh
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -92,6 +147,7 @@ jobs:
           Write-Host "Changelog entry found for version $version."
 
       - name: Import release tag signing key
+        if: steps.check-publish.outputs.is_publish == 'true'
         env:
           # Repository secrets must contain the armored private key and optional passphrase
           # for a GitHub-verified GPG key that is allowed to create signed release tags.
@@ -135,8 +191,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Create and push signed tag
+        if: steps.check-publish.outputs.is_publish == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -145,6 +203,11 @@ jobs:
           git config user.signingkey "$GPG_KEY_ID"
 
           git tag -s "$TAG" -m "Release $TAG"
-          git push origin "refs/tags/$TAG"
 
-          echo "::notice::Created signed tag $TAG — publish workflow will trigger."
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::warning::DRY RUN — would push tag $TAG but skipping."
+            echo "::notice::Tag $TAG created locally (not pushed). Workflow validated successfully."
+          else
+            git push origin "refs/tags/$TAG"
+            echo "::notice::Created signed tag $TAG — publish workflow will trigger."
+          fi
