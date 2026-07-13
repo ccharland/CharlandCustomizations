@@ -63,7 +63,7 @@ jobs:
               repo: context.repo.repo,
               commit_sha: sha,
             });
-            const publishPR = prs.find(pr => pr.merged_at && pr.head.ref.startsWith('publish/'));
+            const publishPR = prs.find(pr => pr.merged_at && pr.head.ref.startsWith('publish/') && pr.merge_commit_sha === sha);
             if (publishPR) {
               core.setOutput('is_publish', 'true');
               core.setOutput('merge_sha', sha);
