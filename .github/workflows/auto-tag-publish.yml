@@ -25,7 +25,7 @@ on:
 
 permissions:
   contents: write
-
+  pull-requests: read
 jobs:
   tag-publish-merge:
     name: Tag publish/* merge (skips other merges)
@@ -43,11 +43,16 @@ jobs:
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
-            // For manual dispatch, always proceed (user is explicitly testing)
+            // For manual dispatch, proceed only in dry-run mode to avoid bypassing publish/* gating
             if (context.eventName === 'workflow_dispatch') {
+              const dryRun = String(context.payload.inputs?.dry_run ?? 'true') === 'true';
+              if (!dryRun) {
+                core.setFailed('Refusing to push tags from workflow_dispatch; use dry_run=true or trigger via a merged publish/* PR.');
+                return;
+              }
               core.setOutput('is_publish', 'true');
               core.setOutput('merge_sha', context.sha);
-              core.info(`Manual dispatch: using HEAD sha ${context.sha}`);
+              core.info(`Manual dispatch (dry-run): using HEAD sha ${context.sha}`);
               return;
             }
 
@@ -189,7 +194,7 @@ jobs:
         if: steps.check-publish.outputs.is_publish == 'true'
         env:
           TAG: ${{ steps.version.outputs.tag }}
-          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
