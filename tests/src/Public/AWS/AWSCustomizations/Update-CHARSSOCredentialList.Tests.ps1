@@ -273,10 +273,10 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             }
 
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
-                -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -Force
+                -SSOSessionName 'ExampleOrg' -Region 'us-east-1' -Force
 
-            $script:capturedContent | Should -Match '\[sso-session CharlandOrg\]'
-            $script:capturedContent | Should -Match 'sso_session = CharlandOrg'
+            $script:capturedContent | Should -Match '\[sso-session ExampleOrg\]'
+            $script:capturedContent | Should -Match 'sso_session = ExampleOrg'
         }
 
         It 'Auto-derives SSOSessionName from StartUrl when not specified' {
@@ -285,11 +285,11 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
                 $script:capturedContent = $Value
             }
 
-            Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+            Update-CHARSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' `
                 -Region 'us-east-1' -Force
 
             # Should strip URL parts and non-alphanumeric chars
-            $script:capturedContent | Should -Match '\[sso-session d9067171d80\]'
+            $script:capturedContent | Should -Match '\[sso-session d1234567890\]'
         }
     }
 
