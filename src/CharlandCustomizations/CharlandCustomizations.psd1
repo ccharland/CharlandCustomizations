@@ -88,6 +88,7 @@ FunctionsToExport = @(
     'Get-CHARAWSAccountListOfDriftedResource',
     'Get-CHARAWSMFASession',
     'Get-CHARAWSObjectCount',
+    'Get-CHARAWSRegionFromIp',
     'Get-CHARDeprecatedLMFunctionList',
     'Get-CHAREC2Count',
     'Get-CHAREC2KeyTagNameStatus',
