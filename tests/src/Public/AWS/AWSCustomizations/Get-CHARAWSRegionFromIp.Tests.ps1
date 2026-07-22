@@ -1,5 +1,5 @@
 BeforeAll {
-    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Get-CHARAWSRegionFromIp.ps1"
+    . "$PSScriptRoot/../../../../../src/CharlandCustomizations/Public/Get-CHARAWSRegionFromIp.ps1"
 }
 
 Describe 'Get-CHARAWSRegionFromIp' -Tag 'Unit' {
