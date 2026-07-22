@@ -119,6 +119,10 @@ function Get-CHARAWSRegionFromIp {
 
     try {
         $parsedInputAddress = [System.Net.IPAddress]::Parse($IPAddress)
+        if ($parsedInputAddress.IsIPv4MappedToIPv6) {
+            $parsedInputAddress = $parsedInputAddress.MapToIPv4()
+        }
+
         $now = [DateTimeOffset]::UtcNow
         $cacheDuration = [TimeSpan]::FromHours(24)
 
