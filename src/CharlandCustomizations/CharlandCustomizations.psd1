@@ -67,6 +67,7 @@ PowerShellVersion = '7.2'
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 NestedModules = @(
+    'Public/AWS/ACM/ACM-Customizations.psm1',
     'Public/AWS/Audit/Audit-AWSAccount.psm1',
     'Public/AWS/AWSCustomizations.psm1',
     'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1',
@@ -80,6 +81,7 @@ FunctionsToExport = @(
     'Clear-CHARAuthenticodeSignature',
     'Clear-CHARS3Bucket',
     'Edit-CHARCFTTEbsVolume',
+    'Export-CHARPfxCertificatePem',
     'Find-CHARCFNStackError',
     'Find-CHAREC2DBSG',
     'Find-CHAROpenSecurityGroup',

@@ -10,7 +10,7 @@ BeforeAll {
     }
 
     . "$PSScriptRoot/../../../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
-    Import-Module "$PSScriptRoot/../../../../../src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1" -Force
+    Import-Module "$PSScriptRoot/../../../../../src/CharlandCustomizations/Public/AWS/ACM/ACM-Customizations.psm1" -Force
 
     $script:testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "Import-CHARPfxCertificateToACM_$([guid]::NewGuid().ToString('N'))"
     New-Item -ItemType Directory -Path $script:testRoot -Force | Out-Null
@@ -60,7 +60,7 @@ AfterAll {
 Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
 
     BeforeEach {
-        Mock Import-ACMCertificate -ModuleName AWSCustomizations {
+        Mock Import-ACMCertificate -ModuleName ACM-Customizations {
             [PSCustomObject]@{
                 CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/test-cert'
             }
@@ -74,7 +74,7 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
         $result.CertificateArn | Should -Be 'arn:aws:acm:us-east-1:123456789012:certificate/test-cert'
         $result.SourcePath | Should -Be (Resolve-Path $script:testPfxPath).ProviderPath
 
-        Should -Invoke Import-ACMCertificate -ModuleName AWSCustomizations -Times 1 -ParameterFilter {
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
             $Certificate -is [byte[]] -and
             $PrivateKey -is [byte[]] -and
             $Region -eq 'us-east-1' -and
@@ -86,7 +86,7 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
     It 'Supports WhatIf and does not call Import-ACMCertificate' {
         $null = Import-CHARPfxCertificateToACM -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -WhatIf
 
-        Should -Invoke Import-ACMCertificate -ModuleName AWSCustomizations -Times 0
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 0
     }
 
     It 'Throws when the PFX path does not exist' {
