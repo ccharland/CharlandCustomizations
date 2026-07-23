@@ -158,7 +158,9 @@ function Export-CHARPfxCertificatePem {
 
   process {
     try {
-      $material = & $script:GetPfxCertificateMaterial @PSBoundParameters
+      $material = & $script:GetPfxCertificateMaterial -PfxPath $PfxPath -Password $Password
+
+      Write-Warning 'The exported private key PEM file is not encrypted. Protect the output directory appropriately.'
 
       try {
         $resolvedOutputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputPath)

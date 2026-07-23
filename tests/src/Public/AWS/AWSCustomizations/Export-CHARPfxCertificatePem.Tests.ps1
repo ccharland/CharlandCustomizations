@@ -52,12 +52,15 @@ Describe 'Export-CHARPfxCertificatePem' -Tag 'Unit' {
     It 'Saves certificate, private key, and chain PEM files to the specified directory' {
         $pemOutputDir = Join-Path $script:testRoot 'pem-output'
 
-        $result = Export-CHARPfxCertificatePem -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -OutputPath $pemOutputDir
+        $warningMessages = $null
+        $result = Export-CHARPfxCertificatePem -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -OutputPath $pemOutputDir -WarningVariable warningMessages
 
         $result | Should -Not -BeNullOrEmpty
         $result.CertificateArn | Should -BeNullOrEmpty
         $result.PemOutputPath | Should -Be (Resolve-Path $pemOutputDir).ProviderPath
         @($result.SavedPemFiles).Count | Should -Be 3
+        @($warningMessages).Count | Should -BeGreaterThan 0
+        (@($warningMessages) -join "`n") | Should -Match 'private key pem file is not encrypted'
 
         $baseName = [System.IO.Path]::GetFileNameWithoutExtension($script:testPfxPath)
         $certificatePath = Join-Path $pemOutputDir "$baseName-certificate.pem"
@@ -75,10 +78,13 @@ Describe 'Export-CHARPfxCertificatePem' -Tag 'Unit' {
     It 'Supports WhatIf and does not write PEM files to disk' {
         $whatIfOutputDir = Join-Path $script:testRoot 'whatif-pem-output'
 
-        $result = Export-CHARPfxCertificatePem -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -OutputPath $whatIfOutputDir -WhatIf
+        $warningMessages = $null
+        $result = Export-CHARPfxCertificatePem -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -OutputPath $whatIfOutputDir -WhatIf -WarningVariable warningMessages
 
         $result.CertificateArn | Should -BeNullOrEmpty
         @($result.SavedPemFiles).Count | Should -Be 0
+        @($warningMessages).Count | Should -BeGreaterThan 0
+        (@($warningMessages) -join "`n") | Should -Match 'private key pem file is not encrypted'
         Test-Path $whatIfOutputDir | Should -BeFalse
     }
 
