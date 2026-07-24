@@ -87,6 +87,7 @@ FunctionsToExport = @(
     'Find-CHAROpenSecurityGroup',
     'Get-CHARAccountListFromProfile',
     'Get-CHARAllEC2Patch',
+    'Get-CHARACMCertificateInventory',
     'Get-CHARAWSAccountListOfDriftedResource',
     'Get-CHARAWSMFASession',
     'Get-CHARAWSObjectCount',
@@ -117,7 +118,10 @@ FunctionsToExport = @(
     'Test-CHARAuthenticodeSignature',
     'Test-CHARCFNStackFromDirectory',
     'Test-CHARCommitSignature',
+    'Test-CHARACMCertificate',
+    'Test-CHARPfxCertificate',
     'Update-CHARCFNStackFromDirectory',
+    'Update-CHARPfxCertificateInACM',
     'Update-CHARPowershell7',
     'Update-CHARSSOCredentialList',
     'Use-CHARAssumedRole'

@@ -13,31 +13,42 @@ BeforeAll {
     $script:testPasswordPlain = 'P@ssw0rd!'
     $script:testPasswordSecure = ConvertTo-SecureString -String $script:testPasswordPlain -AsPlainText -Force
 
-    $rsa = [System.Security.Cryptography.RSA]::Create(2048)
-    try {
-        $request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
-            'CN=unit-test.example',
-            $rsa,
-            [System.Security.Cryptography.HashAlgorithmName]::SHA256,
-            [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
-        )
-        $certificate = $request.CreateSelfSigned(
-            [DateTimeOffset]::UtcNow.AddDays(-1),
-            [DateTimeOffset]::UtcNow.AddDays(30)
-        )
-        try {
-            $pfxBytes = $certificate.Export(
-                [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx,
-                $script:testPasswordPlain
-            )
-            [System.IO.File]::WriteAllBytes($script:testPfxPath, $pfxBytes)
-        }
-        finally {
-            $certificate.Dispose()
+    if ($IsMacOS) {
+        $testKeyPath = Join-Path $script:testRoot 'unit-test.key'
+        $testCertPath = Join-Path $script:testRoot 'unit-test.crt'
+        & openssl req -x509 -newkey rsa:2048 -keyout $testKeyPath -out $testCertPath -days 30 -nodes -subj '/CN=unit-test.example' 2>$null
+        & openssl pkcs12 -export -legacy -out $script:testPfxPath -inkey $testKeyPath -in $testCertPath -passout "pass:$($script:testPasswordPlain)" 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw 'OpenSSL failed to create the macOS PFX test fixture.'
         }
     }
-    finally {
-        $rsa.Dispose()
+    else {
+        $rsa = [System.Security.Cryptography.RSA]::Create(2048)
+        try {
+            $request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new(
+                'CN=unit-test.example',
+                $rsa,
+                [System.Security.Cryptography.HashAlgorithmName]::SHA256,
+                [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
+            )
+            $certificate = $request.CreateSelfSigned(
+                [DateTimeOffset]::UtcNow.AddDays(-1),
+                [DateTimeOffset]::UtcNow.AddDays(30)
+            )
+            try {
+                $pfxBytes = $certificate.Export(
+                    [System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx,
+                    $script:testPasswordPlain
+                )
+                [System.IO.File]::WriteAllBytes($script:testPfxPath, $pfxBytes)
+            }
+            finally {
+                $certificate.Dispose()
+            }
+        }
+        finally {
+            $rsa.Dispose()
+        }
     }
 }
 
