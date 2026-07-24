@@ -45,11 +45,7 @@ $script:GetPfxCertificateMaterial = {
   }
 
   $passwordText = $null
-  if ($PSBoundParameters.ContainsKey('Password')) {
-    $passwordPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
-    try {
-      $passwordText = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPtr)
-    }
+if ($PSBoundParameters.ContainsKey('Password') -and $null -ne $Password) {
     finally {
       [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPtr)
     }

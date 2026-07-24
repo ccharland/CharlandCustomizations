@@ -3,6 +3,7 @@
     Tests for the ACM certificate inspection, validation, replacement, and inventory functions.
 #>
 BeforeAll {
+    $script:createdCommandStubs = @()
     foreach ($commandName in 'Import-ACMCertificate', 'Get-ACMCertificateDetail', 'Get-ACMCertificateList') {
         if (-not (Get-Command $commandName -ErrorAction SilentlyContinue)) {
             Set-Item -Path "function:global:$commandName" -Value { } -Force
