@@ -273,6 +273,10 @@ function Import-CHARPfxCertificateToACM {
   Re-imports (updates) an existing ACM certificate from a PFX file.
 #>
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'Credential',
+    Justification = 'Credential parameter accepts AWSCredentials object, not a password')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'NetworkCredential',
+    Justification = 'NetworkCredential typed as [object] for pipeline compatibility')]
   param(
     [Parameter(Mandatory)]
     [ValidateNotNullOrEmpty()]
@@ -486,6 +490,10 @@ function Test-CHARACMCertificate {
   Test-CHARACMCertificate -CertificateArn $certificateArn -Region us-east-1
 #>
   [CmdletBinding()]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'Credential',
+    Justification = 'Credential parameter accepts AWSCredentials object, not a password')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'NetworkCredential',
+    Justification = 'NetworkCredential typed as [object] for pipeline compatibility')]
   param(
     [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [ValidateNotNullOrEmpty()]
@@ -589,6 +597,10 @@ function Update-CHARPfxCertificateInACM {
   Update-CHARPfxCertificateInACM -CertificateArn $certificateArn -PfxPath .\renewed.pfx -Password (Read-Host -AsSecureString)
 #>
   [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'Credential',
+    Justification = 'Credential parameter accepts AWSCredentials object, not a password')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'NetworkCredential',
+    Justification = 'NetworkCredential typed as [object] for pipeline compatibility')]
   param(
     [Parameter(Mandatory, ValueFromPipelineByPropertyName)]
     [ValidateNotNullOrEmpty()]
@@ -660,6 +672,10 @@ function Get-CHARACMCertificateInventory {
   Get-CHARACMCertificateInventory -Region us-east-1 -ProfileName production
 #>
   [CmdletBinding()]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'Credential',
+    Justification = 'Credential parameter accepts AWSCredentials object, not a password')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', 'NetworkCredential',
+    Justification = 'NetworkCredential typed as [object] for pipeline compatibility')]
   param(
     [Parameter()]
     [string]$Region,
