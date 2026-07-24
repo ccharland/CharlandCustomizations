@@ -75,30 +75,55 @@ NestedModules = @('Public/AWS/ACM/ACM-Customizations.psm1',
                'Public/Git/GitCustomizations.psm1')
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Clear-CHARAuthenticodeSignature', 'Clear-CHARS3Bucket', 
-               'Edit-CHARCFTTEbsVolume', 'Export-CHARPfxCertificatePem', 
-               'Find-CHARCFNStackError', 'Find-CHAREC2DBSG', 
-               'Find-CHAROpenSecurityGroup', 'Get-CHARAccountListFromProfile', 
-               'Get-CHARAllEC2Patch', 'Get-CHARACMCertificateInventory', 
-               'Get-CHARAWSAccountListOfDriftedResource', 'Get-CHARAWSMFASession', 
-               'Get-CHARAWSObjectCount', 'Get-CHARAWSRegionFromIp', 
-               'Get-CHARDeprecatedLMFunctionList', 'Get-CHAREC2Count', 
-               'Get-CHAREC2KeyTagNameStatus', 'Get-CHAREC2SGInUse', 
-               'Get-CHAREC2SnapshotReport', 'Get-CHAREC2VolumeReport', 
-               'Get-CHARGlobalAuditReportItem', 'Get-CHARIAMAuditList', 
-               'Import-CHARPfxCertificateToACM', 'Install-CHARGitHook', 
-               'Install-CHARProfilesFromSource', 
-               'Invoke-CHARScriptMultiRegionProfile', 'New-CHARCFNStackDirectory', 
-               'New-CHARCFNStackFromDirectory', 'Out-CHARAWSNetworkingComponent', 
-               'Out-CHARAWSSupportingInfo', 'Out-CHARCFNStackInfo', 
-               'Remove-CHARExpiredAWSProfile', 'Set-CHARAuthenticodeSignature', 
-               'Set-CHARAWSEnv', 'Set-CHARAWSProfileWithMFA', 
-               'Start-CHAREC2RetryLoop', 'Start-CHARMultiStackDriftDetection', 
-               'Test-CHARAuthenticodeSignature', 'Test-CHARCFNStackFromDirectory', 
-               'Test-CHARCommitSignature', 'Test-CHARACMCertificate', 
-               'Test-CHARPfxCertificate', 'Update-CHARCFNStackFromDirectory', 
-               'Update-CHARPfxCertificateInACM', 'Update-CHARPowershell7', 
-               'Update-CHARSSOCredentialList', 'Use-CHARAssumedRole'
+FunctionsToExport = @(
+    'Clear-CHARAuthenticodeSignature'
+    'Clear-CHARS3Bucket'
+    'Edit-CHARCFTTEbsVolume'
+    'Export-CHARPfxCertificatePem'
+    'Find-CHARCFNStackError'
+    'Find-CHAREC2DBSG'
+    'Find-CHAROpenSecurityGroup'
+    'Get-CHARAccountListFromProfile'
+    'Get-CHARACMCertificateInventory'
+    'Get-CHARAllEC2Patch'
+    'Get-CHARAWSAccountListOfDriftedResource'
+    'Get-CHARAWSMFASession'
+    'Get-CHARAWSObjectCount'
+    'Get-CHARAWSRegionFromIp'
+    'Get-CHARDeprecatedLMFunctionList'
+    'Get-CHAREC2Count'
+    'Get-CHAREC2KeyTagNameStatus'
+    'Get-CHAREC2SGInUse'
+    'Get-CHAREC2SnapshotReport'
+    'Get-CHAREC2VolumeReport'
+    'Get-CHARGlobalAuditReportItem'
+    'Get-CHARIAMAuditList'
+    'Import-CHARPfxCertificateToACM'
+    'Install-CHARGitHook'
+    'Install-CHARProfilesFromSource'
+    'Invoke-CHARScriptMultiRegionProfile'
+    'New-CHARCFNStackDirectory'
+    'New-CHARCFNStackFromDirectory'
+    'Out-CHARAWSNetworkingComponent'
+    'Out-CHARAWSSupportingInfo'
+    'Out-CHARCFNStackInfo'
+    'Remove-CHARExpiredAWSProfile'
+    'Set-CHARAuthenticodeSignature'
+    'Set-CHARAWSEnv'
+    'Set-CHARAWSProfileWithMFA'
+    'Start-CHAREC2RetryLoop'
+    'Start-CHARMultiStackDriftDetection'
+    'Test-CHARACMCertificate'
+    'Test-CHARAuthenticodeSignature'
+    'Test-CHARCFNStackFromDirectory'
+    'Test-CHARCommitSignature'
+    'Test-CHARPfxCertificate'
+    'Update-CHARCFNStackFromDirectory'
+    'Update-CHARPfxCertificateInACM'
+    'Update-CHARPowershell7'
+    'Update-CHARSSOCredentialList'
+    'Use-CHARAssumedRole'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -107,7 +132,10 @@ CmdletsToExport = @()
 # VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'Set-CHARFileSignature', 'Test-CHARAuthenticodeSignatures'
+AliasesToExport = @(
+    'Set-CHARFileSignature'
+    'Test-CHARAuthenticodeSignatures'
+)
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -124,7 +152,13 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = 'Automation','AWS','CloudFormation','PowerShell','Utilities'
+        Tags = @(
+            'Automation'
+            'AWS'
+            'CloudFormation'
+            'PowerShell'
+            'Utilities'
+        )
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/ccharland/CharlandCustomizations/blob/main/LICENSE'
