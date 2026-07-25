@@ -35,7 +35,7 @@ function Test-CHARAWSCmdlet {
         Verifies Get-S3Object and installs the matching AWS.Tools.S3 module
         without prompting when necessary.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$true)]
     [OutputType([bool])]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
