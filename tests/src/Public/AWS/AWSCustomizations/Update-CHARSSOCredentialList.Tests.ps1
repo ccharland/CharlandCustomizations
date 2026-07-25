@@ -152,7 +152,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Write-Output -ModuleName $moduleName -Times 1 -ParameterFilter {
-                $InputObject -eq 'SSO device code: ABCD-1234'
+                $InputObject -eq 'SSO verification code: ABCD-1234'
             }
         }
 
