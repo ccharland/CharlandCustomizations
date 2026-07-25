@@ -115,6 +115,7 @@ FunctionsToExport = @(
     'Start-CHARMultiStackDriftDetection'
     'Test-CHARACMCertificate'
     'Test-CHARAuthenticodeSignature'
+    'Test-CHARAWSCmdlet'
     'Test-CHARCFNStackFromDirectory'
     'Test-CHARCommitSignature'
     'Test-CHARPfxCertificate'
@@ -192,4 +193,3 @@ PrivateData = @{
 # DefaultCommandPrefix = ''
 
 }
-

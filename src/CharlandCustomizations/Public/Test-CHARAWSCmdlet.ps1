@@ -1,0 +1,100 @@
+function Test-CHARAWSCmdlet {
+    <#
+    .SYNOPSIS
+        Verifies that an AWS Tools for PowerShell cmdlet is available.
+
+    .DESCRIPTION
+        Returns true when the requested AWS cmdlet is already available.
+
+        When the cmdlet is unavailable, the function searches the registered
+        PowerShell Gallery for the owning AWS.Tools module, prompts before
+        installing it, and installs the exact version used by the locally
+        available AWS.Tools.Common module. It then verifies that the cmdlet can
+        be discovered.
+
+        A terminating error is thrown if the cmdlet cannot be found, the user
+        declines installation, the required module cannot be installed, or the
+        cmdlet remains unavailable after installation.
+
+    .PARAMETER Name
+        The name of the AWS Tools for PowerShell cmdlet to verify.
+
+    .PARAMETER Force
+        Installs the required module without prompting. Use this for unattended
+        automation.
+
+    .EXAMPLE
+        Test-CHARAWSCmdlet -Name 'Get-EC2Instance'
+
+        Returns true when Get-EC2Instance is available. If it is not available,
+        prompts to install the matching AWS.Tools.EC2 module.
+
+    .EXAMPLE
+        Test-CHARAWSCmdlet -Name 'Get-S3Object' -Force
+
+        Verifies Get-S3Object and installs the matching AWS.Tools.S3 module
+        without prompting when necessary.
+    #>
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    [OutputType([bool])]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [ValidatePattern('^[A-Za-z]+-[A-Za-z0-9]+$')]
+        [string]$Name,
+
+        [switch]$Force
+    )
+
+    process {
+        if (Get-Command -Name $Name -CommandType Cmdlet, Function -ErrorAction SilentlyContinue) {
+            return $true
+        }
+
+        try {
+            $commonModule = Get-Module -Name 'AWS.Tools.Common' -ListAvailable |
+                Sort-Object -Property Version -Descending |
+                Select-Object -First 1
+
+            if (-not $commonModule) {
+                throw 'AWS.Tools.Common is not installed. Install AWS.Tools.Common before installing service modules.'
+            }
+
+            $commonVersion = $commonModule.Version.ToString()
+            $matchingCommands = @(
+                Find-Command -Name $Name -Repository 'PSGallery' -ErrorAction Stop |
+                    Where-Object {
+                        $_.ModuleName -like 'AWS.Tools.*' -and
+                        $_.ModuleName -ne 'AWS.Tools.Common'
+                    }
+            )
+
+            $moduleNames = @($matchingCommands.ModuleName | Sort-Object -Unique)
+            if ($moduleNames.Count -eq 0) {
+                throw "No AWS.Tools module containing cmdlet '$Name' was found in PSGallery."
+            }
+            if ($moduleNames.Count -gt 1) {
+                throw "More than one AWS.Tools module containing cmdlet '$Name' was found: $($moduleNames -join ', ')."
+            }
+
+            $moduleName = $moduleNames[0]
+            $null = Find-Module -Name $moduleName -Repository 'PSGallery' -RequiredVersion $commonVersion -ErrorAction Stop
+
+            $prompt = "Cmdlet '$Name' requires $moduleName version $commonVersion. Install it for the current user?"
+            if (-not $Force -and -not $PSCmdlet.ShouldContinue($prompt, 'Install AWS Tools module')) {
+                throw "Installation of $moduleName was declined. Cmdlet '$Name' is unavailable."
+            }
+
+            Install-Module -Name $moduleName -Repository 'PSGallery' -RequiredVersion $commonVersion -Scope CurrentUser -ErrorAction Stop
+
+            if (Get-Command -Name $Name -CommandType Cmdlet, Function -ErrorAction SilentlyContinue) {
+                return $true
+            }
+
+            throw "Cmdlet '$Name' is unavailable after installing $moduleName version $commonVersion."
+        }
+        catch {
+            $PSCmdlet.ThrowTerminatingError($_)
+        }
+    }
+}
