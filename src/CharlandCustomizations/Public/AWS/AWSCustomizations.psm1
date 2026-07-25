@@ -871,9 +871,14 @@ function Update-CHARSSOCredentialList {
 
     By default, NO temporary credentials (access key / secret key / session token) are
     persisted. Use -SaveCredentials to opt into saving them to the credentials file.
+    When -SaveCredentials is used, config-file updates are skipped and only credentials
+    are refreshed.
 
     Generated profile names follow the pattern:
-        [ProfilePrefix-]<RoleName>-<AccountId>
+      [ProfilePrefix-]<RoleName>-<AccountIdentifier>
+
+    By default, AccountIdentifier is the AWS account ID. Use -UseAccountName to use
+    account name instead.
 
 .PARAMETER StartUrl
     The AWS SSO start URL (e.g., https://d-1234567890.awsapps.com/start).
@@ -912,6 +917,12 @@ function Update-CHARSSOCredentialList {
 .PARAMETER SaveCredentials
     When specified, also retrieves temporary access key, secret key, and session token
     for each role and persists them to the credentials file. By default these are NOT saved.
+  When specified, this function does not modify the AWS config file.
+
+.PARAMETER UseAccountName
+  When specified, generated profile names use AWS account name instead of account ID.
+  Example: AWSAdministratorAccess-dev-account instead of
+  AWSAdministratorAccess-123456789012.
 
 .PARAMETER Force
     Skip confirmation prompts and overwrite existing profiles without asking.
@@ -962,7 +973,8 @@ function Update-CHARSSOCredentialList {
     Update-CHARSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' `
         -SSOSessionName 'ExampleOrg' -Region 'us-east-1' -SaveCredentials
 
-    Writes SSO profiles AND persists temporary access key/secret/token to ~/.aws/credentials.
+  Persists temporary access key/secret/token to ~/.aws/credentials.
+  Config-file updates are skipped in this mode.
 
 .EXAMPLE
     Update-CHARSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' `
@@ -1022,6 +1034,9 @@ function Update-CHARSSOCredentialList {
     [switch]$SaveCredentials,
 
     [Parameter()]
+    [switch]$UseAccountName,
+
+    [Parameter()]
     [switch]$Force,
 
     # AWS common parameters
@@ -1069,10 +1084,12 @@ function Update-CHARSSOCredentialList {
     }
 
     # Ensure config directory exists (skip if path has no parent, e.g., relative filename)
-    $configDir = Split-Path $ConfigFile -Parent
-    if ($configDir -and -not (Test-Path $configDir)) {
-      New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-      Write-Verbose "Created directory: $configDir"
+    if (-not $SaveCredentials) {
+      $configDir = Split-Path $ConfigFile -Parent
+      if ($configDir -and -not (Test-Path $configDir)) {
+        New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+        Write-Verbose "Created directory: $configDir"
+      }
     }
 
     # Ensure credentials directory exists when saving credentials
@@ -1102,7 +1119,9 @@ function Update-CHARSSOCredentialList {
       $client = Register-SSOOIDCClient -ClientName 'powershell-sso-updater' -ClientType 'public' @SsoParams @pseudoCreds
       $device = $client | Start-SSOOIDCDeviceAuthorization -StartUrl $StartUrl @SsoParams @pseudoCreds
 
+      $verificationCode = if ($device.UserCode) { $device.UserCode } else { $device.DeviceCode }
       Write-Verbose "Opening browser for SSO authentication..."
+      Write-Output "SSO device code: $verificationCode"
       Write-Output "Opening browser for SSO login. Please authorize the request."
       Start-Process $device.VerificationUriComplete
 
@@ -1161,16 +1180,18 @@ sso_region = $Region
 sso_registration_scopes = sso:account:access
 "@
 
-    # Read existing config or start fresh
     $configContent = ''
-    if (Test-Path $ConfigFile) {
-      $configContent = Get-Content $ConfigFile -Raw
-    }
+    if (-not $SaveCredentials) {
+      # Read existing config or start fresh
+      if (Test-Path $ConfigFile) {
+        $configContent = Get-Content $ConfigFile -Raw
+      }
 
-    # Only add sso-session block if not already present
-    if ($configContent -notmatch "(?m)^\[sso-session $([regex]::Escape($SSOSessionName))\]") {
-      $configContent = "$ssoSessionBlock`n`n$configContent"
-      Write-Verbose "Added [sso-session $SSOSessionName] block to config."
+      # Only add sso-session block if not already present
+      if ($configContent -notmatch "(?m)^\[sso-session $([regex]::Escape($SSOSessionName))\]") {
+        $configContent = "$ssoSessionBlock`n`n$configContent"
+        Write-Verbose "Added [sso-session $SSOSessionName] block to config."
+      }
     }
 
     # Process each account
@@ -1204,10 +1225,17 @@ sso_registration_scopes = sso:account:access
       }
 
       foreach ($role in $filteredRoles) {
+        $accountIdentifier = if ($UseAccountName -and -not [string]::IsNullOrWhiteSpace($account.AccountName)) {
+          $account.AccountName
+        }
+        else {
+          $account.AccountId
+        }
+
         $generatedProfileName = if ($ProfilePrefix) {
-          "$ProfilePrefix-$($role.RoleName)-$($account.AccountId)"
+          "$ProfilePrefix-$($role.RoleName)-$accountIdentifier"
         } else {
-          "$($role.RoleName)-$($account.AccountId)"
+          "$($role.RoleName)-$accountIdentifier"
         }
 
         $target = "Profile '$generatedProfileName' (Account: $($account.AccountId), Role: $($role.RoleName))"
@@ -1226,16 +1254,18 @@ sso_role_name = $($role.RoleName)
 region = $Region
 "@
 
-            # Replace existing profile block or append new one
-            $escapedSection = [regex]::Escape($profileSection)
-            if ($configContent -match "(?m)$escapedSection") {
-              $configContent = $configContent -replace "(?ms)$escapedSection.*?(?=\r?\n\[|\z)", "$profileBlock`n"
-            }
-            else {
-              if ($configContent -and -not $configContent.EndsWith("`n")) {
-                $configContent += "`n"
+            if (-not $SaveCredentials) {
+              # Replace existing profile block or append new one
+              $escapedSection = [regex]::Escape($profileSection)
+              if ($configContent -match "(?m)$escapedSection") {
+                $configContent = $configContent -replace "(?ms)$escapedSection.*?(?=\r?\n\[|\z)", "$profileBlock`n"
               }
-              $configContent += "$profileBlock`n`n"
+              else {
+                if ($configContent -and -not $configContent.EndsWith("`n")) {
+                  $configContent += "`n"
+                }
+                $configContent += "$profileBlock`n`n"
+              }
             }
 
             # Optionally save temporary credentials to credentials file
@@ -1265,9 +1295,11 @@ region = $Region
     }
 
     # Write config file
-    if ($Force -or $PSCmdlet.ShouldProcess("AWS config file '$ConfigFile'", 'Write updated SSO configuration')) {
-      Set-Content -Path $ConfigFile -Value $configContent.TrimEnd() -Encoding UTF8
-      Write-Verbose "Config written to: $ConfigFile"
+    if (-not $SaveCredentials) {
+      if ($Force -or $PSCmdlet.ShouldProcess("AWS config file '$ConfigFile'", 'Write updated SSO configuration')) {
+        Set-Content -Path $ConfigFile -Value $configContent.TrimEnd() -Encoding UTF8
+        Write-Verbose "Config written to: $ConfigFile"
+      }
     }
 
     # Summary
