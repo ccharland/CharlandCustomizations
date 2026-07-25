@@ -146,7 +146,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Should -Invoke Start-Process -ModuleName $moduleName -Times 1 -Exactly
         }
 
-        It 'Prints the SSO device code for user verification' {
+        It 'Prints the SSO verification code for user verification' {
             Mock Write-Output -ModuleName $moduleName {}
 
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force

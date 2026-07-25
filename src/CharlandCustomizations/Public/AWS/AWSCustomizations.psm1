@@ -917,8 +917,7 @@ function Update-CHARSSOCredentialList {
 .PARAMETER SaveCredentials
     When specified, also retrieves temporary access key, secret key, and session token
     for each role and persists them to the credentials file. By default these are NOT saved.
-  When specified, this function does not modify the AWS config file.
-
+    When specified, this function does not modify the AWS config file.
 .PARAMETER UseAccountName
   When specified, generated profile names use AWS account name instead of account ID.
   Example: AWSAdministratorAccess-dev-account instead of
@@ -1121,7 +1120,7 @@ function Update-CHARSSOCredentialList {
 
       $verificationCode = if ($device.UserCode) { $device.UserCode } else { $device.DeviceCode }
       Write-Verbose "Opening browser for SSO authentication..."
-      Write-Output "SSO device code: $verificationCode"
+      Write-Output "SSO verification code: $verificationCode"
       Write-Output "Opening browser for SSO login. Please authorize the request."
       Start-Process $device.VerificationUriComplete
 
@@ -1225,11 +1224,10 @@ sso_registration_scopes = sso:account:access
       }
 
       foreach ($role in $filteredRoles) {
-        $accountIdentifier = if ($UseAccountName -and -not [string]::IsNullOrWhiteSpace($account.AccountName)) {
-          $account.AccountName
-        }
-        else {
-          $account.AccountId
+        $accountIdentifier = $account.AccountId
+        if ($UseAccountName -and -not [string]::IsNullOrWhiteSpace($account.AccountName)) {
+          $sanitizedAccountName = (($account.AccountName -replace '[^a-zA-Z0-9\-]', '-') -replace '-{2,}', '-').Trim('-')
+          if ($sanitizedAccountName) { $accountIdentifier = $sanitizedAccountName }
         }
 
         $generatedProfileName = if ($ProfilePrefix) {
