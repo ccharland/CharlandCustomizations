@@ -95,6 +95,7 @@ function Get-MyAwsThing {
 Use this pattern for new AWS component functions in:
 
 - `src/CharlandCustomizations/Public/AWS/AWSCustomizations.psm1`
+- `src/CharlandCustomizations/Public/AWS/ACM/ACM-Customizations.psm1`
 - `src/CharlandCustomizations/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1`
 - `src/CharlandCustomizations/Public/AWS/Audit/Audit-AWSAccount.psm1`
 - `src/CharlandCustomizations/Public/AWS/S3/S3Customizations.psm1`

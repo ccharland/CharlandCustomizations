@@ -2,7 +2,11 @@
 
 ## 1. Purpose
 
-This plan defines the release testing required before publishing `CharlandCustomizations`. The goal is to verify that each public function and release-support script is documented, testable, and safe enough for local use, CI, and packaging.
+This plan defines testing standards and release requirements for `CharlandCustomizations`. All functions shipped before v0.5.0 have passing Pester tests and are not tracked here. This document focuses on:
+
+- Requirements for new functions and modules added going forward (see section 3.1)
+- The test inventory for v0.5.0 additions (see section 7)
+- Standards and patterns for maintaining quality as the module grows
 
 ## 2. Release Scope
 
@@ -35,6 +39,53 @@ Each function or script must have the following before release:
 3. Parameter contract coverage for any public parameters added or changed in the release.
 4. Error-path coverage for high-risk workflows such as AWS, signing, filesystem mutation, publishing, and git hook installation.
 5. Code quality pass with `./Scripts/Test-CodeQuality.ps1`.
+
+## 3.1 Adding a New Function or Module
+
+Every new public function or nested module added to the module must satisfy all of the following before the PR is ready for review. These requirements are a superset of the per-release checks in section 3 and are meant to be completed during development, not at release time.
+
+### Source files
+
+- Place the function in the correct subdirectory under `src/CharlandCustomizations/Public/`:
+  - Standalone functions: `Public/<FunctionName>.ps1`
+  - AWS domain functions: `Public/AWS/<Domain>/<Domain>-Customizations.psm1` (add to the existing nested module file for the domain, or create a new nested module under a new subdirectory)
+- Add or update `Export-ModuleMember -Function` in the nested module file where the function lives. The list must be sorted alphabetically, one entry per line.
+- Add the function name to `FunctionsToExport` in `CharlandCustomizations.psd1`. The array must be sorted alphabetically, one entry per line.
+- If a new nested module (`.psm1`) is created, add it to `NestedModules` in `CharlandCustomizations.psd1`.
+
+### Comment-based help
+
+- Every function must have a `.SYNOPSIS`, a `.DESCRIPTION`, `.PARAMETER` blocks for all non-obvious parameters, and at least one `.EXAMPLE`.
+- Run `Get-Help <FunctionName> -Full` after loading the module to confirm help is discoverable.
+
+### Pester tests
+
+- Create a test file that mirrors the source path under `tests/src/`:
+  - Standalone function: `tests/src/Public/<FunctionName>.Tests.ps1`
+  - Nested module function: `tests/src/Public/AWS/<Domain>/<ModuleName>/<FunctionName>.Tests.ps1`
+- The test file must have at least:
+  1. A help check (`Get-Help <FunctionName>` returns a synopsis and at least one example)
+  2. A happy-path behavior test with mocks for any AWS, filesystem, or external calls
+  3. An error-path test for the most likely failure mode
+  4. A `-WhatIf` / `ShouldProcess` test for any function that mutates state
+- Tag unit tests with `-Tag 'Unit'` and help tests with `-Tag 'Help'`.
+- Run `Invoke-Pester -Path ./tests/src -Output Detailed` to verify the new tests pass and do not break existing ones.
+
+### Manifest and quality gates
+
+- Run `./Scripts/Test-ManifestCompliance.ps1` — must pass with no errors.
+- Run `./Scripts/Test-HelpCompliance.ps1` — must pass with no errors.
+- Run `./Scripts/Test-CodeQuality.ps1` — PSScriptAnalyzer must report no errors.
+
+### Documentation
+
+- Add the function to section 6 (Risk-Based Priorities) of this file under the appropriate priority tier:
+  - **P1** — mutates credentials, ACM/AWS resources, files on disk, or runs across accounts
+  - **P2** — core workflow, installs/registers software, or interacts with external services
+  - **P3** — read-only audit, reporting, or informational output
+- Add a row to the Release Inventory Checklist in section 7 with status `Passing` once tests are green.
+- Add an example to `docs/QUICK-REFERENCE.md` under the relevant section.
+- If the function lives in a new nested module, add it to the source tree in `docs/STRUCTURE.md` and to the "When To Use It" list in `docs/NEW-FEATURE-PARAMETERS.md`.
 
 ## 4. Release Gates
 
@@ -89,20 +140,11 @@ Every bug fix must include at least one test that fails against the old behavior
 
 These commands can delete resources, modify credentials, publish artifacts, write signatures, or run across accounts. They require stronger testing before release.
 
-- `Clear-CHARS3Bucket`
-- `New-CHARCFNStackFromDirectory`
-- `Update-CHARCFNStackFromDirectory`
-- `Set-CHARAWSProfileWithMFA`
-- `Update-CHARSSOCredentialList`
-- `Remove-CHARExpiredAWSProfile`
-- `Use-CHARAssumedRole`
-- `Invoke-CHARScriptMultiRegionProfile`
-- `Set-CHARAuthenticodeSignature`
-- `Clear-CHARAuthenticodeSignature`
-- `Install-CHARGitHook`
-- `Scripts/Build-Module.ps1`
-- `Scripts/Publish-CharlandCustomizations.ps1`
-- `Scripts/Register-LocalRepository.ps1`
+Examples:
+
+- Clear-CHARS3Bucket
+- Invoke-CharScriptMultiRegionProfile
+- Write-CHARAuthenticodeSignature
 
 Minimum tests:
 
@@ -115,19 +157,12 @@ Minimum tests:
 
 ### Priority 2: Core Workflows
 
-- `Find-CHARCFNStackError`
-- `Get-CHARAWSMFASession`
-- `Set-CHARAWSEnv`
-- `Get-CHARAccountListFromProfile`
-- `Start-CHARMultiStackDriftDetection`
-- `Get-CHARAWSAccountListOfDriftedResource`
-- `Get-CHARAWSObjectCount`
-- `Test-CHARCFNStackFromDirectory`
-- `Out-CHARCFNStackInfo`
-- `New-CHARCFNStackDirectory`
-- `Edit-CHARCFTTEbsVolume`
-- `Test-CHARCommitSignature`
-- `Scripts/Test-CodeQuality.ps1`
+- These commands are part of the core module workflow, install or register software, or interact with external services. They require moderate testing before release.
+  Examples:
+
+- Install-CHARProfilesFromSource
+- Test-CHARAWSCmdlet
+- Update-CHARSSOCredentialList
 
 Minimum tests:
 
@@ -139,22 +174,7 @@ Minimum tests:
 
 ### Priority 3: Audit And Reporting
 
-- `Get-CHAREC2SGInUse`
-- `Get-CHAREC2Count`
-- `Find-CHAREC2DBSG`
-- `Out-CHARAWSSupportingInfo`
-- `Out-CHARAWSNetworkingComponent`
-- `Get-CHARIAMAuditList`
-- `Get-CHARGlobalAuditReportItem`
-- `Get-CHAREC2KeyTagNameStatus`
-- `Get-CHAREC2SnapshotReport`
-- `Get-CHAREC2VolumeReport`
-- `Start-CHAREC2RetryLoop`
-- `Find-CHAROpenSecurityGroup`
-- `Get-CHARAllEC2Patch`
-- `Get-CHARDeprecatedLMFunctionList`
-- `Install-CHARProfilesFromSource`
-- `Update-CHARPowershell7`
+- Functions that read state, report, or audit without mutating credentials or resources.
 
 Minimum tests:
 
@@ -164,58 +184,7 @@ Minimum tests:
 - Null/empty collection handling
 - Expected fields in output
 
-## 7. Release Inventory Checklist
-
-Track each item through the release. Use `Not Started`, `Help Ready`, `Test Ready`, `Passing`, or `Exception Approved`.
-
-| Item | Type | Priority | Help | Pester Test | Notes |
-| --- | --- | --- | --- | --- | --- |
-| `Install-CHARProfilesFromSource` | Function | P3 | Ready | Passing | Local profile copy behavior |
-| `Invoke-CHARScriptMultiRegionProfile` | Function | P1 | Ready | Passing | Multi-account execution contract |
-| `Set-CHARAuthenticodeSignature` | Function | P1 | Ready | Passing | Signing side effects |
-| `Update-CHARPowershell7` | Function | P3 | Ready | Passing | External install/update behavior |
-| `Clear-CHARAuthenticodeSignature` | Function | P1 | Ready | Passing | File mutation |
-| `Find-CHARCFNStackError` | Function | P2 | Ready | Passing | AWS mocks |
-| `Set-CHARAWSProfileWithMFA` | Function | P1 | Ready | Passing | Credential mutation |
-| `Get-CHARAWSMFASession` | Function | P2 | Ready | Passing | STS mocks |
-| `Start-CHARMultiStackDriftDetection` | Function | P2 | Ready | Passing | CloudFormation mocks |
-| `Get-CHARAWSAccountListOfDriftedResource` | Function | P2 | Ready | Passing | CloudFormation mocks |
-| `Get-CHARAWSObjectCount` | Function | P2 | Ready | Passing | AWS inventory mocks |
-| `Set-CHARAWSEnv` | Function | P2 | Ready | Passing | Environment mutation |
-| `Update-CHARSSOCredentialList` | Function | P1 | Ready | Passing | SSO credential file behavior |
-| `Remove-CHARExpiredAWSProfile` | Function | P1 | Ready | Passing | Credential file mutation |
-| `Get-CHARAccountListFromProfile` | Function | P2 | Ready | Passing | Local credential parsing |
-| `Use-CHARAssumedRole` | Function | P1 | Ready | Passing | Credential/environment mutation |
-| `New-CHARCFNStackFromDirectory` | Function | P1 | Ready | Passing | CloudFormation create flow |
-| `Test-CHARCFNStackFromDirectory` | Function | P2 | Ready | Passing | Template validation flow |
-| `Out-CHARCFNStackInfo` | Function | P2 | Ready | Passing | Output file/report behavior |
-| `Update-CHARCFNStackFromDirectory` | Function | P1 | Ready | Passing | CloudFormation update flow |
-| `New-CHARCFNStackDirectory` | Function | P2 | Ready | Passing | File creation |
-| `Edit-CHARCFTTEbsVolume` | Function | P2 | Ready | Passing | Template transformation |
-| `Clear-CHARS3Bucket` | Function | P1 | Ready | Passing | Destructive S3 behavior |
-| `Get-CHAREC2SGInUse` | Function | P3 | Ready | Passing | EC2/security group mocks |
-| `Get-CHAREC2Count` | Function | P3 | Ready | Passing | EC2 mocks |
-| `Find-CHAREC2DBSG` | Function | P3 | Ready | Passing | Security group analysis |
-| `Out-CHARAWSSupportingInfo` | Function | P3 | Ready | Passing | Report output |
-| `Out-CHARAWSNetworkingComponent` | Function | P3 | Ready | Passing | Report output |
-| `Get-CHARIAMAuditList` | Function | P3 | Ready | Passing | IAM mocks |
-| `Get-CHARGlobalAuditReportItem` | Function | P3 | Ready | Passing | Report item shape |
-| `Get-CHAREC2KeyTagNameStatus` | Function | P3 | Ready | Passing | Tag analysis |
-| `Get-CHAREC2SnapshotReport` | Function | P3 | Ready | Passing | Snapshot mocks |
-| `Get-CHAREC2VolumeReport` | Function | P3 | Ready | Passing | Volume mocks |
-| `Start-CHAREC2RetryLoop` | Function | P3 | Ready | Passing | Retry behavior |
-| `Find-CHAROpenSecurityGroup` | Function | P3 | Ready | Passing | Security group rules |
-| `Get-CHARAllEC2Patch` | Function | P3 | Ready | Passing | SSM patch compliance mocks |
-| `Get-CHARDeprecatedLMFunctionList` | Function | P3 | Ready | Passing | Lambda mocks |
-| `Test-CHARCommitSignature` | Function | P2 | Ready | Passing | Temporary git repo |
-| `Install-CHARGitHook` | Function | P1 | Ready | Passing | File mutation |
-| `New-AWSParamSplat` | Private Helper | P2 | Ready | Passing | Comprehensive tests in `tests/src/Private/New-AWSParamSplat.Tests.ps1` |
-| `Scripts/Build-Module.ps1` | Script | P1 | Ready | Passing | Build/package gate |
-| `Scripts/Publish-CharlandCustomizations.ps1` | Script | P1 | Ready | Passing | Publish flow with mocks |
-| `Scripts/Register-LocalRepository.ps1` | Script | P1 | Ready | Passing | Repository registration |
-| `Scripts/Test-CodeQuality.ps1` | Script | P2 | Ready | Passing | Analyzer invocation |
-
-## 8. Recommended Test Organization
+## 7. Recommended Test Organization
 
 Test files are organized under `tests/src/` to mirror the source structure under `src/CharlandCustomizations/`. Module-contained functions are grouped under a module-named folder.
 
@@ -236,6 +205,7 @@ Modern test organization (all under `tests/src/`):
 - `tests/src/Public/AWS/Audit/Audit-AWSAccount/*.Tests.ps1`
 - `tests/src/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing/*.Tests.ps1`
 - `tests/src/Public/AWS/Lambda/Lambda-Customizations/*.Tests.ps1`
+- `tests/src/Public/AWS/ACM/ACM-Customizations/*.Tests.ps1`
 - `tests/src/Public/AWS/S3/S3Customizations/*.Tests.ps1`
 - `tests/src/Public/Git/GitCustomizations/*.Tests.ps1`
 - `tests/src/Public/*.Tests.ps1` (standalone functions)
@@ -249,9 +219,9 @@ Recommended tags:
 - `Regression`
 - `Help`
 
-## 9. Test Design Patterns
+## 8. Test Design Patterns
 
-### 9.1 Help Coverage Pattern
+### 8.1 Help Coverage Pattern
 
 ```powershell
 It 'has discoverable comment-based help' -Tag 'Help' {
@@ -262,7 +232,7 @@ It 'has discoverable comment-based help' -Tag 'Help' {
 }
 ```
 
-### 9.2 Splatting Contract Pattern
+### 8.2 Splatting Contract Pattern
 
 ```powershell
 It 'passes AWS common parameters to downstream cmdlets' -Tag 'Unit' {
@@ -276,7 +246,7 @@ It 'passes AWS common parameters to downstream cmdlets' -Tag 'Unit' {
 }
 ```
 
-### 9.3 ShouldProcess Pattern
+### 8.3 ShouldProcess Pattern
 
 ```powershell
 It 'does not call destructive commands during WhatIf' -Tag 'Unit' {
@@ -288,7 +258,7 @@ It 'does not call destructive commands during WhatIf' -Tag 'Unit' {
 }
 ```
 
-### 9.4 Error Contract Pattern
+### 8.4 Error Contract Pattern
 
 ```powershell
 It 'throws a useful error when the downstream operation fails' -Tag 'Unit' {
@@ -299,7 +269,7 @@ It 'throws a useful error when the downstream operation fails' -Tag 'Unit' {
 }
 ```
 
-## 10. Execution Commands
+## 9. Execution Commands
 
 Run all SRC tests (module + function unit tests):
 
@@ -343,7 +313,7 @@ Run release build/package check:
 ./Scripts/Build-Module.ps1 -Clean -Package
 ```
 
-## 11. Release Test Sequence
+## 10. Release Test Sequence
 
 1. Refresh the release inventory from `CharlandCustomizations.psd1`.
 2. Verify comment-based help for every function and script.
@@ -357,7 +327,7 @@ Run release build/package check:
 10. Run opt-in integration tests only when sandbox credentials are configured.
 11. Record release exceptions, if any, before publishing.
 
-## 12. Definition Of Done
+## 11. Definition Of Done
 
 A function or script is release-ready when:
 
@@ -367,14 +337,3 @@ A function or script is release-ready when:
 4. Destructive behavior supports and tests `ShouldProcess` where applicable.
 5. Tests pass in a clean environment.
 6. Any skipped or deferred coverage has an explicit release exception.
-
-## 13. Immediate Next Targets
-
-Start with the release blockers:
-
-1. Add help tests for all exported functions and `Scripts/*.ps1`.
-2. Add unit tests for `Clear-CHARS3Bucket`.
-3. Add unit tests for `Set-CHARAuthenticodeSignature` and `Clear-CHARAuthenticodeSignature`.
-4. Add unit tests for `Invoke-CHARScriptMultiRegionProfile`.
-5. Add unit tests for `New-CHARCFNStackFromDirectory` and `Update-CHARCFNStackFromDirectory`.
-6. Add script-level tests for `Scripts/Build-Module.ps1` and `Scripts/Publish-CharlandCustomizations.ps1`.
