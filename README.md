@@ -8,6 +8,13 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 > **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
+## What's new in v0.5.0
+
+- **ACM certificate tools** — Import, validate, inspect, and replace ACM certificates from PFX files (`Import-CHARPfxCertificateToACM`, `Test-CHARACMCertificate`, `Get-CHARACMCertificateInventory`, and more)
+- **IP-to-region lookup** — `Get-CHARAWSRegionFromIp` resolves any IP to its AWS region using official AWS IP ranges
+- **AWS cmdlet dependency helper** — `Test-CHARAWSCmdlet` auto-discovers and installs missing AWS.Tools modules
+- **SSO credential enhancements** — `Update-CHARSSOCredentialList` now supports `-UseAccountName` for human-readable profile names and shows the verification code during auth
+
 ## Goals
 
 I'm using this project to learn how to build and maintain a PowerShell module, and to share useful functions that I create for my own work. The module is focused on AWS automation, but may include other utilities as well, especially around module deployment, code signing, and PowerShell Gallery publishing.
@@ -41,7 +48,14 @@ CharlandCustomizations/
     │   └── CharlandCustomizations/
     │       ├── CharlandCustomizations.psd1
     │       ├── CharlandCustomizations.psm1
-    │       ├── Public/          # Exported functions (AWS, Git, signing)
+    │       ├── Public/          # Exported functions
+    │       │   ├── AWS/
+    │       │   │   ├── ACM/     # Certificate Manager tools
+    │       │   │   ├── Audit/   # Account audit functions
+    │       │   │   ├── CloudFormation/
+    │       │   │   ├── Lambda/
+    │       │   │   └── S3/
+    │       │   └── Git/         # Git helpers
     │       └── Private/         # Internal helpers
     ├── tests/                   # Pester tests
     ├── build/                   # Build output (gitignored)
