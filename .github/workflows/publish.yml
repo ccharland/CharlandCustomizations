@@ -53,22 +53,38 @@ jobs:
           # Extract the expected key fingerprint
           EXPECTED_FPR=$(gpg --batch --list-keys --with-colons | awk -F: '/^fpr:/ { print $10; exit }')
           echo "Trusted key fingerprint: $EXPECTED_FPR"
-
-          # Verify the tag signature
+          
           TAG_NAME="${{ github.ref_name }}"
-          echo "Verifying signature on tag: $TAG_NAME"
+          TAG_REF="refs/tags/$TAG_NAME"
 
-          if ! git verify-tag "$TAG_NAME" 2>&1; then
-            echo "::error::Tag '$TAG_NAME' does not have a valid GPG signature. Only tags signed by the authorized release key can trigger a publish."
+          # Always refresh tags from origin in case local refs are stale/overwritten
+          git fetch --force --tags origin
+
+          # Ensure the ref exists and is an annotated tag object
+          OBJ_TYPE="$(git cat-file -t "$TAG_REF" 2>/dev/null || true)"
+          if [ -z "$OBJ_TYPE" ]; then
+            echo "::error::Tag ref '$TAG_REF' not found after fetch."
+            exit 1
+          fi
+          if [ "$OBJ_TYPE" != "tag" ]; then
+            echo "::error::'$TAG_REF' points to object type '$OBJ_TYPE' (expected 'tag'). This is a lightweight tag or ref mismatch."
+            git show-ref --tags | grep "$TAG_NAME" || true
             exit 1
           fi
 
-          # Confirm the signature was made by the expected key
-          SIGNER_FPR=$(git verify-tag --raw "$TAG_NAME" 2>&1 | grep '^\[GNUPG:\] VALIDSIG' | awk '{ print $3 }')
+          echo "Verifying signature on tag ref: $TAG_REF"
+          if ! git verify-tag "$TAG_REF"; then
+            echo "::error::Tag '$TAG_NAME' does not have a valid GPG signature."
+            exit 1
+          fi
+
+          SIGNER_FPR=$(git verify-tag --raw "$TAG_REF" 2>&1 | awk '/^\[GNUPG:\] VALIDSIG/ {print $3; exit}')
           if [ "$SIGNER_FPR" != "$EXPECTED_FPR" ]; then
-            echo "::error::Tag '$TAG_NAME' was signed by key $SIGNER_FPR, but expected $EXPECTED_FPR. Publish aborted."
+            echo "::error::Tag '$TAG_NAME' was signed by key $SIGNER_FPR, expected $EXPECTED_FPR."
             exit 1
           fi
+
+
 
           echo "✓ Tag '$TAG_NAME' is signed by the authorized release key ($EXPECTED_FPR)."
 
