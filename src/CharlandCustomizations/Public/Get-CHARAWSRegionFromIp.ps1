@@ -135,7 +135,21 @@ function Get-CHARAWSRegionFromIp {
             ($now - $script:AWSIPRangesCacheTimestamp) -ge $cacheDuration
         ) {
             try {
-                $script:AWSIPRangesCache = Invoke-RestMethod -Uri 'https://ip-ranges.amazonaws.com/ip-ranges.json' -Method Get -ErrorAction Stop
+                $response = Invoke-RestMethod -Uri 'https://ip-ranges.amazonaws.com/ip-ranges.json' -Method Get -ErrorAction Stop
+                $hasExpectedTopLevelProperties =
+                    ($response.PSObject.Properties.Name -contains 'prefixes') -and
+                    ($response.PSObject.Properties.Name -contains 'ipv6_prefixes')
+                $prefixesAreValidCollections =
+                    ($response.prefixes -is [System.Collections.IEnumerable]) -and
+                    ($response.ipv6_prefixes -is [System.Collections.IEnumerable]) -and
+                    -not ($response.prefixes -is [string]) -and
+                    -not ($response.ipv6_prefixes -is [string])
+
+                if (-not $response -or -not $hasExpectedTopLevelProperties -or -not $prefixesAreValidCollections) {
+                    throw 'Invalid response structure from AWS IP ranges endpoint.'
+                }
+
+                $script:AWSIPRangesCache = $response
                 $script:AWSIPRangesCacheTimestamp = $now
             }
             catch {
@@ -173,12 +187,11 @@ function Get-CHARAWSRegionFromIp {
         $PSCmdlet.ThrowTerminatingError($_)
     }
 }
-
 # SIG # Begin signature block
 # MIIs4wYJKoZIhvcNAQcCoIIs1DCCLNACAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAApqv8SYOqUEVt
-# tI7QO9R/yNtw5FNYFl2fM6mQekgEjqCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBCAMK1tYR/XmI1
+# NuQSqMn2CUpA8THatkVrP3O0Ny0xrKCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -385,34 +398,34 @@ function Get-CHARAWSRegionFromIp {
 # IExpbWl0ZWQxKzApBgNVBAMTIlNlY3RpZ28gUHVibGljIENvZGUgU2lnbmluZyBD
 # QSBSMzYCEBVU792hXgxFEa5eaR5wqcQwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYB
 # BAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAc
-# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgSFJz
-# kR8foKvCA+ct/Zc7RXE2ZJkiupD1coOIEhMNuWAwDQYJKoZIhvcNAQEBBQAEggIA
-# Sv97FhthSFGbyS2Xt41a5QUekF0AWWKdDslFiKyD9F+bPdvzP0txkFXU2V7VunZO
-# 9gemk6Oqlp0xwSKChNkHF5pMIyVUBEgyeIpIa6B9CwEn0ylVkVY0r8BFWgExqvAr
-# guDx9Q2YVK0BjD6skuIHJIPkYbku0rIha73iuGykhEBfyeMkTzjqATN4jIS5jo2y
-# lWAUXUk2Lw382MEyxYOTDzUxHbtCUbu5zXUBEY907xhTZsjC3yg0NuYRXMecPL0T
-# TmlXxI3A7FKmFXNIt0zYHZF64C3coGr8764OMaQ+jcInEEN9nfw7+3+medhCHBVR
-# wsfkJIlzX3sWEI+rfKFVIKZoY8l91BD6C5xrH3sEFqYLKxoSjaOniOLCeiOoupbg
-# sd55hQjAtfknOPRE5LewrI7yYIM02AvF+gwP1WcL3+VSm6s8G7tUAboq3BwrnJFl
-# koWOHSiUhypUhH3BjVVi5w9dui8dda09JNC6MgQuN40GgJJe4cgcRYBGHL/wQiDZ
-# 8e2SWW3YuUm7lt4sVJkm7FcMUDzjShT4oEbeqt0PmrI3jtQcQi+c+4daKQ7axtmQ
-# 6/FP+jC72oz/k6G2cSXAdJc3ia43mwwSPqmHpyb2UdZ83yMpTVoXb+iK9dFhIYc/
-# ccjrPTatERNNkAWHUYuNAhoDpC6VrFCIM1v9/HMjYoOhggMjMIIDHwYJKoZIhvcN
+# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgBT+g
+# aOheAGPT2zM+omY2BXAQp/K8FHlB2WdS2kNx07EwDQYJKoZIhvcNAQEBBQAEggIA
+# Yat6GKBM1/CXX6z94MaUg4iRJ/nepaP7kg/GqdedFg6PSN44ToKsjYdILDqWSNAI
+# qDRdtmE4lze7bziqDxoyywNlpwj3qUDofKk7c0/F5hwcTDT/D/qXqhPPCwBv7j2S
+# PIOEEI+86sUyEOltR5DFA66HBlVISTMrPjrw513M/kIUc8VB0JNLhku7aQ7BjKyv
+# soihEF6/tr7RPLzbxOx1fVSJJxxvDXhyqyO1IMSrrPcWzIbTY6DqZbClKu9CAil+
+# wnW0VlBEKtkTn2+Xfns9igRwqdxx8BzWCPwGhAf/AQU6w1AjRAqGZzXXIrNXCA8U
+# mbaxslYScJLSq5JQchq9ZHcVGnsZ73p0EXi8wnBexTnjPppfEre9/WLlJj8FZQfz
+# 2OVWA8hlpj0quryJwwyLdlQhlDCy04WplR4qujSSiQkmCb6/pvRV1Ne+G5R+gN1B
+# uu0vkfJJgt3ItEyo+z6tg8jDZeqgnJmw0ZhJxE1rik0Jy25yNq7Uh4YRifte+/vK
+# JzyJvB/GlIGo7ZzDBWhfIpARW2aKs+WIcKKee97ZUbjLS3qh9Fa0z6K9JdoHMEOz
+# /bpMtjiLMwm0hhrIgUjj9ktNbjYDh7A9/NBVHTBM5McXfFRc10Lz5xhCkZ4tQDrn
+# mBTE6AyiwAXrgNUZ9i/u4AP5fFE6Z0GXRCTADlJPiJihggMjMIIDHwYJKoZIhvcN
 # AQkGMYIDEDCCAwwCAQEwajBVMQswCQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGln
 # byBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5n
 # IENBIFI0MQIRAOdO8lWwUE/626bf9/yLoxUwDQYJYIZIAWUDBAICBQCgeTAYBgkq
-# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA3MjcwMTUy
-# MDdaMD8GCSqGSIb3DQEJBDEyBDAhjM4ve5kUnmDbLA2UJKJigzvkpZgCDRrH8Jx0
-# aIK4ZeYauAOS+Aqa3UotJJ1HDOMwDQYJKoZIhvcNAQEBBQAEggIAXY1lu0UlS0Y0
-# ZJn0E6DITzjKpQuEHQSjiOpF6dAGn9vxf7dYJ8tnKL5603zg4Qelk/PPnRVxLSjc
-# 0ws/00n8g/3+F2Tp2KZFjQ3+43XauQ1DQC223TSPOimcgUrYBvNLaBCsM5JiGpR5
-# r82iwk1ZoAJkz8pO1IzxVHUqfLW+jq4Bi0jEWrKQ7eR7I7Sh4Ymv/6Kt07HwitS8
-# uss0uEWwGPg1N9rsjHYoJeCwiGrYzl5s5c0Hgi/SfGATye8oDt+aijaXloG/rRyi
-# ubs59QOvPMfqTo+EcleH7HRmc+mvvteKbfXFVyPwlRS5mEoeW3Ub74Vv63WVwiZh
-# 4ZN1sxiAEvMRsDFW1JeRwfTr+XvfGytygAgGBP9THbRm35RMhOY9fbdliA5bkmCy
-# oClfuNPcj7fo50Nxzs7uNzDe48naitQjmLEZM8izzGfNY8PNDPgcZxZmkPY2l5Sv
-# EdmaSo9kvj4e/p+pC5w0AkN5s0R38J4MzVp9idhQpSIvuB2Zv0vVTK1sDtk+gGlp
-# hZAJmhy2QK1itGpQTcuzCcFVe4scxlkIJobWjkTMc1JzMVFBpcsWyKsmN+l+VLWX
-# uPTMwbLDYQZ16XbBWE/TqpL+dl91b648xsoDIHGStJOQgUEq9oLMfIqNM04zAemk
-# 7w/8nFQKu1bIbZya3JwcEREdTHjpXFs=
+# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA3MjcxMTM5
+# NDZaMD8GCSqGSIb3DQEJBDEyBDCjVZczVqh1Ld1B/o0gALHKojvISIF6WU9TT/EF
+# UD0arkgqYC2/uvDfRw/e7PSoJFUwDQYJKoZIhvcNAQEBBQAEggIAYURZHcWfL8sZ
+# fnv0hNNg23Cfojy4hLy9OOohb2SA9BGWguKc+8byn+74CoW9rIzTz1e/6iNr1kk2
+# Ppivr8kD4E+GTTYwPngeFTz2a0nUXCoOSCMtFwg/W7X61T2I0Rv2UscQW2giPoyJ
+# tIdmiewSlZcP+nw2uqxCLGFYRsifUUHa3HHESHThxawjErAWxkpvtmdHywJ1ZsyG
+# OEiyhPNJQl7jsUzIUmh57aLvt+AqijHrpa0UFDALAfiyBfcu4dqcckyINpVjKTz8
+# bd/PbBOIVQM5PjkVodrkGdScNohg9ZaAl5qZ/nIGFUrDGqUmVdcFl1X41EvovA2F
+# aaI8uszp7B3IoXs0ky3t5bHUHwYyD9vUy30lMTQOJiQIk8VyeRQd9pzcLiOKuIFY
+# CG63u4XizMzb8Ifbtr7UlXd6B/vSqepAps9O8g2CkW5IDW5XWH0CoUv3zJsURFRW
+# EfmW9TZU88IXdPmAWtgts+3xcziRT03KOey4jnt6v+Ab4VLHKq0hcpywAqaKoeVP
+# Qxc4nLk0Yr2B4T44ew+cIp8mnRljH/npiFqi4HEaVKzk4AFI8R3dS40TcJ3Jg860
+# YHvgQ0z9jrIqIY41POvPReAWhElV+FFouGiAcGmXoQXvzksPLaDlFKxdD0qp29tv
+# BnWJmUaEsBrwRdUXMUukDAE4e9U8YFA=
 # SIG # End signature block

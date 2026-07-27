@@ -112,7 +112,7 @@ Import-CHARPfxCertificateToACM -PfxPath ./cert.pfx -Region us-east-1
 Update-CHARPfxCertificateInACM -PfxPath ./renewed.pfx -CertificateArn arn:aws:acm:us-east-1:123456789012:certificate/... -Region us-east-1
 
 # Export PFX to PEM files (cert, key, chain)
-Export-CHARPfxCertificatePem -PfxPath ./cert.pfx -OutputDirectory ./pem-output
+Export-CHARPfxCertificatePem -PfxPath ./cert.pfx -OutputPath ./pem-output
 
 # Inspect a local PFX file
 Test-CHARPfxCertificate -PfxPath ./cert.pfx
@@ -131,7 +131,7 @@ Get-CHARACMCertificateInventory -Region us-east-1
 Get-CHARAWSRegionFromIp -IpAddress 52.94.76.1
 
 # Check if an AWS Tools cmdlet is available, and install if missing
-Test-CHARAWSCmdlet -CmdletName Get-ACMCertificate
+Test-CHARAWSCmdlet -Name Get-ACMCertificate
 ```
 
 ### Git Utilities

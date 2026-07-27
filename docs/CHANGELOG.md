@@ -27,7 +27,6 @@ All notable changes to the CharlandCustomizations module will be documented in t
 - Module manifest `NestedModules` updated to include `Public/AWS/ACM/ACM-Customizations.psm1`
 - Module manifest `FunctionsToExport` expanded with 8 new functions (48 total exported functions)
 - Module manifest arrays reformatted to omit trailing commas (PowerShell style preference)
-- Authenticode signature blocks stripped from source files (will be re-signed for release)
 - Module manifest version bumped to `0.5.0`
 
 ### Security
@@ -70,6 +69,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - Kiro steering and development-standards documentation updated (#72)
 - Ruleset activation logs updated for publish branch additions (#73)
+
 ### Workflow Testing
 
 - Workflow test added to validate that merging triggers the publish workflow
@@ -146,6 +146,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - `Invoke-CCScriptMultiAccountRegion` region iteration — AWS session globals are now properly saved/restored in the `finally` block, preventing state leakage between iterations
 - `Edit-CCCFTTEbsVolume` property-based test reliability — mock re-registration per iteration replaced with script-scoped variable pattern to avoid Pester overhead
+
 ## [0.3.0] - 2026-06-11
 
 ### Added

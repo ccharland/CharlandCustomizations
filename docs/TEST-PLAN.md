@@ -143,8 +143,8 @@ These commands can delete resources, modify credentials, publish artifacts, writ
 Examples:
 
 - Clear-CHARS3Bucket
-- Invoke-CharScriptMultiRegionProfile
-- Write-CHARAuthenticodeSignature
+- Invoke-CHARScriptMultiRegionProfile
+- Set-CHARAuthenticodeSignature
 
 Minimum tests:
 

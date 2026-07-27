@@ -28,16 +28,16 @@ CharlandCustomizations/
 │       │   └── CFNPrivateFunctions.ps1
 │       └── Public/                      # Exported functions
 │           ├── Clear-CHARAuthenticodeSignature.ps1
-            ├── Get-CHARAWSRegionFromIp.ps1
-            ├── Install-CHARProfilesFromSource.ps1
-            ├── Invoke-CHARScriptMultiRegionProfile.ps1
-            ├── Set-CHARAuthenticodeSignature.ps1
-            ├── Test-CHARAuthenticodeSignature.ps1
-            ├── Test-CHARAWSCmdlet.ps1
-            ├── Update-CHARPowershell7.ps1
-            ├── AWS/
-            │   ├── AWSCustomizations.psm1
-            │   ├── ACM/ACM-Customizations.psm1
+│           ├── Get-CHARAWSRegionFromIp.ps1
+│           ├── Install-CHARProfilesFromSource.ps1
+│           ├── Invoke-CHARScriptMultiRegionProfile.ps1
+│           ├── Set-CHARAuthenticodeSignature.ps1
+│           ├── Test-CHARAuthenticodeSignature.ps1
+│           ├── Test-CHARAWSCmdlet.ps1
+│           ├── Update-CHARPowershell7.ps1
+│           ├── AWS/
+│           │   ├── AWSCustomizations.psm1
+│           │   ├── Audit/Audit-AWSAccount.psm1
 │           │   ├── Audit/Audit-AWSAccount.psm1
 │           │   ├── CloudFormation/CloudFormation-TemplateProcessing.psm1
 │           │   ├── Lambda/Lambda-Customizations.psm1
