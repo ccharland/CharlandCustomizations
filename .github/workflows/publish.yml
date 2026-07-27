@@ -68,7 +68,7 @@ jobs:
           fi
           if [ "$OBJ_TYPE" != "tag" ]; then
             echo "::error::'$TAG_REF' points to object type '$OBJ_TYPE' (expected 'tag'). This is a lightweight tag or ref mismatch."
-            git show-ref --tags | grep "$TAG_NAME" || true
+            git show-ref --tags | grep -F -- "$TAG_REF" || true
             exit 1
           fi
 
