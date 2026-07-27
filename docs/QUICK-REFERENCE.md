@@ -102,6 +102,38 @@ Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1
 Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
 ```
 
+### ACM Certificate Management
+
+```powershell
+# Import a PFX file into ACM
+Import-CHARPfxCertificateToACM -PfxPath ./cert.pfx -Region us-east-1
+
+# Replace an existing ACM certificate with a renewed PFX
+Update-CHARPfxCertificateInACM -PfxPath ./renewed.pfx -CertificateArn arn:aws:acm:us-east-1:123456789012:certificate/... -Region us-east-1
+
+# Export PFX to PEM files (cert, key, chain)
+Export-CHARPfxCertificatePem -PfxPath ./cert.pfx -OutputPath ./pem-output
+
+# Inspect a local PFX file
+Test-CHARPfxCertificate -PfxPath ./cert.pfx
+
+# Check an ACM certificate's status and expiration
+Test-CHARACMCertificate -CertificateArn arn:aws:acm:us-east-1:123456789012:certificate/... -Region us-east-1
+
+# List all ACM certificates in a region
+Get-CHARACMCertificateInventory -Region us-east-1
+```
+
+### IP and Utility Helpers
+
+```powershell
+# Resolve an IP address to its AWS region
+Get-CHARAWSRegionFromIp -IpAddress 52.94.76.1
+
+# Check if an AWS Tools cmdlet is available, and install if missing
+Test-CHARAWSCmdlet -Name Get-ACMCertificate
+```
+
 ### Git Utilities
 
 ```powershell

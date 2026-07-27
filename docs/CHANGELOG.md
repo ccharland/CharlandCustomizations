@@ -2,6 +2,37 @@
 
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
+## [0.5.0] - 2026-07-26
+
+### Added
+
+- `Get-CHARAWSRegionFromIp` — resolves an IPv4 or IPv6 address to the matching AWS region using the official AWS IP ranges dataset, with 24-hour in-memory caching (#90)
+- `Test-CHARAWSCmdlet` — verifies an AWS Tools cmdlet is available; if missing, discovers the owning module from PSGallery, prompts before installing it at the matching AWS.Tools.Common version, and confirms availability (#95)
+- `Export-CHARPfxCertificatePem` — converts PFX/P12 files to PEM format (certificate, private key, chain) and writes them to disk (#92)
+- `Import-CHARPfxCertificateToACM` — imports PFX certificate material directly into AWS Certificate Manager (#92)
+- `Update-CHARPfxCertificateInACM` — replaces an existing ACM certificate with renewed PFX material, preserving the ARN and service associations (#92)
+- `Test-CHARPfxCertificate` — inspects a local PFX/P12 file and reports identity, validity, private-key, and chain-validation status (#92)
+- `Test-CHARACMCertificate` — validates the status and remaining lifetime of an ACM certificate (#92)
+- `Get-CHARACMCertificateInventory` — lists ACM certificates in a region with detailed status, expiration, and service-association data (#92)
+- `ACM-Customizations.psm1` nested module added under `Public/AWS/ACM/` (#92)
+- `Update-CHARSSOCredentialList` — `-UseAccountName` parameter to generate profile names using AWS account name instead of account ID (#96)
+- `Update-CHARSSOCredentialList` — SSO verification code now printed to output for user confirmation during device authorization flow (#96)
+- `tests/Run-PesterFailedOnly.ps1` helper script for running Pester and displaying only failures
+- Comprehensive Pester test coverage for all new functions
+
+### Changed
+
+- `Update-CHARSSOCredentialList` — `-SaveCredentials` mode no longer writes to the AWS config file; only credential-file updates occur (#96)
+- `Update-CHARSSOCredentialList` — inline help examples sanitized to use generic placeholder URLs (`d-1234567890.awsapps.com`) and account IDs (`123456789012`) (#89)
+- Module manifest `NestedModules` updated to include `Public/AWS/ACM/ACM-Customizations.psm1`
+- Module manifest `FunctionsToExport` expanded with 8 new functions (48 total exported functions)
+- Module manifest arrays reformatted to omit trailing commas (PowerShell style preference)
+- Module manifest version bumped to `0.5.0`
+
+### Security
+
+- Removed real SSO portal URLs and account IDs from inline help examples (#89)
+
 ## [0.4.1] - 2026-07-12
 
 ### Added
@@ -38,6 +69,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - Kiro steering and development-standards documentation updated (#72)
 - Ruleset activation logs updated for publish branch additions (#73)
+
 ### Workflow Testing
 
 - Workflow test added to validate that merging triggers the publish workflow
@@ -114,6 +146,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - `Invoke-CCScriptMultiAccountRegion` region iteration — AWS session globals are now properly saved/restored in the `finally` block, preventing state leakage between iterations
 - `Edit-CCCFTTEbsVolume` property-based test reliability — mock re-registration per iteration replaced with script-scoped variable pattern to avoid Pester overhead
+
 ## [0.3.0] - 2026-06-11
 
 ### Added
