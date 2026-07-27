@@ -205,7 +205,6 @@ Modern test organization (all under `tests/src/`):
 - `tests/src/Public/AWS/Audit/Audit-AWSAccount/*.Tests.ps1`
 - `tests/src/Public/AWS/CloudFormation/CloudFormation-TemplateProcessing/*.Tests.ps1`
 - `tests/src/Public/AWS/Lambda/Lambda-Customizations/*.Tests.ps1`
-- `tests/src/Public/AWS/ACM/ACM-Customizations/*.Tests.ps1`
 - `tests/src/Public/AWS/S3/S3Customizations/*.Tests.ps1`
 - `tests/src/Public/Git/GitCustomizations/*.Tests.ps1`
 - `tests/src/Public/*.Tests.ps1` (standalone functions)
