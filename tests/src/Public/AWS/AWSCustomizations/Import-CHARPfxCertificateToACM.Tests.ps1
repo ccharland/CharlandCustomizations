@@ -71,6 +71,7 @@ AfterAll {
 Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
 
     BeforeEach {
+        Mock Test-CHARAWSCmdlet { $true } -ModuleName ACM-Customizations
         Mock Import-ACMCertificate -ModuleName ACM-Customizations {
             [PSCustomObject]@{
                 CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/test-cert'
@@ -91,6 +92,9 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
             $Region -eq 'us-east-1' -and
             $Certificate.Length -gt 0 -and
             $PrivateKey.Length -gt 0
+        }
+        Should -Invoke Test-CHARAWSCmdlet -ModuleName ACM-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'Import-ACMCertificate'
         }
     }
 
@@ -114,5 +118,20 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
         {
             Import-CHARPfxCertificateToACM -PfxPath (Join-Path $script:testRoot 'missing-file.pfx')
         } | Should -Throw '*PFX file not found*'
+
+        Should -Invoke Test-CHARAWSCmdlet -ModuleName ACM-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'Import-ACMCertificate'
+        }
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 0 -Exactly
+    }
+
+    It 'Stops before reading the PFX when the ACM module is unavailable' {
+        Mock Test-CHARAWSCmdlet { throw 'ACM dependency unavailable' } -ModuleName ACM-Customizations
+
+        {
+            Import-CHARPfxCertificateToACM -PfxPath (Join-Path $script:testRoot 'missing-file.pfx')
+        } | Should -Throw '*ACM dependency unavailable*'
+
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 0 -Exactly
     }
 }

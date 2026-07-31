@@ -130,6 +130,7 @@ src/CharlandCustomizations/
 3. **Nested module boundaries** — Each `.psm1` under `Public/` is a domain boundary. Don't move functions between nested modules without updating the manifest.
 4. **Manifest alignment** — When adding or removing exported functions, update `FunctionsToExport` in `CharlandCustomizations.psd1`. Keep the array sorted alphabetically, one entry per line.
 5. **AWS common parameters** — Functions calling AWS cmdlets must accept the standard parameter set (`Region`, `ProfileName`, `AccessKey`, `SecretKey`, `SessionToken`, `Credential`, `ProfileLocation`, `EndpointUrl`) and splat them using `New-AWSParamSplat`.
+6. **AWS cmdlet availability** — Before making AWS calls, validate the first cmdlet used from each AWS Tools service module with `Test-CHARAWSCmdlet`. One representative check per service module is sufficient; the root module already validates `AWS.Tools.Common`.
 
 ### Adding a New Function
 

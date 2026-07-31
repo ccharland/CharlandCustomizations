@@ -25,6 +25,7 @@ Describe 'Get-CHARACMCertificateInventory export' -Tag 'Unit' {
 
 Describe 'Get-CHARACMCertificateInventory' -Tag 'Unit' {
     BeforeEach {
+        Mock Test-CHARAWSCmdlet { $true } -ModuleName ACM-Customizations
         Mock Get-ACMCertificateList -ModuleName ACM-Customizations {
             @(
                 [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/one' }
@@ -56,5 +57,8 @@ Describe 'Get-CHARACMCertificateInventory' -Tag 'Unit' {
 
         Should -Invoke Get-ACMCertificateList -ModuleName ACM-Customizations -Times 1
         Should -Invoke Get-ACMCertificateDetail -ModuleName ACM-Customizations -Times 2
+        Should -Invoke Test-CHARAWSCmdlet -ModuleName ACM-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'Get-ACMCertificateList'
+        }
     }
 }

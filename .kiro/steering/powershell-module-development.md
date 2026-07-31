@@ -225,6 +225,28 @@ The helper automatically filters `$PSBoundParameters` to include only the recogn
 - Include all 8 AWS common parameters in the param block for consistency
 - This applies to all module functions that call AWS cmdlets
 
+## AWS Cmdlet Availability
+
+AWS-facing functions must validate that their required AWS Tools service modules are available before making API calls. Pass the first cmdlet used from each distinct service module to `Test-CHARAWSCmdlet`:
+
+```powershell
+begin {
+    @(
+        'Get-EC2Instance',
+        'Get-S3Bucket'
+    ) | Test-CHARAWSCmdlet | Out-Null
+
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+}
+```
+
+- Check one representative cmdlet per AWS Tools service module, not every cmdlet from that module.
+- Use the first cmdlet the function invokes from that service module.
+- Perform the checks before the first AWS API call.
+- Do not pass `-Force` implicitly. Unattended callers can preflight dependencies with `Test-CHARAWSCmdlet -Force` before invoking the function.
+- Do not add redundant checks for `AWS.Tools.Common`; the root module loader validates that prerequisite.
+- A wrapper that only calls another CHAR function can rely on the called function's dependency checks.
+
 ### Backward Compatibility
 
 The old two-parameter pattern (just `-Region` and `-ProfileName` with manual hashtable construction) still works for simple cases. However, the `New-AWSParamSplat` pattern is preferred for all new and refactored functions because it supports the full credential surface and eliminates repetitive conditional logic.
