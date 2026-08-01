@@ -774,9 +774,9 @@ us-east-2          0        1        1           2           0   True
         'Get-LMFunctionList'
     ) | Test-CHARAWSCmdlet | Out-Null
 
-    if (-not $Region) {
-      $Region = (Get-EC2Region).RegionName
-    }
+if (-not $MyInvocation.ExpectingInput -and -not $Region) {
+  $Region = (Get-EC2Region).RegionName
+}
 
     $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
   }
