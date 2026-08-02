@@ -16,7 +16,7 @@ Author: code written by Amazon Q and Copilot, reviewed  by ccharland
 # Added by Kiro (aws-common-params spec): dot-source New-AWSParamSplat for nested module scope
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
 . "$PSScriptRoot/../../../Private/CFNPrivateFunctions.ps1"
-. "$PSScriptRoot/../../../Test-CHARAWSCmdlet.ps1"
+. "$PSScriptRoot/../../Test-CHARAWSCmdlet.ps1"
 Set-Variable -Name S3_BUCKET_PATTERN -Value 'cf-templates-*' -Option ReadOnly -Scope Script
 
 <#
