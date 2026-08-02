@@ -5,6 +5,8 @@
 BeforeAll {
     $script:RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
     $script:ModulePath = Join-Path $script:RepoRoot 'src/CharlandCustomizations/CharlandCustomizations.psm1'
+    $script:ModuleContent = Get-Content -Path $script:ModulePath -Raw
+    $script:ModuleLoader = [scriptblock]::Create($script:ModuleContent)
 }
 
 Describe 'CharlandCustomizations.psm1 root module' -Tag 'Unit' {
@@ -19,5 +21,35 @@ Describe 'CharlandCustomizations.psm1 root module' -Tag 'Unit' {
         $content = Get-Content -Path $script:ModulePath -Raw
         $content | Should -Match 'Public'
         $content | Should -Match 'Private'
+    }
+
+    Context 'AWS tools dependency validation' {
+        BeforeEach {
+            Mock Get-ChildItem { @() }
+            Mock Install-Module {}
+            Mock Write-Host {}
+            Mock Write-Verbose {}
+        }
+
+        It 'throws when detected AWS tools version is less than 5' {
+            Mock Get-Command {
+                [PSCustomObject]@{
+                    Module = [PSCustomObject]@{
+                        Version = [version]'4.9.9'
+                    }
+                }
+            } -ParameterFilter { $Name -eq 'Set-AWSCredential' }
+
+            { & $script:ModuleLoader } | Should -Throw '*Version 5+ is required*'
+        }
+
+        It 'fails fast when AWS tools are missing' {
+            Mock Get-Command { $null } -ParameterFilter { $Name -eq 'Set-AWSCredential' }
+
+            $errorRecord = { & $script:ModuleLoader } | Should -Throw -PassThru
+
+            $errorRecord.Exception.Message | Should -Match 'PromptForChoice|install declined|Read and Prompt functionality'
+            Should -Invoke Install-Module -Times 0
+        }
     }
 }
