@@ -2,6 +2,12 @@
 
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- AWS-facing functions now call `Test-CHARAWSCmdlet` before their first AWS operation, checking one representative cmdlet from each AWS Tools service module they use (#100)
+
 ## [0.5.0] - 2026-07-26
 
 ### Added

@@ -12,7 +12,7 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 - **ACM certificate tools** — Import, validate, inspect, and replace ACM certificates from PFX files (`Import-CHARPfxCertificateToACM`, `Test-CHARACMCertificate`, `Get-CHARACMCertificateInventory`, and more)
 - **IP-to-region lookup** — `Get-CHARAWSRegionFromIp` resolves any IP to its AWS region using official AWS IP ranges
-- **AWS cmdlet dependency helper** — `Test-CHARAWSCmdlet` auto-discovers and installs missing AWS.Tools modules
+- **AWS cmdlet dependency helper** — AWS-facing functions use `Test-CHARAWSCmdlet` to auto-discover and install missing AWS.Tools service modules before making API calls
 - **SSO credential enhancements** — `Update-CHARSSOCredentialList` now supports `-UseAccountName` for human-readable profile names and shows the verification code during auth
 
 ## Goals

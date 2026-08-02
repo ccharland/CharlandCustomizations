@@ -132,6 +132,9 @@ Get-CHARAWSRegionFromIp -IpAddress 52.94.76.1
 
 # Check if an AWS Tools cmdlet is available, and install if missing
 Test-CHARAWSCmdlet -Name Get-ACMCertificate
+
+# Preflight one representative cmdlet from each required service module
+'Get-EC2Instance', 'Get-S3Bucket' | Test-CHARAWSCmdlet
 ```
 
 ### Git Utilities

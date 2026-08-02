@@ -22,6 +22,7 @@ Describe 'Test-CHARACMCertificate export' -Tag 'Unit' {
 
 Describe 'Test-CHARACMCertificate' -Tag 'Unit' {
     BeforeEach {
+        Mock Test-CHARAWSCmdlet { $true } -ModuleName ACM-Customizations
         Mock Get-ACMCertificateDetail -ModuleName ACM-Customizations {
             [PSCustomObject]@{
                 CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/valid'
@@ -42,6 +43,9 @@ Describe 'Test-CHARACMCertificate' -Tag 'Unit' {
         $result.HasMinimumValidity | Should -BeTrue
         $result.IsValid | Should -BeTrue
         @($result.ValidationMessages).Count | Should -Be 0
+        Should -Invoke Test-CHARAWSCmdlet -ModuleName ACM-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Name -eq 'Get-ACMCertificateDetail'
+        }
     }
 
     It 'reports status and lifetime failures' {
