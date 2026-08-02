@@ -5,7 +5,7 @@
 Write-Verbose "Loading ACM-Customizations.psm1"
 
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
-. "$PSScriptRoot/../../../Test-CHARAWSCmdlet.ps1"
+. "$PSScriptRoot/../../Test-CHARAWSCmdlet.ps1"
 
 $script:GetPfxCertificateMaterial = {
   param(
