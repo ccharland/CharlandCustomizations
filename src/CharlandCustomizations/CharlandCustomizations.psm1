@@ -24,23 +24,27 @@
 $awsCmd = Get-Command -Name 'Set-AWSCredential' -ErrorAction SilentlyContinue
 if (-not $awsCmd) {
     $ask = 'AWS PowerShell tools not found. Install current AWS.Tools.Common ?'
-    Write-Host $ask
-
     $installAwsTools = $false
-    if ($PSCmdlet) {
-        $installAwsTools = $PSCmdlet.ShouldContinue($ask, 'Install AWS Tools.Common')
-    } elseif ($Host -and $Host.UI) {
+    $canPrompt = ($Host -and $Host.UI -and $Host.UI.RawUI -and [Environment]::UserInteractive)
+
+    if ($canPrompt) {
+        Write-Host $ask
         $choices = [System.Management.Automation.Host.ChoiceDescription[]] @(
             (New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', 'Install AWS.Tools.Common now'),
             (New-Object System.Management.Automation.Host.ChoiceDescription '&No', 'Do not install and stop module import')
         )
         $selection = $Host.UI.PromptForChoice('Install AWS Tools.Common', $ask, $choices, 1)
         $installAwsTools = ($selection -eq 0)
+    } else {
+        throw 'AWS.Tools.Common was not found, and this session is non-interactive so the module cannot prompt for installation. Install AWS.Tools.Common v5+ (or AWSPowerShell.NetCore v5+) and retry module import.'
     }
 
     if ($installAwsTools) {
-        Install-Module -Name 'AWS.Tools.Common' -Force -Scope CurrentUser
+        Install-Module -Name 'AWS.Tools.Common'  -Scope CurrentUser
         $awsCmd = Get-Command -Name 'Set-AWSCredential' -ErrorAction SilentlyContinue
+        if (-not $awsCmd) {
+            throw 'AWS.Tools.Common install failed. This module requires AWS.Tools.Common v5+ or AWSPowerShell.NetCore v5+.'
+        }
     } else {
         throw 'AWS.Tools.Common install declined. This module requires AWS.Tools.Common v5+ or AWSPowerShell.NetCore v5+.'
     }

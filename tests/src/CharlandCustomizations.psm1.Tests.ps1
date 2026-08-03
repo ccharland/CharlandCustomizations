@@ -20,4 +20,60 @@ Describe 'CharlandCustomizations.psm1 root module' -Tag 'Unit' {
         $content | Should -Match 'Public'
         $content | Should -Match 'Private'
     }
+
+    It 'fails fast in non-interactive mode when AWS tools are missing' {
+        # Use .ps1 extension because dot-sourcing .psm1 files triggers module
+        # loader semantics that silently swallow errors and output
+        $tempModulePath = Join-Path $TestDrive 'CharlandCustomizations.MissingAws.ps1'
+        $tempScriptPath = Join-Path $TestDrive 'Import-Module-NonInteractive.ps1'
+
+        $moduleContent = Get-Content -Path $script:ModulePath -Raw
+        $moduleContent = $moduleContent -replace
+            [regex]::Escape('$awsCmd = Get-Command -Name ''Set-AWSCredential'' -ErrorAction SilentlyContinue'),
+            '$awsCmd = $null'
+        Set-Content -Path $tempModulePath -Value $moduleContent -Encoding UTF8
+
+        @"
+try {
+    . '$($tempModulePath.Replace("'", "''"))'
+    Write-Output 'IMPORT_SUCCEEDED_UNEXPECTEDLY'
+    exit 0
+} catch {
+    Write-Output `$_.Exception.Message
+    exit 1
+}
+"@ | Set-Content -Path $tempScriptPath -Encoding UTF8
+
+        $result = & pwsh -NoProfile -NonInteractive -File $tempScriptPath 2>&1
+        ($result | Out-String) | Should -Match 'non-interactive|cannot prompt|NonInteractive|Install AWS.Tools.Common'
+        $LASTEXITCODE | Should -Not -Be 0
+    }
+
+    It 'throws when AWS PowerShell tools version is less than 5' {
+        # Use .ps1 extension because dot-sourcing .psm1 files triggers module
+        # loader semantics that silently swallow errors and output
+        $tempModulePath = Join-Path $TestDrive 'CharlandCustomizations.LegacyAws.ps1'
+        $tempScriptPath = Join-Path $TestDrive 'Import-Module-LegacyVersion.ps1'
+
+        $moduleContent = Get-Content -Path $script:ModulePath -Raw
+        $moduleContent = $moduleContent -replace
+            [regex]::Escape('$awsCmd = Get-Command -Name ''Set-AWSCredential'' -ErrorAction SilentlyContinue'),
+            '$awsCmd = [PSCustomObject]@{ Module = [PSCustomObject]@{ Version = [version]''4.9.0'' } }'
+        Set-Content -Path $tempModulePath -Value $moduleContent -Encoding UTF8
+
+        @"
+try {
+    . '$($tempModulePath.Replace("'", "''"))'
+    Write-Output 'IMPORT_SUCCEEDED_UNEXPECTEDLY'
+    exit 0
+} catch {
+    Write-Output `$_.Exception.Message
+    exit 1
+}
+"@ | Set-Content -Path $tempScriptPath -Encoding UTF8
+
+        $result = & pwsh -NoProfile -File $tempScriptPath 2>&1
+        ($result | Out-String) | Should -Match 'Version 5\+ is required'
+        $LASTEXITCODE | Should -Not -Be 0
+    }
 }
