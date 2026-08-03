@@ -5,6 +5,8 @@
 BeforeAll {
     $script:RepoRoot = Resolve-Path (Join-Path $PSScriptRoot '../..')
     $script:ModulePath = Join-Path $script:RepoRoot 'src/CharlandCustomizations/CharlandCustomizations.psm1'
+    $script:ModuleContent = Get-Content -Path $script:ModulePath -Raw
+    $script:ModuleLoader = [scriptblock]::Create($script:ModuleContent)
 }
 
 Describe 'CharlandCustomizations.psm1 root module' -Tag 'Unit' {
