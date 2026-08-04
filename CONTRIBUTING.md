@@ -45,7 +45,7 @@ Invoke-Pester -Path ./tests -Output Detailed
 
 All branches must use an approved prefix. The pre-commit hook and CI will reject commits on unrecognized branches.
 
-**Code branches** (modify `src/` and `tests/src/`):
+**Code branches** (modify `src/`, `tests/src/`, and `.vscode/cspell.json`):
 
 - `feature/<description>` — New functionality
 - `bugfix/<description>` — Bug fixes
@@ -75,7 +75,7 @@ The pre-commit hook enforces separation between code and infrastructure work. Th
 
 | Branch Type | Blocked Paths | Everything Else |
 |-------------|---------------|-----------------|
-| Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) |
+| Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/` except `.vscode/cspell.json`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `.vscode/cspell.json`, `docs/`, root files, `assets/`) |
 | Infrastructure branches | `src/`, `tests/src/` | Allowed (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) |
 | Publish branches | `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, `tests/` | Allowed (only `src/`, `docs/`, root files, `assets/`) |
 

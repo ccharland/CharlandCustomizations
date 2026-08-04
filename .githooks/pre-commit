@@ -23,12 +23,14 @@ classify_branch_policy() {
         feature/*|bugfix/*|hotfix/*|architecture/*|breaking/*|docs/*|chore/*|codex-code/*|copilot-code/*|kiro-code/*)
             POLICY_NAME='normal code branch'
             BLOCKED_PATTERN='^(\.github|\.githooks|\.kiro/settings|\.vscode|Scripts|tests/scripts)(/|$)'
+            ALLOWED_PATTERN='^\.vscode/cspell\.json$'
             BLOCKED_PATHS='.github/, .githooks/, .kiro/settings/, .vscode/, Scripts/, and tests/scripts/'
             return 0
             ;;
         workflow/*|workflows/*|infrastructure/*|infra/*|ci/*|codex-infra/*|copilot-infra/*|kiro-infra/*)
             POLICY_NAME='workflow/infrastructure branch'
             BLOCKED_PATTERN='^(src|tests/src)(/|$)'
+            ALLOWED_PATTERN=''
             BLOCKED_PATHS='src/ and tests/src/'
             return 0
             ;;
@@ -36,6 +38,7 @@ classify_branch_policy() {
             POLICY_NAME='publish/release branch'
             # Publish branches are restricted to release prep only: signing, manifest, changelog
             BLOCKED_PATTERN='^(\.github|\.githooks|\.kiro|\.vscode|Scripts|tests)(/|$)'
+            ALLOWED_PATTERN=''
             BLOCKED_PATHS='.github/, .githooks/, .kiro/, .vscode/, Scripts/, and tests/'
             return 0
             ;;
@@ -47,6 +50,9 @@ classify_branch_policy() {
 
 if classify_branch_policy "$BRANCH"; then
     BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E "$BLOCKED_PATTERN" || true)"
+    if [ -n "$ALLOWED_PATTERN" ] && [ -n "$BLOCKED_FILES" ]; then
+        BLOCKED_FILES="$(printf '%s\n' "$BLOCKED_FILES" | grep -Ev "$ALLOWED_PATTERN" || true)"
+    fi
 else
     BRANCH_PREFIX="$(printf '%s' "$BRANCH" | cut -d/ -f1 | tr '[:upper:]' '[:lower:]')"
     echo "Commit blocked by CC git path policy." >&2

@@ -312,6 +312,19 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             $result.ExitCode | Should -Be 0
         }
 
+        It 'Allows cSpell configuration changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath '.vscode/cspell.json' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 0
+        }
+
+        It 'Blocks settings changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath '.vscode/settings.json' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'normal code branch'
+        }
+
         It 'Blocks tests/scripts changes on normal code branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
             $result = Invoke-TestPathPolicyHook -BranchName 'feature/add-module-command' -StagedPath 'tests/scripts/Build-Module.Tests.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
 

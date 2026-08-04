@@ -66,6 +66,24 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
+        It 'Allows only the cSpell configuration under .vscode on normal code branches' {
+            {
+                & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('.vscode/cspell.json')
+            } | Should -Not -Throw
+
+            {
+                & $script:ScriptPath -BranchName 'codex-code/add-command' -ChangedPath @('.vscode/cspell.json')
+            } | Should -Not -Throw
+        }
+
+        It 'Blocks neighboring VS Code configuration on normal code branches' {
+            foreach ($path in @('.vscode/settings.json', '.vscode/tasks.json', '.vscode/other.json')) {
+                {
+                    & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @($path)
+                } | Should -Throw '*normal code branch*'
+            }
+        }
+
         It 'Blocks tests/scripts changes on normal code branches' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('tests/scripts/Build-Module.Tests.ps1')
@@ -87,6 +105,15 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         It 'Allows workflow configuration changes on infrastructure branches' {
             {
                 & $script:ScriptPath -BranchName 'workflow/update-quality-gate' -ChangedPath @('.github/workflows/pr-quality-gate.yml')
+            } | Should -Not -Throw
+        }
+
+        It 'Allows VS Code configuration changes on infrastructure branches' {
+            {
+                & $script:ScriptPath -BranchName 'infra/editor-config' -ChangedPath @(
+                    '.vscode/cspell.json',
+                    '.vscode/settings.json'
+                )
             } | Should -Not -Throw
         }
 
@@ -146,6 +173,12 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         It 'Blocks .kiro changes on publish branches' {
             {
                 & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('.kiro/settings/mcp.json')
+            } | Should -Throw '*publish/release branch*'
+        }
+
+        It 'Blocks the cSpell configuration on publish branches' {
+            {
+                & $script:ScriptPath -BranchName 'publish/v0.6.0' -ChangedPath @('.vscode/cspell.json')
             } | Should -Throw '*publish/release branch*'
         }
 
