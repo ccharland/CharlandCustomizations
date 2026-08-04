@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     CharlandCustomizations module loader.
 
@@ -27,16 +27,18 @@ if (-not $awsCmd) {
     $installAwsTools = $false
     $canPrompt = ($Host -and $Host.UI -and $Host.UI.RawUI -and [Environment]::UserInteractive)
 
-    if ($canPrompt) {
-        Write-Host $ask
+    $installAwsTools = $false
+    if ($env:CHAR_AUTO_INSTALL_AWS_TOOLS -eq 'true') {
+        $installAwsTools = $true
+    } elseif ($PSCmdlet -and $PSCmdlet.ShouldContinue) {
+        $installAwsTools = $PSCmdlet.ShouldContinue($ask, 'Install AWS Tools.Common')
+    } elseif ($Host -and $Host.UI -and (-not [System.Environment]::UserInteractive -eq $false)) {
         $choices = [System.Management.Automation.Host.ChoiceDescription[]] @(
             (New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', 'Install AWS.Tools.Common now'),
             (New-Object System.Management.Automation.Host.ChoiceDescription '&No', 'Do not install and stop module import')
         )
         $selection = $Host.UI.PromptForChoice('Install AWS Tools.Common', $ask, $choices, 1)
         $installAwsTools = ($selection -eq 0)
-    } else {
-        throw 'AWS.Tools.Common was not found, and this session is non-interactive so the module cannot prompt for installation. Install AWS.Tools.Common v5+ (or AWSPowerShell.NetCore v5+) and retry module import.'
     }
 
     if ($installAwsTools) {
