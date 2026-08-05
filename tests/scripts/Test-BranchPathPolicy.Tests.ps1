@@ -1,5 +1,25 @@
 BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../../Scripts/Test-BranchPathPolicy.ps1"
+
+    function Invoke-BranchPolicyScript {
+        param(
+            [Parameter(Mandatory)]
+            [string]$BranchName,
+
+            [Parameter(Mandatory)]
+            [AllowEmptyCollection()]
+            [string[]]$ChangedPath
+        )
+
+            $quotedChangedPath = $ChangedPath | ForEach-Object {
+                "'" + ($_ -replace "'", "''") + "'"
+            }
+            $changedPathLiteral = "@(" + ($quotedChangedPath -join ', ') + ")"
+            $command = "& { & '$script:ScriptPath' -BranchName '$BranchName' -ChangedPath $changedPathLiteral }"
+
+            $null = & pwsh -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1
+        return $LASTEXITCODE
+    }
 }
 
 Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
@@ -26,6 +46,12 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
+        It 'Returns exit code 0 for passing policy checks' {
+            (Invoke-BranchPolicyScript -BranchName 'feature/add-command' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 0
+        }
+
         It 'Blocks all changes when branch prefix is not approved' {
             {
                 & $script:ScriptPath -BranchName 'experiment/new-policy' -ChangedPath @(
@@ -49,6 +75,10 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('.github/workflows/pr-quality-gate.yml')
             } | Should -Throw '*normal code branch*'
+        }
+
+        It 'Returns exit code 1 when policy validation fails' {
+            (Invoke-BranchPolicyScript -BranchName 'feature/add-command' -ChangedPath @('.github/workflows/pr-quality-gate.yml')) | Should -Be 1
         }
 
         It 'Blocks Scripts changes on normal code branches' {
