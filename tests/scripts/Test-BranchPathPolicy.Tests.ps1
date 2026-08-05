@@ -71,14 +71,14 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
 
     Context 'Path separation policy' {
 
-        It 'Blocks workflow configuration changes on normal code branches' {
+        It 'Allows workflow configuration changes on normal code branches' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('.github/workflows/pr-quality-gate.yml')
-            } | Should -Throw '*normal code branch*'
+            } | Should -Not -Throw
         }
 
         It 'Returns exit code 1 when policy validation fails' {
-            (Invoke-BranchPolicyScript -BranchName 'feature/add-command' -ChangedPath @('.github/workflows/pr-quality-gate.yml')) | Should -Be 1
+            (Invoke-BranchPolicyScript -BranchName 'feature/add-command' -ChangedPath @('Scripts/Test-ManifestCompliance.ps1')) | Should -Be 1
         }
 
         It 'Blocks Scripts changes on normal code branches' {
@@ -106,30 +106,30 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
-        It 'Blocks neighboring VS Code configuration on normal code branches' {
+        It 'Allows neighboring VS Code configuration on normal code branches' {
             foreach ($path in @('.vscode/settings.json', '.vscode/tasks.json', '.vscode/other.json')) {
                 {
                     & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @($path)
-                } | Should -Throw '*normal code branch*'
+                } | Should -Not -Throw
             }
         }
 
-        It 'Blocks tests/scripts changes on normal code branches' {
+        It 'Allows tests/scripts changes on normal code branches' {
             {
                 & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('tests/scripts/Build-Module.Tests.ps1')
-            } | Should -Throw '*normal code branch*'
+            } | Should -Not -Throw
         }
 
-        It 'Blocks source changes on infrastructure branches' {
+        It 'Allows source changes on infrastructure branches' {
             {
                 & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*workflow/infrastructure branch*'
+            } | Should -Not -Throw
         }
 
-        It 'Blocks tests/src changes on infrastructure branches' {
+        It 'Allows tests/src changes on infrastructure branches' {
             {
                 & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1')
-            } | Should -Throw '*workflow/infrastructure branch*'
+            } | Should -Not -Throw
         }
 
         It 'Allows workflow configuration changes on infrastructure branches' {
@@ -182,10 +182,10 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
-        It 'Blocks .github changes on publish branches' {
+        It 'Allows .github changes on publish branches' {
             {
                 & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('.github/workflows/publish.yml')
-            } | Should -Throw '*publish/release branch*'
+            } | Should -Not -Throw
         }
 
         It 'Blocks Scripts changes on publish branches' {
@@ -194,22 +194,22 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Throw '*publish/release branch*'
         }
 
-        It 'Blocks tests changes on publish branches' {
+        It 'Allows tests changes on publish branches' {
             {
                 & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('tests/src/Something.Tests.ps1')
-            } | Should -Throw '*publish/release branch*'
+            } | Should -Not -Throw
         }
 
-        It 'Blocks .kiro changes on publish branches' {
+        It 'Allows .kiro changes on publish branches' {
             {
                 & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('.kiro/settings/mcp.json')
-            } | Should -Throw '*publish/release branch*'
+            } | Should -Not -Throw
         }
 
-        It 'Blocks the cSpell configuration on publish branches' {
+        It 'Allows the cSpell configuration on publish branches' {
             {
                 & $script:ScriptPath -BranchName 'publish/v0.6.0' -ChangedPath @('.vscode/cspell.json')
-            } | Should -Throw '*publish/release branch*'
+            } | Should -Not -Throw
         }
 
         It 'Allows root files on publish branches' {

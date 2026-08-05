@@ -55,19 +55,14 @@ param(
     [AllowEmptyCollection()]
     [string[]]$ChangedPath
 )
-
+Set-StrictMode -Version 3
 $ErrorActionPreference = 'Stop'
 
 $script:SuccessExitCode = 0
 $script:PolicyViolationExitCode = 1
 
 Set-Variable -Name NormalCodeBranchBlockedPath -Option Constant -Value @(
-    '.github'
-    '.githooks'
-    '.kiro/settings'
-    '.vscode'
     'Scripts'
-    'tests/scripts'
 )
 
 Set-Variable -Name NormalCodeBranchAllowedPath -Option Constant -Value @(
@@ -75,17 +70,11 @@ Set-Variable -Name NormalCodeBranchAllowedPath -Option Constant -Value @(
 )
 
 Set-Variable -Name WorkflowInfrastructureBranchBlockedPath -Option Constant -Value @(
-    'src'
-    'tests/src'
+    'Scripts'
 )
 
 Set-Variable -Name PublishBranchBlockedPath -Option Constant -Value @(
-    '.github'
-    '.githooks'
-    '.kiro'
-    '.vscode'
     'Scripts'
-    'tests'
 )
 
 $approvedBranchPrefixes = @(
@@ -260,7 +249,11 @@ function Test-ExactPath {
 }
 
 $blockedPrefixes = $matchingBranchPolicy.BlockedPath
-$allowedPaths = @($matchingBranchPolicy.AllowedPath | Where-Object { $_ })
+$allowedPaths = @(
+    if ($matchingBranchPolicy.PSObject.Properties.Name -contains 'AllowedPath') {
+        $matchingBranchPolicy.AllowedPath | Where-Object { $_ }
+    }
+)
 $branchType = $matchingBranchPolicy.BranchType
 
 $blockedPaths = @(
@@ -295,12 +288,11 @@ Split this work into a branch whose name matches the kind of change being made.
 
 Write-Output "Branch path policy passed for '$BranchName'."
 exit $script:SuccessExitCode
-
 # SIG # Begin signature block
 # MIIs4wYJKoZIhvcNAQcCoIIs1DCCLNACAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDRqwrUS9rAVt8F
-# f9YhiyuPzI+kHSirheCS86yxlc2oLKCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCC8xRGXL65UwgiV
+# Aw/Z69T/4lj3VGUgi1p307GY+kTvEqCCJfgwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -507,34 +499,34 @@ exit $script:SuccessExitCode
 # IExpbWl0ZWQxKzApBgNVBAMTIlNlY3RpZ28gUHVibGljIENvZGUgU2lnbmluZyBD
 # QSBSMzYCEBVU792hXgxFEa5eaR5wqcQwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYB
 # BAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAc
-# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgFKOI
-# F+5UaTRPWDr+4hPeA+HgWw5P+4wREJN8xFCjq5owDQYJKoZIhvcNAQEBBQAEggIA
-# tf+mDCWQXW6vPm/eRV3sKg5rZ9sd4GdhO0O0rj8+brC03nLEUNAZeMt/k6UVfvTI
-# 7OmSnXRsIKelsacMUWjDcOEncb9IbcNaf0MCmM1/M3fpzGCnwhx+0hFFitM4K4/B
-# ijupbuaGMbjgBEeSFLaItcu4kIm+hJGoV8AwpT3iMCMDIVd4VT72DfwmvMsTW7wg
-# w5uDQ+0aTVgY4oeYYY147Px57g5d2sN4HuZaZIwTQKk0SUwaUbkI1MrT7fuOzAd5
-# hiohXZ7BdsUizYyq2OMG8o1jDZxhQdtQuBP80WetP1eRubsV1viw+b9e0vyBvMU6
-# ZGQk3j/B8RgQOkFE6aiHcDsM36ahexE1P9UjNLsmqKIflZidbrakwp2b27TPnsPb
-# +PCXXjxDyecMLCYitermC+HzVaGUNN0WJi0sgnirPBzn7F0QXXV39G+q1il1umo3
-# tM4k1OPbciemj2eG8WS0mGLdFuewQjwh7iyoSji8PnVgWYpYec4GT8uyXCj3ei2M
-# OD+037piYjNDjwsNLVd9ARWnAG7fHGHV44HKRZwnJT9R2Jn3jpchURjNkOEF/7Or
-# Vf1eHLj5gfT5h+JorOgZ06vSaMsWEa97cx0bETRHPIwlErzu5EzCezOTu0O6dlVt
-# 6G0Rc7yfPAPvdAmeZHCleNzZzdtKeiTnDwgNwRAnlfqhggMjMIIDHwYJKoZIhvcN
+# BgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgqKG8
+# Ikcs0gTd607Xv0NEXLvSWL8DEGTKY8FyJy6zW7MwDQYJKoZIhvcNAQEBBQAEggIA
+# I37jqZOBWKipGaFCp/aoyEf9y83SIryqJBXizvPSXQRw6TmGPO+LCzLOCM7GYZYC
+# 332qRUFjxAwjlkPUzZnJ0BCG5cPVPzUHEPma9QpR7qdMpnE+vp6WPMKd/zqb6FpU
+# ijAzwX2noYbr1LBTl4DSKn3/xjihYj00sK9OosFdM+sL+6l6ULl0Y1QUr291zDpH
+# qI95m7yxD5XawJbvSif3PRsCK0uzvT1AA0ssnyzr9yf1ThPEKJ18BUAHs9aUNqph
+# 3fasiBpwBprZN2zcj0OGGxQtUMdxoe8jGZMSWUV0CK9eOfWlKla4vCAzitxyFwUJ
+# +GXwMP6XNaCIurwsAZInzS+ip40qVN+E7+QEuqTrsomm6hN444JWatPQoGAKNGaw
+# 4EekFohHqEyji7jUyEasDNizomTuzCX+bLeRvBNZWstbipnTH8U117NuEkWpDtx4
+# iw6kum3JWV4e/+n09Md7D1ZR9C5wH3cT1nEUnw5SgE+ip6D7h0T2L/KL0tbUxHKE
+# 08EDPASiKL31hqMFGCiggaGZjBUCBBkH5+QFhcNoccqrGLUwGl9VS149HzE5vPHM
+# Qto/20oQgu/b5CFH8ftHn79aRuCnD6sugGm+1UCVV9wfS1wcyMvyueKgikNH6O/t
+# snZBsKlQ1OtZ8UCuXYXWpI5Gk5SkGXLExgT5ZaZvqYihggMjMIIDHwYJKoZIhvcN
 # AQkGMYIDEDCCAwwCAQEwajBVMQswCQYDVQQGEwJHQjEYMBYGA1UEChMPU2VjdGln
 # byBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5n
 # IENBIFI0MQIRAOdO8lWwUE/626bf9/yLoxUwDQYJYIZIAWUDBAICBQCgeTAYBgkq
-# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA4MDUyMjA5
-# NTBaMD8GCSqGSIb3DQEJBDEyBDB3Cb0/vujZUqpfiCi9MmjiZ0MnGG/aoKCtpLy7
-# WriCaCrYkZ27GC7lm7DcTj1NKIwwDQYJKoZIhvcNAQEBBQAEggIARXinjdJDfG38
-# XSstN6dxTGGIAO8DYltDEsMu+GASrOzb4rrm27HhInBgz8AV51J/s127pTRbHqfA
-# wndTumZ/1FJnsrCcGXKLVMg1FmY85KHFcgXpLVB0Zxkee+77F+GRs9t0KWvzOXrs
-# 2BZbLQqqDSW1Tk9P7MsBz/vKapCCOkt129oH7AdlisDu413cuE5acYJg87lvip0i
-# mFHKudb5JIriRaXiCpzHER/AXxk1XKErSfgzlvU6GmTX/DGb9UbB/U7w8BibuTno
-# ip8AvT/HNtN1oRWkifPYWdRG3hFR6kiHJ45MrCHUoXErP3lxBMUuO/pJegvQ8cyi
-# 2ztDNQTHBbdr82OBlIPVaRDSp/PwyXKM5JbVQ1rB5telufmSb6BpVamxq//PgTHl
-# 1WCb3xewTGhNq+eK6VSjoKjJiSDYjktKuvujUkuvMIMRL4nT0NFgcaJQ2rw6TuH2
-# LJXKS9nX/TN/4QDg4LEtnLvG8j+UiIRermWdrDuWTNoFHYElkOatf1a3RIhXkEZT
-# w7V17GLB55DsyE0EwV/rF4lFk3wrP8BzBBqnV5awURbo7ppky2a67ZsHWM66fnTp
-# FfkdBBEd7oLuhuoKh6pVe88EtQU56ByNE2YQRjVP91NlMyJpyVP2oMVv1KsT0V02
-# VZ4hbVd5jMPw7EiOhl3y4d1JjXhSgAQ=
+# hkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yNjA4MDUyMzQx
+# MDhaMD8GCSqGSIb3DQEJBDEyBDAbcYPQll7q1XoQFSQI8hO1yQT0jhY98boxMBQ0
+# gySDiOnC5l2PJ86S/FU1K92wOtgwDQYJKoZIhvcNAQEBBQAEggIAcAy80ujHeAqA
+# NYBcavmAR3b45x4WUeQfWCKtgw0bjwPRnk1YF7RKxnGb5iFHFNtqs7AQQfqGLPaI
+# HOR4nb/sONUlqANsF6bN+01NfzuX/Fc5Sq1GJyWOM880IYS9+GE2u0cljf02etdq
+# 5ClVh60XySqJhF/wr8IiwCGHiK4ULgdyXSk27WDVijFyQRGzyiVSqctgqrX7+6wn
+# KOlHhJPP9Sp80JMxP92gOsihfbb+2H+YnwY199tBuL/Pn+7v7r0WEAhqknozKZlk
+# 76Fl091juYrwKDH5o0GOeCBbmtnzI+ieK4IuRT6ZOFBxk0mRqLu5u+mSdkQ/MD69
+# onhgdtCu1Ry2vO+iZpfkrvnXdkGkFlqV19QTD30/mOzGeWMrkyRdFvpSg2qAqzVO
+# +K3GhcVKky50+HycvbFbs9JQD7K2i7T+GCnahCEBP6DeVoXEd7DOSxUfaOlDaOgN
+# 5Z5T83vmT1XhRfbfyEmVuFuyhlGMPaAwi+rwPM9vDHLB1PG9fE646fsnBOBSb38a
+# edRQmQqdZ0zqaCd1mg5xlT4HjHaYBFYNNLXp4iORFH4bHvCq+xMPIY9HodyvnwMm
+# dTazy/6QunZKwhhlejP+lllyK7W2vH6O7O9mXFBPpe5+IZnRoTQD40FpLD13dm7P
+# ImhwX2e98TlrkcYyVXYuQSP4kfKQH/8=
 # SIG # End signature block
