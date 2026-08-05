@@ -16,7 +16,7 @@ param(
     [Parameter()]
     [switch]$Compact
 )
-$verbosePreference = 'Continue'
+# Verbose output is controlled by the -Verbose common parameter.
 
 function Write-DebugMessage {
     param(
@@ -96,7 +96,7 @@ if (-not (Test-Path -Path $resultPath)) {
 }
 
 [xml]$testResults = Get-Content -Path $resultPath -Raw
-$failedTests = @($testResults.SelectNodes('//test-case[(@result="Failed" or @success="False") and not(translate(@result,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="ignored")]'))
+$failedTests = @($testResults.SelectNodes('//test-case[(@result="Failed" or @success="False") and not(translate(@result,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="skipped") and not(translate(@label,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="ignored")]'))
 
 Write-DebugMessage "Parsed test result XML. Failed tests found: $($failedTests.Count)"
 
