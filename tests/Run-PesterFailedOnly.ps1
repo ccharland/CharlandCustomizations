@@ -16,9 +16,23 @@ param(
     [Parameter()]
     [switch]$Compact
 )
+$verbosePreference = 'Continue'
+
+function Write-DebugMessage {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    Write-Verbose ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss.fff'), $Message)
+}
 
 $configPath = Join-Path $PSScriptRoot 'pester.config.ps1'
 $resultPath = Join-Path $PSScriptRoot 'coverage/testResults.xml'
+
+Write-DebugMessage "Starting failed-only Pester run. Compact mode: $Compact"
+Write-DebugMessage "Config path: $configPath"
+Write-DebugMessage "Result path: $resultPath"
 
 # Run Pester in a child process with output redirected to keep terminal noise out.
 $command = @"
@@ -39,12 +53,39 @@ $psi.RedirectStandardOutput = $true
 $psi.RedirectStandardError = $true
 $psi.CreateNoWindow = $true
 
+Write-DebugMessage 'Launching child pwsh process for Invoke-Pester.'
+
 $process = [System.Diagnostics.Process]::Start($psi)
-$null = $process.StandardOutput.ReadToEnd()
-$stdErr = $process.StandardError.ReadToEnd()
+Write-DebugMessage "Child process started. PID: $($process.Id)"
+
+# Read both streams concurrently to avoid deadlocks when one buffer fills.
+$stdOutTask = $process.StandardOutput.ReadToEndAsync()
+$stdErrTask = $process.StandardError.ReadToEndAsync()
+
+Write-DebugMessage 'Waiting for child process to exit...'
+$lastProgress = [DateTime]::UtcNow
+while (-not $process.HasExited) {
+    Start-Sleep -Milliseconds 500
+    if (([DateTime]::UtcNow - $lastProgress).TotalSeconds -ge 10) {
+        Write-DebugMessage "Still waiting for child process (PID $($process.Id))..."
+        $lastProgress = [DateTime]::UtcNow
+    }
+}
+
 $process.WaitForExit()
+$stdOut = $stdOutTask.GetAwaiter().GetResult()
+$stdErr = $stdErrTask.GetAwaiter().GetResult()
+
+Write-DebugMessage "Child process exited with code $($process.ExitCode)."
+if ($stdErr) {
+    Write-DebugMessage ("Child stderr length: {0}" -f $stdErr.Length)
+}
+if ($stdOut) {
+    Write-DebugMessage ("Child stdout length: {0}" -f $stdOut.Length)
+}
 
 if (-not (Test-Path -Path $resultPath)) {
+    Write-DebugMessage 'Result file was not found after process exit.'
     if ($stdErr) {
         Write-Error "Pester run did not produce test results. Stderr: $stdErr"
     }
@@ -55,7 +96,9 @@ if (-not (Test-Path -Path $resultPath)) {
 }
 
 [xml]$testResults = Get-Content -Path $resultPath -Raw
-$failedTests = @($testResults.SelectNodes('//test-case[@result="Failed" or @success="False"]'))
+$failedTests = @($testResults.SelectNodes('//test-case[(@result="Failed" or @success="False") and not(translate(@result,"ABCDEFGHIJKLMNOPQRSTUVWXYZ","abcdefghijklmnopqrstuvwxyz")="ignored")]'))
+
+Write-DebugMessage "Parsed test result XML. Failed tests found: $($failedTests.Count)"
 
 if ($failedTests.Count -eq 0) {
     Write-Host 'No failed tests.'
