@@ -20,7 +20,7 @@ As AI tools (Copilot, Kiro, Codex) are used alongside manual development, there'
 
 Enforce a branch path separation policy:
 
-- **Code branches** (`feature/*`, `bugfix/*`, etc.) are blocked from modifying `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, and `tests/scripts/`. Everything else (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) is allowed.
+- **Code branches** (`feature/*`, `bugfix/*`, etc.) are blocked from modifying `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, and `tests/scripts/`, with one exact-file exception for `.vscode/cspell.json`. Everything else (including `src/`, `tests/src/`, `.vscode/cspell.json`, `docs/`, root files, `assets/`) is allowed.
 - **Infrastructure branches** (`workflow/*`, `infra/*`, `ci/*`, etc.) are blocked from modifying `src/` and `tests/src/`. Everything else (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) is allowed.
 - **Publish branches** (`publish/*`) are blocked from modifying `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, and `tests/`. Everything else is allowed, including `src/`, `docs/`, root files, and `assets/`.
 
@@ -39,6 +39,7 @@ An escape hatch (`CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1`) exists for genuinel
 - AI-generated changes can't accidentally touch CI or signing scripts on a code branch.
 - Easier to reason about what broke when a CI check fails.
 - Release branches can be scoped precisely.
+- Code changes can add repository-specific spelling terms without granting access to unrelated editor configuration.
 
 ### Negative
 

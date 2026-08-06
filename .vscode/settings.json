@@ -6,14 +6,7 @@
             "packageManager": "ms-python.python:pip"
         }
     ],
-    "cSpell.words": [
-        "ACMRD",
-        "Authenticode",
-        "CHARAWS",
-        "CHARCFN",
-        "kiro",
-        "LASTEXITCODE",
-        "notmatch",
-        "pscustomobject"
+    "cSpell.import": [
+        "${workspaceFolder}/.vscode/cspell.json"
     ]
 }
