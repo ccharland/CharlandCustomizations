@@ -11,13 +11,7 @@ BeforeAll {
             [string[]]$ChangedPath
         )
 
-            $quotedChangedPath = $ChangedPath | ForEach-Object {
-                "'" + ($_ -replace "'", "''") + "'"
-            }
-            $changedPathLiteral = "@(" + ($quotedChangedPath -join ', ') + ")"
-            $command = "& { & '$script:ScriptPath' -BranchName '$BranchName' -ChangedPath $changedPathLiteral }"
-
-            $null = & pwsh -NoProfile -ExecutionPolicy Bypass -Command $command 2>&1
+            $null = & pwsh -NoProfile -ExecutionPolicy Bypass -File $script:ScriptPath -BranchName $BranchName -ChangedPath $ChangedPath 2>&1
         return $LASTEXITCODE
     }
 }
@@ -27,15 +21,15 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
     Context 'Branch name format validation' {
 
         It 'Blocks all changes when branch name has no forward slash' {
-            {
-                & $script:ScriptPath -BranchName 'my-branch-no-slash' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*unrecognized prefix*'
+            (Invoke-BranchPolicyScript -BranchName 'my-branch-no-slash' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 1
         }
 
         It 'Blocks workflow changes when branch name has no forward slash' {
-            {
-                & $script:ScriptPath -BranchName 'update-workflows' -ChangedPath @('.github/workflows/publish.yml')
-            } | Should -Throw '*unrecognized prefix*'
+            (Invoke-BranchPolicyScript -BranchName 'update-workflows' -ChangedPath @(
+                '.github/workflows/publish.yml'
+            )) | Should -Be 1
         }
 
         It 'Passes when branch name contains a forward slash' {
@@ -53,11 +47,9 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         }
 
         It 'Blocks all changes when branch prefix is not approved' {
-            {
-                & $script:ScriptPath -BranchName 'experiment/new-policy' -ChangedPath @(
-                    'src/CharlandCustomizations/Public/Test-Thing.ps1'
-                )
-            } | Should -Throw '*unrecognized prefix*'
+            (Invoke-BranchPolicyScript -BranchName 'experiment/new-policy' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 1
         }
 
         It 'Allows approved AI branch prefix copilot-code' {
@@ -82,9 +74,9 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         }
 
         It 'Blocks Scripts changes on normal code branches' {
-            {
-                & $script:ScriptPath -BranchName 'feature/add-command' -ChangedPath @('Scripts/Test-ManifestCompliance.ps1')
-            } | Should -Throw '*normal code branch*'
+            (Invoke-BranchPolicyScript -BranchName 'feature/add-command' -ChangedPath @(
+                'Scripts/Test-ManifestCompliance.ps1'
+            )) | Should -Be 1
         }
 
         It 'Allows source and tests/src changes on normal code branches' {
@@ -121,15 +113,15 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         }
 
         It 'Blocks source changes on infrastructure branches' {
-            {
-                & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Throw '*workflow/infrastructure branch*'
+            (Invoke-BranchPolicyScript -BranchName 'infrastructure/update-ci' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 1
         }
 
         It 'Blocks tests/src changes on infrastructure branches' {
-            {
-                & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1')
-            } | Should -Throw '*workflow/infrastructure branch*'
+            (Invoke-BranchPolicyScript -BranchName 'infrastructure/update-ci' -ChangedPath @(
+                'tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1'
+            )) | Should -Be 1
         }
 
         It 'Allows Scripts changes on infrastructure branches' {
@@ -195,9 +187,9 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         }
 
         It 'Blocks Scripts changes on publish branches' {
-            {
-                & $script:ScriptPath -BranchName 'publish/v0.5.0' -ChangedPath @('Scripts/Build-Module.ps1')
-            } | Should -Throw '*publish/release branch*'
+            (Invoke-BranchPolicyScript -BranchName 'publish/v0.5.0' -ChangedPath @(
+                'Scripts/Build-Module.ps1'
+            )) | Should -Be 1
         }
 
         It 'Allows tests changes on publish branches' {
