@@ -120,15 +120,21 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             } | Should -Not -Throw
         }
 
-        It 'Allows source changes on infrastructure branches' {
+        It 'Blocks source changes on infrastructure branches' {
             {
                 & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('src/CharlandCustomizations/Public/Test-Thing.ps1')
-            } | Should -Not -Throw
+            } | Should -Throw '*workflow/infrastructure branch*'
         }
 
-        It 'Allows tests/src changes on infrastructure branches' {
+        It 'Blocks tests/src changes on infrastructure branches' {
             {
                 & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1')
+            } | Should -Throw '*workflow/infrastructure branch*'
+        }
+
+        It 'Allows Scripts changes on infrastructure branches' {
+            {
+                & $script:ScriptPath -BranchName 'infrastructure/update-ci' -ChangedPath @('Scripts/Test-BranchPathPolicy.ps1')
             } | Should -Not -Throw
         }
 
