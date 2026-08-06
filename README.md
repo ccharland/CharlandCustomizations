@@ -8,12 +8,11 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 > **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
-## What's new in v0.5.0
+## What's new in v0.6.0
 
-- **ACM certificate tools** — Import, validate, inspect, and replace ACM certificates from PFX files (`Import-CHARPfxCertificateToACM`, `Test-CHARACMCertificate`, `Get-CHARACMCertificateInventory`, and more)
-- **IP-to-region lookup** — `Get-CHARAWSRegionFromIp` resolves any IP to its AWS region using official AWS IP ranges
-- **AWS cmdlet dependency helper** — AWS-facing functions use `Test-CHARAWSCmdlet` to auto-discover and install missing AWS.Tools service modules before making API calls
-- **SSO credential enhancements** — `Update-CHARSSOCredentialList` now supports `-UseAccountName` for human-readable profile names and shows the verification code during auth
+- **Proactive AWS dependency checks** — All AWS-facing functions now call `Test-CHARAWSCmdlet` before their first API operation, automatically detecting and offering to install missing AWS.Tools service modules
+- **Enhanced dependency validation** — `Test-CHARAWSCmdlet` supports pipeline input of multiple cmdlet names, improved error messaging, and streamlined module-version matching
+- **CI modernization** — GitHub Actions workflows updated to current action versions, replacing deprecated Node.js 16 runners
 
 ## Goals
 

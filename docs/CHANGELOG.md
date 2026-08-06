@@ -4,9 +4,18 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-05
+
 ### Changed
 
 - AWS-facing functions now call `Test-CHARAWSCmdlet` before their first AWS operation, checking one representative cmdlet from each AWS Tools service module they use (#100)
+- `Test-CHARAWSCmdlet` enhanced to support pipeline input of multiple cmdlet names, improved error messaging, and streamlined module-version matching logic (#103)
+- AWS cmdlet validation documentation updated across all nested modules with consistent usage examples (#102)
+- `auto-tag-publish.yml` workflow updated to use current GitHub Actions versions, replacing deprecated Node.js 16 action runners (#98)
+- `tests/Run-PesterFailedOnly.ps1` now excludes ignored test cases from failed-only output (#105)
+- `.github/rulesets` updated to allow `code/*` branches to modify repository cSpell configuration (#107)
+- All source files re-signed with current Authenticode certificates
+- Module manifest version bumped to `0.6.0`
 
 ## [0.5.0] - 2026-07-26
 
