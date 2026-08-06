@@ -8,6 +8,5 @@
     ],
     "cSpell.import": [
         "${workspaceFolder}/.vscode/cspell.json"
-    ],
-    "gitlens.hovers.enabled": true
+    ]
 }
