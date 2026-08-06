@@ -195,12 +195,29 @@ jobs:
         env:
           TAG: ${{ steps.version.outputs.tag }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+          # Use a PAT to push the tag so that the push event triggers downstream
+          # workflows (publish.yml). Tags pushed with the default GITHUB_TOKEN do
+          # not trigger on:push workflows — a deliberate GitHub security measure.
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
         run: |
+          if [ -z "$RELEASE_PAT" ]; then
+            echo "::error::RELEASE_PAT secret is not configured. A Personal Access Token with contents:write scope is required to trigger downstream workflows."
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config gpg.program "$GPG_WRAPPER"
           git config gpg.format openpgp
           git config user.signingkey "$GPG_KEY_ID"
+
+          # Configure git credential helper to securely provide the PAT without
+          # exposing it in command arguments, URLs, or error output.
+          git config --local credential.helper \
+            '!f() { echo "username=x-access-token"; echo "password=${RELEASE_PAT}"; }; f'
+
+          # actions/checkout configures an Authorization header using GITHUB_TOKEN; unset it so git uses the PAT helper above.
+          git config --local --unset-all http.https://github.com/.extraheader || true
 
           git tag -s "$TAG" -m "Release $TAG"
 
