@@ -284,6 +284,12 @@ jobs:
           TAG_NAME="${{ needs.resolve-tag.outputs.tag_name }}"
           echo "Protecting tag: $TAG_NAME"
 
+          # Check if a release already exists for this tag
+          if gh api "repos/${{ github.repository }}/releases/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "✓ Release for '$TAG_NAME' already exists. Tag is already protected."
+            exit 0
+          fi
+
           # Detect prerelease: any tag with a hyphen after the version (e.g., v0.3.0-beta)
           VERSION="${TAG_NAME#v}"
           if [[ "$VERSION" == *-* ]]; then
