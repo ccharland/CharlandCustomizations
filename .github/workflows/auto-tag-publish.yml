@@ -211,10 +211,10 @@ jobs:
           git config gpg.format openpgp
           git config user.signingkey "$GPG_KEY_ID"
 
-          # Configure the PAT via HTTP extraheader so the credential never appears
-          # in command-line arguments, error output, or shell traces.
-          git config --local http.https://github.com/.extraheader \
-            "Authorization: basic $(printf 'x-access-token:%s' "$RELEASE_PAT" | base64)"
+          # Configure git credential helper to securely provide the PAT without
+          # exposing it in command arguments, URLs, or error output.
+          git config --local credential.helper \
+            '!f() { echo "username=x-access-token"; echo "password=${RELEASE_PAT}"; }; f'
 
           git tag -s "$TAG" -m "Release $TAG"
 

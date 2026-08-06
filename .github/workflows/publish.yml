@@ -39,11 +39,11 @@ jobs:
 
       - name: Determine effective tag
         id: resolve
+        env:
+          INPUT_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || '' }}
+          REF_TAG: ${{ github.ref_name }}
         run: |
-          # Priority: explicit input > ref_name (for both push-tag and workflow_dispatch-on-tag)
-          INPUT_TAG="${{ inputs.tag }}"
-          REF_TAG="${{ github.ref_name }}"
-
+          # Priority: explicit input (workflow_dispatch only) > ref_name (push-tag or dispatch-on-tag)
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           elif [[ "$REF_TAG" == v* ]]; then
@@ -52,6 +52,9 @@ jobs:
             echo "::error::Unable to determine tag. Either push a tag, select a tag ref, or provide the 'tag' input."
             exit 1
           fi
+
+          # Normalize: strip refs/tags/ prefix if accidentally included
+          TAG="${TAG#refs/tags/}"
 
           # Validate the resolved tag exists
           if ! git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
