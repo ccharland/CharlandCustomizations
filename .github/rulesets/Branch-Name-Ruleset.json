@@ -21,13 +21,11 @@
         "refs/heads/breaking/*",
         "refs/heads/docs/*",
         "refs/heads/chore/*",
-        "refs/heads/codex-code/*",
-        "refs/heads/copilot-code/*",
-        "refs/heads/kiro-code/*",
-        "refs/heads/codex-infra/*",
-        "refs/heads/copilot-infra/*",
-        "refs/heads/kiro-infra/*",
-        "refs/heads/publish/*"
+        "refs/heads/publish/*",
+        "refs/heads/copilot/*",
+        "refs/heads/codex/*",
+        "refs/heads/kiro/*",
+        "refs/heads/dependabot/*"
       ]
     }
   },
