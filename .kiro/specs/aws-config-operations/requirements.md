@@ -141,3 +141,21 @@ This document specifies the requirements for a new PowerShell module (`Config-Op
 1. THE Config_Module SHALL include comment-based help for each exported function containing: Synopsis, Description, Parameter documentation for all parameters, at least two Example sections, and a Notes section with attribution.
 2. THE Config_Module SHALL document the AWS common parameters (Region, ProfileName, AccessKey, SecretKey, SessionToken, Credential, ProfileLocation, EndpointUrl) in each function's help.
 3. THE Config_Module SHALL include the Kiro attribution line in the Notes section of each function's comment-based help.
+
+
+### Requirement 11: Pester Unit Tests
+
+**User Story:** As a developer, I want comprehensive Pester unit tests for the Config operations module, so that I can verify correctness of each function and catch regressions during development.
+
+#### Acceptance Criteria
+
+1. THE Config_Module tests SHALL be located at `tests/src/Public/AWS/Config/Config-Operations/`.
+2. Each exported function SHALL have a dedicated test file named `<FunctionName>.Tests.ps1` (e.g., `Get-CHARConfigResourceCreationDate.Tests.ps1`).
+3. A module-level test file `Config-Operations.Tests.ps1` SHALL verify module structure including exported function names and parameter presence for all AWS common parameters.
+4. All test Describe blocks SHALL use the `-Tag 'Unit'` parameter.
+5. Tests SHALL mock all AWS cmdlets (`Get-CFGResourceConfigHistory`, `Find-CTEvent`, `Get-CFGComplianceDetailsByConfigRule`, `Get-CFGComplianceDetailsByResource`) using `-ModuleName Config-Operations`.
+6. Tests SHALL mock `Test-CHARAWSCmdlet` and `New-AWSParamSplat` using `-ModuleName Config-Operations`.
+7. Each function test file SHALL include contexts for: happy path, CloudTrail unavailable (lifecycle functions only), no Config history or no results, and AWS API errors (permission denied, service exception).
+8. Tests SHALL verify output object property names and order using `$result.PSObject.Properties.Name`.
+9. Tests SHALL verify warning and error stream output using `-WarningVariable` and `Should -Invoke Write-Error` patterns or stream redirection.
+10. Tests SHALL verify pipeline input acceptance by piping values into each function.
