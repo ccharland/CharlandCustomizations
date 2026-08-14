@@ -55,8 +55,6 @@ An escape hatch (`CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1`) exists for genuinel
 
 ### 2026-08-13 — Allow AI-generated branch prefixes (issue #111)
 
-AI automation tools (Copilot, Codex, Kiro) create branches using their own prefixes (`copilot/*`, `codex/*`, `kiro/*`). The branch creation ruleset now allows these prefixes so the tools can perform background work without being blocked.
+AI automation tools (Copilot, Codex, Kiro) create branches using their own prefixes (`copilot/*`, `codex/*`, `kiro/*`). The branch creation ruleset now allows these prefixes so the tools can perform background work without being blocked. Dependabot also creates branches using its own prefix  (`dependabot/*`.) 
 
-This does **not** weaken merge protections. Existing required workflow checks (`branch-path-policy.yml`, `pr-quality-gate.yml`) still enforce path separation and status checks on any PR targeting `main`. AI-generated branches must be renamed to an approved prefix (e.g. `feature/*`, `infrastructure/*`) before merge if required by repository policy.
-
-`dependabot/*` is also explicitly allowed for automated dependency updates.
+This does **not** weaken merge protections. Existing required workflow checks (`branch-path-policy.yml`, `pr-quality-gate.yml`) still enforce path separation and status checks on any PR targeting `main`. AI-generated branches must be renamed to an approved prefix (e.g. `feature/*`, `infrastructure/*`) before merge to satisfy these checks.
