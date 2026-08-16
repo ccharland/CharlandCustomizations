@@ -83,42 +83,42 @@ Implement `Test-CHARConfigResourceType` in `Config-Operations.psm1` — a correc
       - Multiple values piped produce independent results per input
     - _Requirements: 5.9–5.18_
 
-  - [ ]* 4.3 Write property tests for output format invariant
+  - [x] 4.3 Write property tests for output format invariant
     - **Property 1: Output Format Invariant**
     - Use `New-RandomResourceTypeInput` to generate 100+ inputs, confirm all non-`$false` outputs match `^AWS::[A-Z][a-zA-Z0-9]+::[A-Z][a-zA-Z0-9]+$`
     - **Validates: Requirements 1.7, 1.8**
 
-  - [ ]* 4.4 Write property tests for correction idempotence
+  - [x] 4.4 Write property tests for correction idempotence
     - **Property 2: Correction Idempotence**
     - For 100+ generated inputs where `f(x) ≠ $false`, confirm `f(f(x)) == f(x)`
     - **Validates: Requirements 1.1, 1.2**
 
-  - [ ]* 4.5 Write property tests for whitespace invariance
+  - [x] 4.5 Write property tests for whitespace invariance
     - **Property 3: Whitespace Invariance**
     - For 100+ inputs with random leading/trailing whitespace, confirm `f(padded) == f(trimmed)`
     - **Validates: Requirements 1.6**
 
-  - [ ]* 4.6 Write property tests for invalid input rejection
+  - [x] 4.6 Write property tests for invalid input rejection
     - **Property 4: Invalid Input Rejection**
     - Generate 100+ strings with non-alphanumeric segment chars, digit-leading segments, or <2 segments after prefix; confirm all return `$false`
     - **Validates: Requirements 1.8, 1.9**
 
-  - [ ]* 4.7 Write property tests for no-throw guarantee
+  - [x] 4.7 Write property tests for no-throw guarantee
     - **Property 5: No-Throw Guarantee**
     - Feed 100+ arbitrary strings (including `$null`, empty, random bytes, long strings); confirm no terminating errors are thrown
     - **Validates: Requirements 1.10**
 
-  - [ ]* 4.8 Write property tests for cache-based case correction
+  - [x] 4.8 Write property tests for cache-based case correction
     - **Property 6: Cache-Based Case Correction**
     - With a mocked cache, for each cached entry generate random case variants; confirm the cache entry is always returned
     - **Validates: Requirements 2.9, 2.10**
 
-  - [ ]* 4.9 Write property tests for non-existent type rejection with populated cache
+  - [x] 4.9 Write property tests for non-existent type rejection with populated cache
     - **Property 7: Non-Existent Type Rejection with Populated Cache**
     - Generate format-valid strings not in the mocked cache; confirm all return `$false`
     - **Validates: Requirements 2.11**
 
-  - [ ]* 4.10 Write property tests for pipeline independence
+  - [x] 4.10 Write property tests for pipeline independence
     - **Property 8: Pipeline Independence**
     - Pipe N random inputs; confirm each output matches individual invocation
     - **Validates: Requirements 3.5, 3.6**
