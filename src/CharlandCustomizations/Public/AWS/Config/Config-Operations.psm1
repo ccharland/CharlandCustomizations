@@ -198,6 +198,36 @@ function Test-CHARConfigResourceType {
 
         $value = $segments -join '::'
 
+        # Stage 4b: Apply well-known AWS service abbreviation corrections
+        # PascalCase alone produces 'Ec2', 'Rds', etc. — fix common all-caps service names
+        # that can't be inferred from simple first-char uppercase logic.
+        $knownAbbreviations = @{
+            'Ec2'          = 'EC2'
+            'Rds'          = 'RDS'
+            'Iam'          = 'IAM'
+            'Elb'          = 'ELB'
+            'Elbv2'        = 'ELBv2'
+            'Ecs'          = 'ECS'
+            'Eks'          = 'EKS'
+            'Emr'          = 'EMR'
+            'Kms'          = 'KMS'
+            'Sns'          = 'SNS'
+            'Sqs'          = 'SQS'
+            'Ssm'          = 'SSM'
+            'Waf'          = 'WAF'
+            'Wafv2'        = 'WAFv2'
+            'Dms'          = 'DMS'
+            'Acm'          = 'ACM'
+            'Ecr'          = 'ECR'
+        }
+        $correctedSegments = $value -split '::'
+        for ($j = 1; $j -lt $correctedSegments.Length; $j++) {
+            if ($knownAbbreviations.ContainsKey($correctedSegments[$j])) {
+                $correctedSegments[$j] = $knownAbbreviations[$correctedSegments[$j]]
+            }
+        }
+        $value = $correctedSegments -join '::'
+
         # Stage 5: Validate against the structural format pattern
         if ($value -notmatch $formatPattern) {
             return $false
@@ -347,7 +377,7 @@ function Get-CHARConfigResourceCreationDate {
         Write-Verbose "Querying AWS Config history for resource '$ResourceId' ($ResourceType)."
 
         try {
-            $history = Get-CFGResourceConfigHistory -ResourceId $ResourceId -ResourceType $ResourceType -ChronologicalOrder Reverse @awsParams
+            $history = Get-CFGResourceConfigHistory -ResourceId $ResourceId -ResourceType $ResourceType -ChronologicalOrder Forward @awsParams -Limit 5 |Select-Object -First 2
         }
         catch {
             if ($_.Exception.GetType().Name -eq 'ResourceNotDiscoveredException') {
@@ -372,7 +402,12 @@ function Get-CHARConfigResourceCreationDate {
         Write-Verbose "Retrieved $($history.Count) configuration item(s) for '$ResourceId'."
 
         # Get the earliest item (last in reverse chronological order)
-        $earliestItem = $history | Select-Object -Last 1
+        $earliestItem = $history | Where-Object ConfigurationItemStatus -eq "ResourceDiscovered"  | Select-Object -First 1
+        if ($earliestItem){
+              $ResourceDiscovered = $true
+        } else {
+            $ResourceDiscovered = $false
+        }
         $creationDate = $earliestItem.ConfigurationItemCaptureTime
 
         # Query CloudTrail for the creation event
@@ -418,9 +453,10 @@ function Get-CHARConfigResourceCreationDate {
             ResourceId    = $ResourceId
             ResourceType  = $ResourceType
             CreationDate  = $creationDate
+            ResourceDiscovered = $ResourceDiscovered
             PrincipalName = $principalName
-            EventName     = $eventName
-            EventSource   = $eventSource
+            FirstCloudTrailEventName     = $eventName
+            FirstCloudTrailEventSource   = $eventSource
         }
     }
 
@@ -546,7 +582,8 @@ function Get-CHARConfigResourceDeleteDate {
         Write-Verbose "Querying AWS Config history for deletion record of resource '$ResourceId' ($ResourceType)."
 
         try {
-            $history = Get-CFGResourceConfigHistory -ResourceId $ResourceId -ResourceType $ResourceType -ChronologicalOrder Reverse @awsParams
+            $history = Get-CFGResourceConfigHistory -ResourceId $ResourceId -ResourceType $ResourceType -ChronologicalOrder Reverse @awsParams -Limit 5 |Select-Object -First 2
+            
         }
         catch {
             if ($_.Exception.GetType().Name -eq 'ResourceNotDiscoveredException') {
