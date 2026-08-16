@@ -11,15 +11,15 @@ on:
       - "v[0-9]*.[0-9]*.[0-9]*-*"
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Tag to publish (e.g. v0.6.0). Must already exist. When triggered from UI, select the tag as the ref instead."
-        required: false
-        type: string
       dry_run:
         description: "Run with -WhatIf (no actual publish)"
         required: false
         type: boolean
         default: true
+      tag:
+        description: "Tag to verify and publish (e.g. v0.6.0). Provide this for manual runs started from a branch ref."
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -43,13 +43,13 @@ jobs:
           INPUT_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || '' }}
           REF_TAG: ${{ github.ref_name }}
         run: |
-          # Priority: explicit input (workflow_dispatch only) > ref_name (push-tag or dispatch-on-tag)
+          # Priority: explicit input (manual dispatch from a branch ref) > ref_name (push-tag or dispatch-on-tag)
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           elif [[ "$REF_TAG" == v* ]]; then
             TAG="$REF_TAG"
           else
-            echo "::error::Unable to determine tag. Either push a tag, select a tag ref, or provide the 'tag' input."
+            echo "::error::Unable to determine tag. Push a tag or provide the 'tag' workflow input for manual runs."
             exit 1
           fi
 
