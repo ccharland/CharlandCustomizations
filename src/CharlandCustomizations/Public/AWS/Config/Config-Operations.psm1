@@ -402,12 +402,13 @@ function Get-CHARConfigResourceCreationDate {
         Write-Verbose "Retrieved $($history.Count) configuration item(s) for '$ResourceId'."
 
         # Get the earliest item (last in reverse chronological order)
+        # Get the earliest item (last in reverse chronological order)
         $earliestItem = $history | Where-Object ConfigurationItemStatus -eq "ResourceDiscovered"  | Select-Object -First 1
-        if ($earliestItem){
-              $ResourceDiscovered = $true
-        } else {
-            $ResourceDiscovered = $false
+        if (-not $earliestItem) {
+            Write-Warning "Resource '$ResourceId' ($ResourceType) has no ResourceDiscovered status in Config history."
+            return $null
         }
+        $ResourceDiscovered = $true
         $creationDate = $earliestItem.ConfigurationItemCaptureTime
 
         # Query CloudTrail for the creation event
