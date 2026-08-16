@@ -955,5 +955,11 @@ function Get-CHARConfigResourceComplianceReport {
 
     end { }
 }
-
-Export-ModuleMember -Function 'Get-CHARConfigResourceComplianceReport', 'Get-CHARConfigResourceCreationDate', 'Get-CHARConfigNonCompliantResource', 'Get-CHARConfigResourceDeleteDate', 'Test-CHARConfigResourceType'
+# list one per line
+Export-ModuleMember -Function @(
+    'Get-CHARConfigNonCompliantResource',
+    'Get-CHARConfigResourceComplianceReport', 
+    'Get-CHARConfigResourceCreationDate',
+    'Get-CHARConfigResourceDeleteDate',
+    'Test-CHARConfigResourceType'
+)

@@ -140,9 +140,10 @@ CmdletsToExport = @()
 
 # Variables to export from this module
 # VariablesToExport = @()
-
-# Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'Set-CHARFileSignature', 'Test-CHARAuthenticodeSignatures'
+# Aliases to export from this module,: one export per line, sorted. 
+AliasesToExport = @('Set-CHARFileSignature', 
+'Test-CHARAuthenticodeSignatures'
+)
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -158,8 +159,13 @@ PrivateData = @{
 
     PSData = @{
 
-        # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = 'Automation','AWS','CloudFormation','PowerShell','Utilities'
+        # Tags applied to this module. One per line, sorted. 
+        # These help with module discovery in online galleries.
+        Tags = @('Automation',
+        'AWS',
+        'CloudFormation',
+        'PowerShell',
+        'Utilities')
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/ccharland/CharlandCustomizations/blob/main/LICENSE'
@@ -175,7 +181,6 @@ PrivateData = @{
 
         # Prerelease string of this module
         # Prerelease = ''
-
         # Flag to indicate whether the module requires explicit user acceptance for install/update/save
         # RequireLicenseAcceptance = $false
 

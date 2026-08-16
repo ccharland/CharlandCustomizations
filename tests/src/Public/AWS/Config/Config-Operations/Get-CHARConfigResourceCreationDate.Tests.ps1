@@ -31,13 +31,13 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
             Mock Get-CFGResourceConfigHistory {
                 @(
                     [PSCustomObject]@{
-                        ConfigurationItemCaptureTime = [DateTime]'2024-06-15T12:00:00Z'
-                        ConfigurationItemStatus      = 'OK'
+                        ConfigurationItemCaptureTime = [DateTime]'2024-03-15T10:30:00Z'
+                        ConfigurationItemStatus      = 'ResourceDiscovered'
                         ResourceId                   = 'i-0123456789abcdef0'
                         ResourceType                 = 'AWS::EC2::Instance'
                     },
                     [PSCustomObject]@{
-                        ConfigurationItemCaptureTime = [DateTime]'2024-03-15T10:30:00Z'
+                        ConfigurationItemCaptureTime = [DateTime]'2024-06-15T12:00:00Z'
                         ConfigurationItemStatus      = 'OK'
                         ResourceId                   = 'i-0123456789abcdef0'
                         ResourceType                 = 'AWS::EC2::Instance'
@@ -58,15 +58,16 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
             $script:result = Get-CHARConfigResourceCreationDate -ResourceId 'i-0123456789abcdef0' -ResourceType 'AWS::EC2::Instance'
         }
 
-        It 'Returns a PSCustomObject with 6 properties in correct order' {
+        It 'Returns a PSCustomObject with 7 properties in correct order' {
             $propertyNames = $script:result.PSObject.Properties.Name
-            $propertyNames | Should -HaveCount 6
+            $propertyNames | Should -HaveCount 7
             $propertyNames[0] | Should -Be 'ResourceId'
             $propertyNames[1] | Should -Be 'ResourceType'
             $propertyNames[2] | Should -Be 'CreationDate'
-            $propertyNames[3] | Should -Be 'PrincipalName'
-            $propertyNames[4] | Should -Be 'EventName'
-            $propertyNames[5] | Should -Be 'EventSource'
+            $propertyNames[3] | Should -Be 'ResourceDiscovered'
+            $propertyNames[4] | Should -Be 'PrincipalName'
+            $propertyNames[5] | Should -Be 'FirstCloudTrailEventName'
+            $propertyNames[6] | Should -Be 'FirstCloudTrailEventSource'
         }
 
         It 'Sets ResourceId to the queried resource ID' {
@@ -81,16 +82,20 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
             $script:result.CreationDate | Should -Be ([DateTime]'2024-03-15T10:30:00Z')
         }
 
+        It 'Sets ResourceDiscovered to $true when a ResourceDiscovered item exists' {
+            $script:result.ResourceDiscovered | Should -BeTrue
+        }
+
         It 'Sets PrincipalName from CloudTrail event' {
             $script:result.PrincipalName | Should -Be 'arn:aws:iam::123456789012:user/admin'
         }
 
-        It 'Sets EventName from CloudTrail event' {
-            $script:result.EventName | Should -Be 'RunInstances'
+        It 'Sets FirstCloudTrailEventName from CloudTrail event' {
+            $script:result.FirstCloudTrailEventName | Should -Be 'RunInstances'
         }
 
-        It 'Sets EventSource from CloudTrail event' {
-            $script:result.EventSource | Should -Be 'ec2.amazonaws.com'
+        It 'Sets FirstCloudTrailEventSource from CloudTrail event' {
+            $script:result.FirstCloudTrailEventSource | Should -Be 'ec2.amazonaws.com'
         }
     }
 
@@ -101,7 +106,7 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
                 @(
                     [PSCustomObject]@{
                         ConfigurationItemCaptureTime = [DateTime]'2024-03-15T10:30:00Z'
-                        ConfigurationItemStatus      = 'OK'
+                        ConfigurationItemStatus      = 'ResourceDiscovered'
                         ResourceId                   = 'i-0123456789abcdef0'
                         ResourceType                 = 'AWS::EC2::Instance'
                     }
@@ -123,16 +128,16 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
             $script:result.PrincipalName | Should -BeNullOrEmpty
         }
 
-        It 'Sets EventName to $null when CloudTrail fails' {
-            $script:result.EventName | Should -BeNullOrEmpty
+        It 'Sets FirstCloudTrailEventName to $null when CloudTrail fails' {
+            $script:result.FirstCloudTrailEventName | Should -BeNullOrEmpty
         }
 
-        It 'Sets EventSource to $null when CloudTrail fails' {
-            $script:result.EventSource | Should -BeNullOrEmpty
+        It 'Sets FirstCloudTrailEventSource to $null when CloudTrail fails' {
+            $script:result.FirstCloudTrailEventSource | Should -BeNullOrEmpty
         }
 
-        It 'Still returns all 6 properties' {
-            $script:result.PSObject.Properties.Name | Should -HaveCount 6
+        It 'Still returns all 7 properties' {
+            $script:result.PSObject.Properties.Name | Should -HaveCount 7
         }
     }
 
