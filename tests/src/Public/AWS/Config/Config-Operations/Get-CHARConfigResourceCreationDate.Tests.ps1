@@ -22,6 +22,7 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
     BeforeAll {
         Mock Test-CHARAWSCmdlet { } -ModuleName 'Config-Operations'
         Mock New-AWSParamSplat { return @{} } -ModuleName 'Config-Operations'
+        Mock Test-CHARConfigResourceType { return $ResourceType } -ModuleName 'Config-Operations'
     }
 
     Context 'Happy path - Config history and CloudTrail event found' {

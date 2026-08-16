@@ -28,6 +28,11 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846490827
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846563840
       }
     ],
     "2.1 Add validator call to Get-CHARConfigResourceCreationDate": [
@@ -35,6 +40,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266522
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846567805
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846656261
       }
     ],
     "2.2 Add validator call to Get-CHARConfigResourceDeleteDate": [
@@ -42,6 +57,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266548
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846568551
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846656928
       }
     ],
     "2.3 Add validator call to Get-CHARConfigResourceComplianceReport": [
@@ -49,6 +74,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266571
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846569314
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846657699
       }
     ],
     "3. Checkpoint - Verify module loads correctly": [
@@ -56,6 +91,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266622
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846663494
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846717651
       }
     ],
     "4.1 Create test file with input generator helpers and correction pipeline tests": [
@@ -63,6 +108,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266647
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846721440
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846885278
       }
     ],
     "4.2 Add cache-based validation and pipeline tests": [
@@ -70,6 +125,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266672
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846889729
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846962728
       }
     ],
     "5.1 Add Test-CHARConfigResourceType mock to existing Config-Operations test files": [
@@ -77,6 +142,16 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266696
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846722216
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846886243
       }
     ],
     "6. Final checkpoint - Verify all tests pass": [
@@ -84,6 +159,44 @@
         "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
         "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
         "timestamp": 1786846266722
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846984468
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786847028267
+      }
+    ],
+    "1. Implement Test-CHARConfigResourceType core function": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846563870
+      }
+    ],
+    "2. Integrate validator into existing functions": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846657721
+      }
+    ],
+    "5. Update existing function tests to mock the validator": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846886269
+      }
+    ],
+    "4. Create Pester tests for Test-CHARConfigResourceType": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846962766
       }
     ]
   }

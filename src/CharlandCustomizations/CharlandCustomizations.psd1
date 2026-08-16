@@ -66,45 +66,74 @@ PowerShellVersion = '7.2'
 # FormatsToProcess = @()
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-NestedModules = @('Public/AWS/ACM/ACM-Customizations.psm1', 
-               'Public/AWS/Audit/Audit-AWSAccount.psm1', 
-               'Public/AWS/AWSCustomizations.psm1', 
-               'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1', 
-               'Public/AWS/Config/Config-Operations.psm1', 
-               'Public/AWS/Lambda/Lambda-Customizations.psm1', 
-               'Public/AWS/S3/S3Customizations.psm1', 
-               'Public/Git/GitCustomizations.psm1')
+NestedModules = @(
+    'Public/AWS/ACM/ACM-Customizations.psm1'
+    'Public/AWS/Audit/Audit-AWSAccount.psm1'
+    'Public/AWS/AWSCustomizations.psm1'
+    'Public/AWS/CloudFormation/CloudFormation-TemplateProcessing.psm1'
+    'Public/AWS/Config/Config-Operations.psm1'
+    'Public/AWS/Lambda/Lambda-Customizations.psm1'
+    'Public/AWS/S3/S3Customizations.psm1'
+    'Public/Git/GitCustomizations.psm1'
+)
 
-# Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Clear-CHARAuthenticodeSignature', 'Clear-CHARS3Bucket', 
-               'Edit-CHARCFTTEbsVolume', 'Export-CHARPfxCertificatePem', 
-               'Find-CHARCFNStackError', 'Find-CHAREC2DBSG', 
-               'Find-CHAROpenSecurityGroup', 'Get-CHARAccountListFromProfile', 
-               'Get-CHARACMCertificateInventory', 'Get-CHARAllEC2Patch', 
-               'Get-CHARAWSAccountListOfDriftedResource', 'Get-CHARAWSMFASession', 
-               'Get-CHARAWSObjectCount', 'Get-CHARAWSRegionFromIp', 
-               'Get-CHARConfigNonCompliantResource', 
-               'Get-CHARConfigResourceComplianceReport', 
-               'Get-CHARConfigResourceCreationDate', 
-               'Get-CHARConfigResourceDeleteDate', 
-               'Get-CHARDeprecatedLMFunctionList', 'Get-CHAREC2Count', 
-               'Get-CHAREC2KeyTagNameStatus', 'Get-CHAREC2SGInUse', 
-               'Get-CHAREC2SnapshotReport', 'Get-CHAREC2VolumeReport', 
-               'Get-CHARGlobalAuditReportItem', 'Get-CHARIAMAuditList', 
-               'Import-CHARPfxCertificateToACM', 'Install-CHARGitHook', 
-               'Install-CHARProfilesFromSource', 
-               'Invoke-CHARScriptMultiRegionProfile', 'New-CHARCFNStackDirectory', 
-               'New-CHARCFNStackFromDirectory', 'Out-CHARAWSNetworkingComponent', 
-               'Out-CHARAWSSupportingInfo', 'Out-CHARCFNStackInfo', 
-               'Remove-CHARExpiredAWSProfile', 'Set-CHARAuthenticodeSignature', 
-               'Set-CHARAWSEnv', 'Set-CHARAWSProfileWithMFA', 
-               'Start-CHAREC2RetryLoop', 'Start-CHARMultiStackDriftDetection', 
-               'Test-CHARACMCertificate', 'Test-CHARAuthenticodeSignature', 
-               'Test-CHARAWSCmdlet', 'Test-CHARCFNStackFromDirectory', 
-               'Test-CHARCommitSignature', 'Test-CHARPfxCertificate', 
-               'Update-CHARCFNStackFromDirectory', 
-               'Update-CHARPfxCertificateInACM', 'Update-CHARPowershell7', 
-               'Update-CHARSSOCredentialList', 'Use-CHARAssumedRole'
+# Functions to export from this module, Keep list sorted, one entry per line for code management
+# For best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
+FunctionsToExport = @(
+    'Clear-CHARAuthenticodeSignature'
+    'Clear-CHARS3Bucket'
+    'Edit-CHARCFTTEbsVolume'
+    'Export-CHARPfxCertificatePem'
+    'Find-CHARCFNStackError'
+    'Find-CHAREC2DBSG'
+    'Find-CHAROpenSecurityGroup'
+    'Get-CHARAccountListFromProfile'
+    'Get-CHARACMCertificateInventory'
+    'Get-CHARAllEC2Patch'
+    'Get-CHARAWSAccountListOfDriftedResource'
+    'Get-CHARAWSMFASession'
+    'Get-CHARAWSObjectCount'
+    'Get-CHARAWSRegionFromIp'
+    'Get-CHARConfigNonCompliantResource'
+    'Get-CHARConfigResourceComplianceReport'
+    'Get-CHARConfigResourceCreationDate'
+    'Get-CHARConfigResourceDeleteDate'
+    'Get-CHARDeprecatedLMFunctionList'
+    'Get-CHAREC2Count'
+    'Get-CHAREC2KeyTagNameStatus'
+    'Get-CHAREC2SGInUse'
+    'Get-CHAREC2SnapshotReport'
+    'Get-CHAREC2VolumeReport'
+    'Get-CHARGlobalAuditReportItem'
+    'Get-CHARIAMAuditList'
+    'Import-CHARPfxCertificateToACM'
+    'Install-CHARGitHook'
+    'Install-CHARProfilesFromSource'
+    'Invoke-CHARScriptMultiRegionProfile'
+    'New-CHARCFNStackDirectory'
+    'New-CHARCFNStackFromDirectory'
+    'Out-CHARAWSNetworkingComponent'
+    'Out-CHARAWSSupportingInfo'
+    'Out-CHARCFNStackInfo'
+    'Remove-CHARExpiredAWSProfile'
+    'Set-CHARAuthenticodeSignature'
+    'Set-CHARAWSEnv'
+    'Set-CHARAWSProfileWithMFA'
+    'Start-CHAREC2RetryLoop'
+    'Start-CHARMultiStackDriftDetection'
+    'Test-CHARACMCertificate'
+    'Test-CHARAuthenticodeSignature'
+    'Test-CHARAWSCmdlet'
+    'Test-CHARCFNStackFromDirectory'
+    'Test-CHARCommitSignature'
+    'Test-CHARConfigResourceType'
+    'Test-CHARPfxCertificate'
+    'Update-CHARCFNStackFromDirectory'
+    'Update-CHARPfxCertificateInACM'
+    'Update-CHARPowershell7'
+    'Update-CHARSSOCredentialList'
+    'Use-CHARAssumedRole'
+)
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

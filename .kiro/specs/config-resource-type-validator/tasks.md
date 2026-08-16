@@ -6,7 +6,7 @@ Implement `Test-CHARConfigResourceType` in `Config-Operations.psm1` — a correc
 
 ## Tasks
 
-- [ ] 1. Implement Test-CHARConfigResourceType core function
+- [x] 1. Implement Test-CHARConfigResourceType core function
   - [x] 1.1 Add module-scoped cache variable and implement the correction pipeline function
     - Add `$script:ConfigResourceTypeCache = $null` after the dot-source lines in `Config-Operations.psm1` (before any function definitions)
     - Implement `Test-CHARConfigResourceType` with full comment-based help (Synopsis, Description, Parameters, 2+ Examples, Notes with attribution)
@@ -19,35 +19,35 @@ Implement `Test-CHARConfigResourceType` in `Config-Operations.psm1` — a correc
     - Ensure function never throws terminating errors for invalid input — always returns string or `$false`
     - _Requirements: 1.1–1.11, 2.1–2.13, 3.2–3.4, 3.7–3.8_
 
-  - [-] 1.2 Update Export-ModuleMember and module manifest
+  - [x] 1.2 Update Export-ModuleMember and module manifest
     - Add `'Test-CHARConfigResourceType'` to the `Export-ModuleMember -Function` list in `Config-Operations.psm1`
     - Add `'Test-CHARConfigResourceType'` to the `FunctionsToExport` array in `CharlandCustomizations.psd1`
     - _Requirements: 3.1_
 
-- [ ] 2. Integrate validator into existing functions
-  - [~] 2.1 Add validator call to Get-CHARConfigResourceCreationDate
+- [x] 2. Integrate validator into existing functions
+  - [x] 2.1 Add validator call to Get-CHARConfigResourceCreationDate
     - Insert validation block at top of `process` block: call `Test-CHARConfigResourceType -ResourceType $ResourceType @awsParams`
     - If result is `$false`, write terminating error with original input value
     - If result differs from original, assign corrected value to `$ResourceType` and write `Write-Verbose` with both values
     - If result equals original, proceed without verbose message
     - _Requirements: 4.1, 4.4, 4.5, 4.6_
 
-  - [~] 2.2 Add validator call to Get-CHARConfigResourceDeleteDate
+  - [x] 2.2 Add validator call to Get-CHARConfigResourceDeleteDate
     - Same integration pattern as 2.1 in `Get-CHARConfigResourceDeleteDate` process block
     - _Requirements: 4.2, 4.4, 4.5, 4.6_
 
-  - [~] 2.3 Add validator call to Get-CHARConfigResourceComplianceReport
+  - [x] 2.3 Add validator call to Get-CHARConfigResourceComplianceReport
     - Same integration pattern as 2.1 in `Get-CHARConfigResourceComplianceReport` process block
     - _Requirements: 4.3, 4.4, 4.5, 4.6_
 
-- [~] 3. Checkpoint - Verify module loads correctly
+- [x] 3. Checkpoint - Verify module loads correctly
   - Ensure `Config-Operations.psm1` parses without syntax errors
   - Ensure `Import-Module CharlandCustomizations` loads without errors
   - Ensure `Test-CHARConfigResourceType` appears in exported commands
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Create Pester tests for Test-CHARConfigResourceType
-  - [~] 4.1 Create test file with input generator helpers and correction pipeline tests
+- [x] 4. Create Pester tests for Test-CHARConfigResourceType
+  - [x] 4.1 Create test file with input generator helpers and correction pipeline tests
     - Create `tests/src/Public/AWS/Config/Config-Operations/Test-CHARConfigResourceType.Tests.ps1`
     - Implement input generator helper functions: `New-RandomValidResourceType`, `New-RandomMiscasedResourceType`, `New-RandomInvalidResourceType`, `New-RandomWhitespacePadded`, `New-RandomSeparatorVariant`
     - Write unit tests in `Context 'Correction Pipeline - Format-Only Mode'`:
@@ -67,7 +67,7 @@ Implement `Test-CHARConfigResourceType` in `Config-Operations.psm1` — a correc
       - Segments beginning with digits returns `$false`
     - _Requirements: 5.1–5.8, 5.14_
 
-  - [~] 4.2 Add cache-based validation and pipeline tests
+  - [x] 4.2 Add cache-based validation and pipeline tests
     - Write unit tests in `Context 'Cache-Based Validation'`:
       - Mock `Get-CFGDiscoveredResourceCount` to return known types
       - Verify exact cache match returns the cached string
@@ -123,13 +123,13 @@ Implement `Test-CHARConfigResourceType` in `Config-Operations.psm1` — a correc
     - Pipe N random inputs; confirm each output matches individual invocation
     - **Validates: Requirements 3.5, 3.6**
 
-- [ ] 5. Update existing function tests to mock the validator
-  - [~] 5.1 Add Test-CHARConfigResourceType mock to existing Config-Operations test files
+- [x] 5. Update existing function tests to mock the validator
+  - [x] 5.1 Add Test-CHARConfigResourceType mock to existing Config-Operations test files
     - Add `Mock Test-CHARConfigResourceType { return $ResourceType }` (pass-through) to existing test files for `Get-CHARConfigResourceCreationDate`, `Get-CHARConfigResourceDeleteDate`, and `Get-CHARConfigResourceComplianceReport`
     - Ensure existing tests still pass with the validator integration
     - _Requirements: 4.1–4.3_
 
-- [~] 6. Final checkpoint - Verify all tests pass
+- [x] 6. Final checkpoint - Verify all tests pass
   - Run full Pester test suite for Config-Operations functions
   - Confirm module imports cleanly with new function exported
   - Ensure all tests pass, ask the user if questions arise.
