@@ -658,12 +658,12 @@ function Get-CHARConfigResourceDeleteDate {
         }
 
         [PSCustomObject][ordered]@{
-            ResourceId    = $ResourceId
-            ResourceType  = $ResourceType
-            DeletionDate  = $deletionDate
-            PrincipalName = $principalName
-            EventName     = $eventName
-            EventSource   = $eventSource
+            ResourceId                 = $ResourceId
+            ResourceType               = $ResourceType
+            DeletionDate               = $deletionDate
+            PrincipalName              = $principalName
+            FirstCloudTrailEventName   = $eventName
+            FirstCloudTrailEventSource = $eventSource
         }
     }
 

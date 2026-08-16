@@ -217,7 +217,7 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
                 @(
                     [PSCustomObject]@{
                         ConfigurationItemCaptureTime = [DateTime]'2024-01-10T08:00:00Z'
-                        ConfigurationItemStatus      = 'OK'
+                        ConfigurationItemStatus      = 'ResourceDiscovered'
                         ResourceId                   = 'i-pipeline123'
                         ResourceType                 = 'AWS::EC2::Instance'
                     }
@@ -246,7 +246,7 @@ Describe 'Get-CHARConfigResourceCreationDate' -Tag 'Unit' {
                 @(
                     [PSCustomObject]@{
                         ConfigurationItemCaptureTime = [DateTime]'2024-02-20T09:00:00Z'
-                        ConfigurationItemStatus      = 'OK'
+                        ConfigurationItemStatus      = 'ResourceDiscovered'
                         ResourceId                   = 'test-resource'
                         ResourceType                 = 'AWS::EC2::Instance'
                     }

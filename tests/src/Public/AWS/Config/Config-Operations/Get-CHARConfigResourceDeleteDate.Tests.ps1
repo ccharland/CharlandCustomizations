@@ -71,8 +71,8 @@ Describe 'Get-CHARConfigResourceDeleteDate' -Tag 'Unit' {
             $result = Get-CHARConfigResourceDeleteDate -ResourceId 'i-0123456789abcdef0' -ResourceType 'AWS::EC2::Instance'
 
             $result.PrincipalName | Should -Be 'arn:aws:iam::123456789012:user/admin'
-            $result.EventName | Should -Be 'TerminateInstances'
-            $result.EventSource | Should -Be 'ec2.amazonaws.com'
+            $result.FirstCloudTrailEventName | Should -Be 'TerminateInstances'
+            $result.FirstCloudTrailEventSource | Should -Be 'ec2.amazonaws.com'
         }
 
         It 'Output has exactly 6 properties in correct order' {
@@ -84,8 +84,8 @@ Describe 'Get-CHARConfigResourceDeleteDate' -Tag 'Unit' {
             $propertyNames[1] | Should -Be 'ResourceType'
             $propertyNames[2] | Should -Be 'DeletionDate'
             $propertyNames[3] | Should -Be 'PrincipalName'
-            $propertyNames[4] | Should -Be 'EventName'
-            $propertyNames[5] | Should -Be 'EventSource'
+            $propertyNames[4] | Should -Be 'FirstCloudTrailEventName'
+            $propertyNames[5] | Should -Be 'FirstCloudTrailEventSource'
         }
     }
 
@@ -176,8 +176,8 @@ Describe 'Get-CHARConfigResourceDeleteDate' -Tag 'Unit' {
             $result | Should -Not -BeNullOrEmpty
             $result.DeletionDate | Should -Be ([datetime]'2024-03-15 10:30:00')
             $result.PrincipalName | Should -BeNullOrEmpty
-            $result.EventName | Should -BeNullOrEmpty
-            $result.EventSource | Should -BeNullOrEmpty
+            $result.FirstCloudTrailEventName | Should -BeNullOrEmpty
+            $result.FirstCloudTrailEventSource | Should -BeNullOrEmpty
         }
 
         It 'Still returns valid ResourceId and ResourceType' {
