@@ -1,13 +1,22 @@
 {
-    "version": "0.2",
-    "words": [
-        "ACMRD",
-        "Authenticode",
-        "CHARAWS",
-        "CHARCFN",
-        "kiro",
-        "LASTEXITCODE",
-        "notmatch",
-        "pscustomobject"
-    ]
+  "version": "0.2",
+  "words": [
+    "CHARCFTT",
+    "ACMRD",
+    "Authenticode",
+    "CHARACM",
+    "CHARAWS",
+    "CHARAWSMFA",
+    "CHARCFN",
+    "CHAREC",
+    "CHARIAM",
+    "CHARSSO",
+    "DBSG",
+    "kiro",
+    "Kiro",
+    "LASTEXITCODE",
+    "Miscased",
+    "notmatch",
+    "pscustomobject"
+  ]
 }
