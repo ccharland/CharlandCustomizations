@@ -21,6 +21,9 @@ AfterAll {
 Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
 
     BeforeAll {
+        # Default to Windows for all tests so happy-path tests pass on Linux/macOS
+        Mock Test-CHARIsWindows { return $true }
+
         # Mock Set-AuthenticodeSignature to prevent actual signing
         Mock Set-AuthenticodeSignature {
             [PSCustomObject]@{ Status = 'Valid'; Path = $FilePath }
@@ -70,6 +73,28 @@ Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
                 NotAfter      = (Get-Date).AddYears(1)
                 HasPrivateKey = $true
                 Thumbprint    = 'EEFF112233445566'
+            }
+            Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
+
+            # Act
+            Set-CHARAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+
+            # Assert
+            Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
+                $TimestampServer -eq 'http://timestamp.sectigo.com'
+            }
+        }
+    }
+
+    Context 'SSL.com issuer timestamp server selection' {
+
+        It 'Falls back to http://timestamp.sectigo.com for SSL.com issuer' {
+            # Arrange
+            $mockCert = [PSCustomObject]@{
+                Issuer        = 'CN=SSL.com Code Signing Intermediate CA ECC R2, O=SSL Corp, L=Houston'
+                NotAfter      = (Get-Date).AddYears(1)
+                HasPrivateKey = $true
+                Thumbprint    = 'AABB112233CCDD44'
             }
             Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
 

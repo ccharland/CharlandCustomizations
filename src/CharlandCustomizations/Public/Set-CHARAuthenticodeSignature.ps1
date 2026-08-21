@@ -6,6 +6,24 @@
     Standalone entry point used during module build to apply Authenticode
     signatures without importing the full module. When dot-sourced or imported
     as part of the module, the inner function is loaded into the session instead.
+
+    Supports Digicert, Sectigo, and SSL.com certificate issuers for automatic
+    timestamp server selection.
+
+.PARAMETER MyCert
+    Code signing certificate to use. If not specified, the inner function
+    auto-detects from the CurrentUser certificate store.
+
+.PARAMETER TimeStampServer
+    URL of the timestamp server. If not specified, determined automatically
+    by the certificate issuer.
+
+.PARAMETER Path
+    Path(s) to the file(s) to sign.
+
+.NOTES
+    When dot-sourced (. .\Set-CHARAuthenticodeSignature.ps1), only the inner
+    function and alias are defined; no signing occurs.
 #>
 [CmdletBinding()]
 param(
@@ -29,15 +47,22 @@ function Set-CHARAuthenticodeSignature {
     Signs files using a code signing certificate from the CurrentUser certificate store.
     Automatically selects the valid certificate with the longest time before expiration
     and determines the appropriate timestamp server based on the certificate issuer
-    (Digicert or Sectigo).
+    (Digicert, Sectigo, or SSL.com).
+
+    This function is Windows-only and will throw on non-Windows platforms.
 
 .PARAMETER MyCert
     Code signing certificate to use. If not specified, automatically selects the valid
-    codesign certificate with the longest time before expiration from the CurrentUser store.
+    code-signing certificate with the longest time before expiration from the
+    CurrentUser certificate store (cert:\currentuser\my).
 
 .PARAMETER TimeStampServer
     URL of the timestamp server. If not specified, automatically determined based on the
-    certificate issuer (Digicert or Sectigo).
+    certificate issuer:
+    - Digicert: http://timestamp.digicert.com
+    - Sectigo: http://timestamp.sectigo.com
+    - SSL.com: http://timestamp.sectigo.com (SSL.com timestamp server does not work properly
+      with Set-AuthenticodeSignature)
 
 .PARAMETER Path
     Path(s) to the file(s) to sign. Accepts pipeline input and the FullName property
@@ -60,6 +85,10 @@ function Set-CHARAuthenticodeSignature {
 .EXAMPLE
     Set-CHARAuthenticodeSignature -Path .\MyScript.ps1 -TimeStampServer 'http://timestamp.digicert.com'
     Signs a file using an explicitly specified timestamp server.
+
+.NOTES
+    Requires Windows. Uses Test-CHARIsWindows (Private) for platform validation.
+    Alias: Set-CHARFileSignature
 #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'This helper performs code-signing operations by design and is intentionally explicit.')]
     [CmdletBinding()]
@@ -151,12 +180,11 @@ if ($MyInvocation.InvocationName -ne '.') {
 }
 
 
-
 # SIG # Begin signature block
-# MIIgywYJKoZIhvcNAQcCoIIgvDCCILgCAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIIgygYJKoZIhvcNAQcCoIIguzCCILcCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAQqKAvT8ISnHBZ
-# /XjnKXUUu9c1HgWSbiVmL+B7HoPGpaCCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAJWUGZeOXLnMTB
+# yz7BQ1LqYtL0XZK6pguojX7jwJTVlKCCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
 # /xLZmv82guWnMAoGCCqGSM49BAMDMHwxCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVU
 # ZXhhczEQMA4GA1UEBwwHSG91c3RvbjEYMBYGA1UECgwPU1NMIENvcnBvcmF0aW9u
 # MTEwLwYDVQQDDChTU0wuY29tIFJvb3QgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkg
@@ -302,30 +330,30 @@ if ($MyInvocation.InvocationName -ne '.') {
 # BEvgsbxe25yEhJ0IdGa1pwCYsarldJhJVMdNcAOU7jyIMqHcczav3wtIXp/SwbXZ
 # 3xX0mfsLfANSJ47G4qPgx1atb6GIlTaQXzu/p4fTQeAIUVzZXT4K984IyfuO7NLj
 # WMtog1wGUpZD98pv+4Mt9Y5bvfPUjaUVjtePy1DVdi0rl5ESNYi0zyOmXVxtA5zz
-# xu1H7RdLZOZugT/XjX69rY9bMYIEyTCCBMUCAQEwgYwweDELMAkGA1UEBhMCVVMx
+# xu1H7RdLZOZugT/XjX69rY9bMYIEyDCCBMQCAQEwgYwweDELMAkGA1UEBhMCVVMx
 # DjAMBgNVBAgMBVRleGFzMRAwDgYDVQQHDAdIb3VzdG9uMREwDwYDVQQKDAhTU0wg
 # Q29ycDE0MDIGA1UEAwwrU1NMLmNvbSBDb2RlIFNpZ25pbmcgSW50ZXJtZWRpYXRl
 # IENBIEVDQyBSMgIQUR3u8+0Mq1hXs5hyxM0vzzANBglghkgBZQMEAgEFAKCBhDAY
 # BgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3
 # AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqGSIb3DQEJBDEi
-# BCCKXBURvLyOSgYZ6SpOND8qdl+Srv5eBluAY8KyGp7qTDALBgcqhkjOPQIBBQAE
-# ZzBlAjEA6duMoywLTcAeSo5ty7E2ivBL4Z8y6KJngf3cGotKqW0cj1snw7gSo6Bt
-# B0WzulzrAjB6o/EyVC6TNO46nZrKKoeC8FL7p2bTxHTnT2v+JTMWboVHhN/gyQLx
-# JRk0TF+pg32hggMjMIIDHwYJKoZIhvcNAQkGMYIDEDCCAwwCAQEwajBVMQswCQYD
-# VQQGEwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0
-# aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5nIENBIFI0MQIRAOdO8lWwUE/626bf9/yL
-# oxUwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwG
-# CSqGSIb3DQEJBTEPFw0yNjA4MjEwMzA1MjFaMD8GCSqGSIb3DQEJBDEyBDA4CEAX
-# dJ70pqdIAEwB0PBj+7UDw2pT5y1WZ2iqQi+KzcAUXTT3lh7gsOfTOHFMnjcwDQYJ
-# KoZIhvcNAQEBBQAEggIAjaGV9JdRxPuBsGawn+m5+61h3jvCRKKR32RV2zHnM9Lb
-# ypdJP2WVR+DcD+E/Lb/49XQ/znoik7zkZzQy8A+CwBV8E8Cs0ZlrQ2LILeCSYBZg
-# PJ3V/35bd6tvvYFwh9gU74lDj17S1pNVGwuRrojnlgXj+C3souSZtmsZIcKbtlkg
-# TeBWueOvEH9DJvJBuTwt9EHRMigZDgw+zSqNUuFEiOnKtiK3coV26csi04ksWbMC
-# 4fdFQovQsLXYuvFYjA7/FRQjRHcrYxM9sByIOaJGkzILYehoNagr6LLucATGUATr
-# VrhhFj6uPX08y9zb6k2/7PalszyOnchIqHJMd3T+eAbwQx7eKuq4qORK+LQlzo0T
-# pzHZJ93bkFX3fXSwhs8pJivIZqgLpJedSvd+PYq6wow5A4SbP5QbqQxLfyo19i+q
-# jipJ4OjLDSZtyZISun8iSgqK8J4Ot8xdIky4HoKKWZgU/8SDzTbWENNYOqqeFqAx
-# oITfOCaWBSrbZWYcqxuso5AAfJ1AokDqULfhsrGuXY/UwhMqU1nudJWDbCojgvwu
-# NIfpPZ+5D3+4rBeT0/IGvmf5DnxnlwSgwH2gpF8AyElowvCnqdOgWFqXGeLE1tJI
-# RMN55zxa+4URRZ+PBtbOB2u8BPymoRLQXliII+5ksUC8+nA/7A57xcp0wt8riTs=
+# BCCXfq1Nm1VyhwmEGQou4ZbGMeAYz+VQHDmSdo6lWF1UhDALBgcqhkjOPQIBBQAE
+# ZjBkAjAkKPGcRzox6nm8BgY0JdcZ1GV015L2mzbVMVCJAyTkN5Ah4jkRcVXiyPEs
+# 9vXTn1UCMCsjOuMWjhUSrNJBZjeC4zO5fP3V4AzDamYRq8kMMtFDcPsAD5kcWJ7C
+# 9mVBBTLrIaGCAyMwggMfBgkqhkiG9w0BCQYxggMQMIIDDAIBATBqMFUxCzAJBgNV
+# BAYTAkdCMRgwFgYDVQQKEw9TZWN0aWdvIExpbWl0ZWQxLDAqBgNVBAMTI1NlY3Rp
+# Z28gUHVibGljIFRpbWUgU3RhbXBpbmcgQ0EgUjQxAhEA507yVbBQT/rbpt/3/Iuj
+# FTANBglghkgBZQMEAgIFAKB5MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJ
+# KoZIhvcNAQkFMQ8XDTI2MDgyMTAzMjAzNVowPwYJKoZIhvcNAQkEMTIEMJ/MBObg
+# 7w0esk02NtD2yh3JN8oN5eMyTm31f5D20nQ3tUlUs5xO55SK9Hgfe1XZszANBgkq
+# hkiG9w0BAQEFAASCAgCFrhMye36jP8KYUIm1eeZIVPpmztR92EuKnLyTmSykg0cu
+# 9UrwTSDej8qsSPZuHTtkEKzUcKwNwbg/Q53uww1cAoiDtj++68yr8pPoRn2vyLVO
+# ECPhoCb608G82cjk7ShthlhOayE5AnkhZHRWNxGydBzcPJS41uueo1+otU9mYqYs
+# oJxOisgAW43/ptjoKh2PA+EcqEzqLIzfeRT6guJnpEqYspz13WMIRnIWFYGQJCqx
+# RYqcN1WkQaLd5nO1T0WGbMTOrSM7xrItSbD/CuLqAngZhbi1Y6/MljiCx/qcuk+x
+# BFW8gVlS0+UVXpkye/ec3dirte5i83tUO5hEbFtEo1zf1R1ufMsgn1UO2LyS4GLK
+# 1nLx6p8w5JX+nk6C0PQWJyS4K3Q8akfsZseAl8uEP9MM6hwjgwjK4OWX1iO716UE
+# 4yb5GugjvmiOHIUloEhM3n8ZYlo+gWBtiZ9wb5UNXYkBwhsVL2jS+JqrXWbSbZ2R
+# 1392z3+qPhK2zrFoiYh8SvYHvRJIbI4+jWY82qTZd265wxzybOmGFYf6kKRA2WtG
+# NZfFEMnKgsYbW3XDS7SJRwa8nsJdXte5ObLNZa+Ib1A0mVVdFC+P3aBL3w84Ikie
+# 7O36T5uempsO00jX/f+I2oQUUORqrbp7qjJLfc2HdsaTqP3ze6+kiz4PO9Ypuw==
 # SIG # End signature block
