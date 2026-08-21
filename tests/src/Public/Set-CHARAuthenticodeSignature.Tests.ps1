@@ -10,9 +10,8 @@ BeforeAll {
         param($FilePath, $TimestampServer, $Certificate)
     }
 
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Private/Test-CHARIsWindows.ps1"
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CHARAuthenticodeSignature.ps1"
-    # Force the script-scoped variable used by the SUT to $true for testing on non-Windows
-    $script:CHARIsWindows = $true
 }
 
 AfterAll {
@@ -22,6 +21,9 @@ AfterAll {
 Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
 
     BeforeAll {
+        # Default to Windows for all tests so happy-path tests pass on Linux/macOS
+        Mock Test-CHARIsWindows { return $true }
+
         # Mock Set-AuthenticodeSignature to prevent actual signing
         Mock Set-AuthenticodeSignature {
             [PSCustomObject]@{ Status = 'Valid'; Path = $FilePath }
@@ -84,6 +86,28 @@ Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
         }
     }
 
+    Context 'SSL.com issuer timestamp server selection' {
+
+        It 'Falls back to http://timestamp.sectigo.com for SSL.com issuer' {
+            # Arrange
+            $mockCert = [PSCustomObject]@{
+                Issuer        = 'CN=SSL.com Code Signing Intermediate CA ECC R2, O=SSL Corp, L=Houston'
+                NotAfter      = (Get-Date).AddYears(1)
+                HasPrivateKey = $true
+                Thumbprint    = 'AABB112233CCDD44'
+            }
+            Set-Content -Path 'TestDrive:\script.ps1' -Value 'Write-Output "hello"'
+
+            # Act
+            Set-CHARAuthenticodeSignature -MyCert $mockCert -Path 'TestDrive:\script.ps1'
+
+            # Assert
+            Should -Invoke Set-AuthenticodeSignature -Times 1 -ParameterFilter {
+                $TimestampServer -eq 'http://timestamp.sectigo.com'
+            }
+        }
+    }
+
     Context 'Alias compatibility' {
 
         It 'Alias Set-CHARFileSignature resolves to Set-CHARAuthenticodeSignature' {
@@ -94,10 +118,9 @@ Describe 'Set-CHARAuthenticodeSignature' -Tag 'Unit' {
     Context 'Windows requirement' {
 
         It 'Throws when not running on Windows' {
-            $script:CHARIsWindows = $false
+            Mock Test-CHARIsWindows { return $false }
             { Set-CHARAuthenticodeSignature -MyCert ([PSCustomObject]@{ Issuer='CN=Digicert'; NotAfter=(Get-Date).AddYears(1); HasPrivateKey=$true }) -Path 'TestDrive:\script.ps1' } |
                 Should -Throw '*only supported on Windows systems*'
-            $script:CHARIsWindows = $true
         }
     }
 
