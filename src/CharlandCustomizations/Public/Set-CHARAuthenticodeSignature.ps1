@@ -20,17 +20,6 @@ param(
     [string[]]$Path
 )
 
-function Test-CHARIsWindows {
-    <#
-    .SYNOPSIS
-        Returns whether the current platform is Windows.
-    .DESCRIPTION
-        Thin wrapper around the automatic $IsWindows variable to enable
-        mocking in Pester tests (automatic variables are read-only).
-    #>
-    return [bool]$IsWindows
-}
-
 function Set-CHARAuthenticodeSignature {
     <#
 .SYNOPSIS

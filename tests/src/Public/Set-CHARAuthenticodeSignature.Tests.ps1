@@ -10,6 +10,7 @@ BeforeAll {
         param($FilePath, $TimestampServer, $Certificate)
     }
 
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Private/Test-CHARIsWindows.ps1"
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Set-CHARAuthenticodeSignature.ps1"
 }
 
