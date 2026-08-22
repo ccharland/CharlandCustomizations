@@ -200,11 +200,6 @@ jobs:
           # not trigger on:push workflows — a deliberate GitHub security measure.
           RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
         run: |
-          if [ -z "$RELEASE_PAT" ]; then
-            echo "::error::RELEASE_PAT secret is not configured. A Personal Access Token with contents:write scope is required to trigger downstream workflows."
-            exit 1
-          fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config gpg.program "$GPG_WRAPPER"
@@ -226,6 +221,10 @@ jobs:
             echo "::warning::DRY RUN — would push tag $TAG but skipping."
             echo "::notice::Tag $TAG created locally (not pushed). Workflow validated successfully."
           else
+            if [ -z "$RELEASE_PAT" ]; then
+              echo "::error::RELEASE_PAT secret is not configured. A Personal Access Token with contents:write scope is required to trigger downstream workflows."
+              exit 1
+            fi
             git push origin "refs/tags/$TAG"
             echo "::notice::Created signed tag $TAG — publish workflow will trigger."
           fi
