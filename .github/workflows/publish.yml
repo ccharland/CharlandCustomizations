@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: true
+      tag:
+        description: "Tag to verify and publish (e.g. v0.6.0). Provide this for manual runs started from a branch ref."
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -44,12 +48,14 @@ jobs:
           REF_TAG: ${{ github.ref_name }}
         run: |
           # Priority: explicit input (workflow_dispatch only) > ref_name (push-tag or dispatch-on-tag)
+
           if [ -n "$INPUT_TAG" ]; then
             TAG="$INPUT_TAG"
           elif [[ "$REF_TAG" == v* ]]; then
             TAG="$REF_TAG"
           else
             echo "::error::Unable to determine tag. Either push a tag, select a tag ref, or provide the 'tag' input."
+
             exit 1
           fi
 

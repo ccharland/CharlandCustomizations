@@ -45,7 +45,16 @@ An escape hatch (`CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1`) exists for genuinel
 
 - Occasionally requires two branches/PRs for tightly coupled changes (e.g., adding a function that also needs a new CI check).
 - Contributors must learn the branch naming convention before their first commit.
+- Branches created by AI tools need to be renamed before merging.
 
 ### Neutral
 
 - The override mechanism means this is a guardrail, not a hard wall. Deliberate exceptions are still possible.
+
+## Amendments
+
+### 2026-08-13 — Allow AI-generated branch prefixes (issue #111)
+
+AI automation tools (Copilot, Codex, Kiro) create branches using their own prefixes (`copilot/*`, `codex/*`, `kiro/*`). The branch creation ruleset now allows these prefixes so the tools can perform background work without being blocked. Dependabot also creates branches using its own prefix  (`dependabot/*`.) 
+
+This does **not** weaken merge protections. Existing required workflow checks (`branch-path-policy.yml`, `pr-quality-gate.yml`) still enforce path separation and status checks on any PR targeting `main`. AI-generated branches must be renamed to an approved prefix (e.g. `feature/*`, `infrastructure/*`) before merge to satisfy these checks.

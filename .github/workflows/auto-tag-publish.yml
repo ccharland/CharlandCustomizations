@@ -216,6 +216,10 @@ jobs:
           git config --local credential.helper \
             '!f() { echo "username=x-access-token"; echo "password=${RELEASE_PAT}"; }; f'
 
+          # actions/checkout configures an Authorization header using GITHUB_TOKEN; unset it so git uses the PAT helper above.
+          git config --local --unset-all http.https://github.com/.extraheader || true
+
+
           git tag -s "$TAG" -m "Release $TAG"
 
           if [ "$DRY_RUN" = "true" ]; then
