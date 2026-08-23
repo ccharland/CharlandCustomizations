@@ -4,6 +4,41 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-23
+
+### Added
+
+- `Config-Operations.psm1` — new nested module under `Public/AWS/Config/` providing AWS Config resource lifecycle and compliance query functions (#113)
+- `Get-CHARConfigResourceCreationDate` — determines when an AWS resource was first recorded by Config and correlates with CloudTrail to identify the creating principal (#113)
+- `Get-CHARConfigResourceDeleteDate` — determines when an AWS resource was deleted and correlates with CloudTrail to identify the deleting principal (#113)
+- `Get-CHARConfigNonCompliantResource` — retrieves all resources evaluated as non-compliant by a specified AWS Config rule (#113)
+- `Get-CHARConfigResourceComplianceReport` — retrieves all Config rule compliance evaluations for a specific resource (#113)
+- `Test-CHARConfigResourceType` — correction-first validator for AWS Config resource type strings with dynamic enum caching from `Get-CFGDiscoveredResourceCount` (#113)
+- `Test-CHARIsWindows` — private helper function wrapping `$IsWindows` to enable mocking in Pester tests
+- Comprehensive Pester test suite for all Config-Operations functions including property-based tests for the resource type validator
+- `publish.yml` workflow now accepts a `tag` input for manual dispatch, enabling publish from branch refs without requiring the tag to be the triggering ref (#115)
+- `publish.yml` adds a `resolve-tag` job that determines the effective tag from either input or push event, improving reliability for manual runs (#109, #115)
+
+### Changed
+
+- `Set-CHARAuthenticodeSignature` — refactored platform check to use `Test-CHARIsWindows` instead of a script-scoped `$CHARIsWindows` variable; added SSL.com certificate issuer support (falls back to Sectigo timestamp server) (#117)
+- `Set-CHARAuthenticodeSignature` — standalone script `Path` parameter changed from `ValueFromPipeline` to positional `[Parameter(Position = 0)]` to fix parse error (#117)
+- `auto-tag-publish.yml` — uses `RELEASE_PAT` secret for tag push so downstream workflows are triggered (tags pushed with `GITHUB_TOKEN` do not trigger `on:push` workflows) (#109)
+- Branch name ruleset simplified: replaced per-tool code/infra prefixes (`copilot-code/*`, `kiro-infra/*`, etc.) with unified AI tool prefixes (`copilot/*`, `codex/*`, `kiro/*`) and added `dependabot/*` (#112)
+- ADR-002 (branch path policy) amended to document AI-generated branch prefix allowance and clarify that PR path enforcement still applies (#112)
+- Module manifest version bumped to `0.7.0`; `NestedModules` updated to include `Config-Operations.psm1`; `FunctionsToExport` expanded with 5 new functions (52 total exported functions)
+- cSpell dictionary expanded with project-specific terms
+
+### Removed
+
+- `tests/Unit/Core/Set-CHARFileSignature.Tests.ps1` — replaced by updated `tests/src/Public/Set-CHARAuthenticodeSignature.Tests.ps1` that uses `Test-CHARIsWindows` mocking
+
+
+### Infrastructure
+
+- Kiro spec documents added for `aws-config-operations` and `config-resource-type-validator` features
+- Ruleset activation logs updated for branch name changes (#112)
+
 ## [0.6.0] - 2026-08-05
 
 ### Changed
