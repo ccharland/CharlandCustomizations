@@ -33,7 +33,6 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - `tests/Unit/Core/Set-CHARFileSignature.Tests.ps1` — replaced by updated `tests/src/Public/Set-CHARAuthenticodeSignature.Tests.ps1` that uses `Test-CHARIsWindows` mocking
 
-
 ### Infrastructure
 
 - Kiro spec documents added for `aws-config-operations` and `config-resource-type-validator` features
