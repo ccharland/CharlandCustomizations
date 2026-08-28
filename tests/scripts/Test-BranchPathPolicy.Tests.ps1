@@ -162,6 +162,81 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
         }
     }
 
+    Context 'AI root branch policy' {
+
+        It 'Blocks src changes on bare copilot/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'copilot/new-quality-check' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks Scripts changes on bare copilot/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'copilot/add-build-step' -ChangedPath @(
+                'Scripts/Build-Module.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks tests/src changes on bare copilot/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'copilot/refactor-tests' -ChangedPath @(
+                'tests/src/CharlandCustomizations/Public/Test-Thing.Tests.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Allows docs changes on bare copilot/ branches' {
+            {
+                & $script:ScriptPath -BranchName 'copilot/update-docs' -ChangedPath @('docs/CHANGELOG.md')
+            } | Should -Not -Throw
+        }
+
+        It 'Allows .github changes on bare copilot/ branches' {
+            {
+                & $script:ScriptPath -BranchName 'copilot/workflow-fix' -ChangedPath @('.github/workflows/publish.yml')
+            } | Should -Not -Throw
+        }
+
+        It 'Blocks src changes on bare codex/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'codex/new-feature' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Get-Something.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks Scripts changes on bare codex/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'codex/infra-update' -ChangedPath @(
+                'Scripts/Test-CodeQuality.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks tests/src changes on bare kiro/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'kiro/experiment' -ChangedPath @(
+                'tests/src/CharlandCustomizations/Public/Something.Tests.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks src changes on bare kiro/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'kiro/add-command' -ChangedPath @(
+                'src/CharlandCustomizations/Public/New-Thing.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Allows docs changes on bare kiro/ branches' {
+            {
+                & $script:ScriptPath -BranchName 'kiro/doc-updates' -ChangedPath @('docs/QUICK-REFERENCE.md')
+            } | Should -Not -Throw
+        }
+
+        It 'Does not confuse bare copilot/ with copilot-code/' {
+            (Invoke-BranchPolicyScript -BranchName 'copilot/src-change' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 1
+
+            {
+                & $script:ScriptPath -BranchName 'copilot-code/src-change' -ChangedPath @(
+                    'src/CharlandCustomizations/Public/Test-Thing.ps1'
+                )
+            } | Should -Not -Throw
+        }
+    }
+
     Context 'Publish branch policy' {
 
         It 'Allows source changes on publish branches' {

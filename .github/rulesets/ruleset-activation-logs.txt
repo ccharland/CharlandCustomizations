@@ -401,3 +401,65 @@ Summary:
     "updated_at": "2026-06-22T16:49:37.272-04:00"
   }
 ]
+
+=== Ruleset log [test] 2026-08-28T10:02:56.8485560-04:00 ===
+Summary:
+[
+  {
+    "id": 20826978,
+    "name": "Block Malformed Branch Names",
+    "target": "branch",
+    "enforcement": "active",
+    "created_at": "2026-08-13T22:12:40.541-04:00",
+    "updated_at": "2026-08-13T22:12:40.554-04:00"
+  },
+  {
+    "id": 17999725,
+    "name": "Block-Malformed-Tags",
+    "target": "tag",
+    "enforcement": "active",
+    "created_at": "2026-06-22T16:46:47.625-04:00",
+    "updated_at": "2026-06-22T16:46:47.643-04:00"
+  },
+  {
+    "id": 18790149,
+    "name": "Copilot review for default branch",
+    "target": "branch",
+    "enforcement": "active",
+    "created_at": "2026-07-10T16:17:37.987-04:00",
+    "updated_at": "2026-07-10T16:17:37.987-04:00"
+  },
+  {
+    "id": 17999737,
+    "name": "Feature-Tag-Rules",
+    "target": "tag",
+    "enforcement": "active",
+    "created_at": "2026-06-22T16:47:04.288-04:00",
+    "updated_at": "2026-06-22T16:47:04.318-04:00"
+  },
+  {
+    "id": 18845069,
+    "name": "Protect-Deployment Tags",
+    "target": "tag",
+    "enforcement": "active",
+    "created_at": "2026-07-12T19:21:33.359-04:00",
+    "updated_at": "2026-07-12T19:21:33.432-04:00"
+  },
+  {
+    "id": 17999764,
+    "name": "Require Branch Path Policy",
+    "target": "branch",
+    "enforcement": "active",
+    "created_at": "2026-06-22T16:47:50.648-04:00",
+    "updated_at": "2026-06-22T16:47:50.704-04:00"
+  },
+  {
+    "id": 17999812,
+    "name": "Start-tag-rule",
+    "target": "tag",
+    "enforcement": "active",
+    "created_at": "2026-06-22T16:49:37.246-04:00",
+    "updated_at": "2026-06-22T16:49:37.272-04:00"
+  }
+]
+Snapshot file: /Users/chris/Documents/GitHub/CharlandCustomizations/.github/rulesets/snapshots/rulesets-20260828-100257.json
