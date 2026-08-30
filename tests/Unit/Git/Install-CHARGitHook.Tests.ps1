@@ -365,6 +365,33 @@ Describe 'Install-CHARGitHook' -Tag 'Unit' {
             $result.Output | Should -Match 'unrecognized prefix'
         }
 
+        It 'Blocks source changes on bare AI-root branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'copilot/new-command' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'AI root branch'
+        }
+
+        It 'Blocks docs changes on bare AI-root branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'kiro/update-docs' -StagedPath 'docs/CHANGELOG.md' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'AI root branch'
+        }
+
+        It 'Blocks workflow changes on bare AI-root branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'codex/workflow-fix' -StagedPath '.github/workflows/publish.yml' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 1
+            $result.Output | Should -Match 'AI root branch'
+        }
+
+        It 'Allows source changes on AI code-variant branches' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
+            $result = Invoke-TestPathPolicyHook -BranchName 'copilot-code/new-command' -StagedPath 'src/CharlandCustomizations/Public/Test-Thing.ps1' -HookRepo $script:HookRepo -GitPath $script:PathPolicyGit -HookPath $script:PathPolicyHook
+
+            $result.ExitCode | Should -Be 0
+        }
+
         It 'Allows a deliberate override for exceptional cases' -Skip:(-not ((Get-Command git -CommandType Application -ErrorAction SilentlyContinue) -and (Get-Command sh -ErrorAction SilentlyContinue))) {
             $env:CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE = '1'
 

@@ -182,16 +182,16 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             )) | Should -Be 1
         }
 
-        It 'Allows docs changes on bare copilot/ branches' {
-            {
-                & $script:ScriptPath -BranchName 'copilot/update-docs' -ChangedPath @('docs/CHANGELOG.md')
-            } | Should -Not -Throw
+        It 'Blocks docs changes on bare copilot/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'copilot/update-docs' -ChangedPath @(
+                'docs/CHANGELOG.md'
+            )) | Should -Be 1
         }
 
-        It 'Allows .github changes on bare copilot/ branches' {
-            {
-                & $script:ScriptPath -BranchName 'copilot/workflow-fix' -ChangedPath @('.github/workflows/publish.yml')
-            } | Should -Not -Throw
+        It 'Blocks .github changes on bare copilot/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'copilot/workflow-fix' -ChangedPath @(
+                '.github/workflows/publish.yml'
+            )) | Should -Be 1
         }
 
         It 'Blocks src changes on bare codex/ branches' {
@@ -218,10 +218,22 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             )) | Should -Be 1
         }
 
-        It 'Allows docs changes on bare kiro/ branches' {
-            {
-                & $script:ScriptPath -BranchName 'kiro/doc-updates' -ChangedPath @('docs/QUICK-REFERENCE.md')
-            } | Should -Not -Throw
+        It 'Blocks docs changes on bare kiro/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'kiro/doc-updates' -ChangedPath @(
+                'docs/QUICK-REFERENCE.md'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks root file changes on bare codex/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'codex/readme-tweak' -ChangedPath @(
+                'README.md'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks .kiro changes on bare kiro/ branches' {
+            (Invoke-BranchPolicyScript -BranchName 'kiro/settings' -ChangedPath @(
+                '.kiro/settings/mcp.json'
+            )) | Should -Be 1
         }
 
         It 'Does not confuse bare copilot/ with copilot-code/' {
