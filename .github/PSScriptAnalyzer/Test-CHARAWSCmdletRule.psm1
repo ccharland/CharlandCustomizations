@@ -6,11 +6,20 @@ function Measure-UseTestCHARAWSCmdlet {
     )
 
     $settingsPath = Join-Path $PSScriptRoot 'Test-CHARAWSCmdletRule.Exclusions.psd1'
-    $settings = Import-PowerShellDataFile -Path $settingsPath
+    if (-not (Test-Path -Path $settingsPath)) {
+        throw "Exclusion file not found: $settingsPath"
+    }
+    try {
+        $settings = Import-PowerShellDataFile -Path $settingsPath -ErrorAction Stop
+    } catch {
+        throw "Failed to load exclusion file '$settingsPath': $_"
+    }
     $excludedFunctions = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    foreach ($functionName in $settings.ExcludeFunction.Keys) {
-        $null = $excludedFunctions.Add($functionName)
+    if ($null -ne $settings.ExcludeFunction) {
+        foreach ($functionName in $settings.ExcludeFunction.Keys) {
+            $null = $excludedFunctions.Add($functionName)
+        }
     }
 
     $functions = $ScriptBlockAst.FindAll({
