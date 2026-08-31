@@ -462,4 +462,4 @@ Summary:
     "updated_at": "2026-06-22T16:49:37.272-04:00"
   }
 ]
-Snapshot file: /Users/chris/Documents/GitHub/CharlandCustomizations/.github/rulesets/snapshots/rulesets-20260828-100257.json
+Snapshot file: .github/rulesets/snapshots/rulesets-20260828-100257.json
