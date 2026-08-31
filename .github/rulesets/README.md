@@ -130,6 +130,6 @@ gh api /repos/ccharland/CharlandCustomizations/rulesets | Out-File -FilePath $ou
 ## Notes
 
 - `bypass_actors` is empty, meaning no one (including admins) can bypass these rules. Add actors if a hotfix escape hatch is needed. Note: on personal repos, admins can still bypass via the GitHub UI.
-- The "Copilot review for default branch" ruleset (ID `18790149`) is configured directly on GitHub and has no local JSON file. It triggers automatic Copilot code review on PRs to `main` but is advisory only — Copilot leaves "Comment" reviews that do not count toward required approvals and cannot block merge.
+- The "Copilot review for default branch" ruleset is configured directly on GitHub and has no local JSON file. It triggers automatic Copilot code review on PRs to `main` but is advisory only — Copilot leaves "Comment" reviews that do not count toward required approvals and cannot block merge.
 - GitHub ruleset ref-name conditions use glob patterns, not full semantic-version regular expressions. Workflows must perform strict version validation.
 - AI-tool branches (`copilot/`, `codex/`, `kiro/`) are allowed by the branch name ruleset for creation, but `Test-BranchPathPolicy.ps1` blocks ALL path changes on those prefixes. This forces a rename to the scoped variant (`-code/` or `-infra/`) before merge.
