@@ -148,3 +148,4 @@ Before finishing a code change, verify:
 3. AWS cmdlet functions follow the shared splatting pattern.
 4. Analyzer and tests were run (or clearly reported if not run).
 5. Documentation was updated when externally visible behavior changed.
+6. README files in affected directories were updated to reflect the changes (added/removed/renamed files, updated descriptions).

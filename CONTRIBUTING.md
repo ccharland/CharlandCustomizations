@@ -65,6 +65,10 @@ All branches must use an approved prefix. The pre-commit hook and CI will reject
 - `ci/<description>`
 - `kiro-infra/<description>` or `copilot-infra/<description>` or `codex-infra/<description>`
 
+**Bare AI-root branches** (`copilot/*`, `codex/*`, `kiro/*`):
+
+These are the prefixes AI tools create automatically. They may be used for background work, but they block **all** paths and cannot merge into `main`. Rename to a `-code/` variant (source changes) or a `-infra/` variant (workflow/infrastructure changes) before opening a PR.
+
 **Publish branches** (restricted to release prep — signing, changelog, version bump only):
 
 - `publish/<description>` — Release preparation only: version bump, re-signing, changelog (e.g., `publish/v0.5.0`)
@@ -78,6 +82,7 @@ The pre-commit hook enforces separation between code and infrastructure work. Th
 | Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/` except `.vscode/cspell.json`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `.vscode/cspell.json`, `docs/`, root files, `assets/`) |
 | Infrastructure branches | `src/`, `tests/src/` | Allowed (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) |
 | Publish branches | `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, `tests/` | Allowed (only `src/`, `docs/`, root files, `assets/`) |
+| Bare AI-root branches (`copilot/*`, `codex/*`, `kiro/*`) | All paths | Nothing (rename to a `-code/` or `-infra/` variant before merge) |
 
 For exceptional mixed-scope commits, use the override deliberately:
 
