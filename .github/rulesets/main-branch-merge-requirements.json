@@ -1,5 +1,5 @@
 {
-  "name": "Require Branch Path Policy",
+  "name": "Main Branch Merge Requirements",
   "target": "branch",
   "enforcement": "active",
   "conditions": {
@@ -34,6 +34,22 @@
         "required_status_checks": [
           {
             "context": "Branch Path Policy",
+            "integration_id": 15368
+          },
+          {
+            "context": "Pester Tests",
+            "integration_id": 15368
+          },
+          {
+            "context": "PSScriptAnalyzer",
+            "integration_id": 15368
+          },
+          {
+            "context": "Comment-Based Help",
+            "integration_id": 15368
+          },
+          {
+            "context": "Manifest Compliance",
             "integration_id": 15368
           }
         ]

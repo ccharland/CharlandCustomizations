@@ -10,12 +10,12 @@ These files serve as documentation so the team can review, version-track, and re
 
 | File | Description |
 |------|-------------|
-| `Branch-Name-Ruleset.json` | Blocks branch creation unless the name uses one of the approved prefixes. |
+| `Branch-Name-Ruleset.json` | Blocks branch creation unless the name uses one of the approved prefixes. Includes scoped AI-tool prefixes (`codex-code/`, `copilot-code/`, `kiro-code/`, `codex-infra/`, `copilot-infra/`, `kiro-infra/`) and bare AI-tool prefixes (`codex/`, `copilot/`, `kiro/`) for initial AI-generated branches that must be renamed before merge. |
 | `Block-Malformed-Tags.json` | Blocks tag creation outside the version, start, and feature tag namespaces. |
 | `Feature-Tag-Rules.json` | Makes `feature/*` tags immutable after creation. |
 | `protect-deployment-tags.json` | Protects version tags (`v*.*.*`) used to trigger module publishing. Requires GPG-signed tags, prevents force-pushes, and enforces that all PR quality gate checks have passed before a release tag is accepted. |
 | `Start-tag-rule.json` | Requires signed, immutable `start/v*.*.*` tags. |
-| `require-branch-path-policy.json` | Requires pull requests into `main` to pass the Branch Path Policy status check before merge. The workflow blocks mixed code/infrastructure branch scopes. |
+| `main-branch-merge-requirements.json` | Requires pull requests into `main` to pass all quality gate status checks before merge: Branch Path Policy, Pester Tests, PSScriptAnalyzer, Comment-Based Help, and Manifest Compliance. |
 | `Log-RulesetSnapshot.ps1` | Helper script that logs current ruleset status and optional ruleset detail snapshots. |
 
 ## Reimporting Rulesets
@@ -28,18 +28,12 @@ for ruleset in \
   .github/rulesets/Block-Malformed-Tags.json \
   .github/rulesets/Feature-Tag-Rules.json \
   .github/rulesets/protect-deployment-tags.json \
-  .github/rulesets/Start-tag-rule.json
+  .github/rulesets/Start-tag-rule.json \
+  .github/rulesets/main-branch-merge-requirements.json
 do
   gh api --method POST /repos/ccharland/CharlandCustomizations/rulesets \
     --input "$ruleset"
 done
-```
-
-The branch path policy is intentionally disabled while it is being tested. Import it separately when desired:
-
-```bash
-gh api --method POST /repos/ccharland/CharlandCustomizations/rulesets \
-  --input .github/rulesets/require-branch-path-policy.json
 ```
 
 ## Check Ruleset Status via API
@@ -57,7 +51,7 @@ gh api /repos/ccharland/CharlandCustomizations/rulesets \
 
 ```bash
 gh api /repos/ccharland/CharlandCustomizations/rulesets \
-  --jq '.[] | select(.name == "Require Branch Path Policy") | {id: .id, name: .name, enforcement: .enforcement, target: .target}'
+  --jq '.[] | select(.name == "Main Branch Merge Requirements") | {id: .id, name: .name, enforcement: .enforcement, target: .target}'
 ```
 
 ### Get full details for a specific ruleset ID
@@ -77,7 +71,7 @@ $rulesets | Select-Object id, name, target, enforcement | Format-Table -AutoSize
 
 ```bash
 gh api /repos/ccharland/CharlandCustomizations/rulesets \
-  --jq '.[] | select(.name == "Block Malformed Branch Names" or .name == "Require Branch Path Policy") | {name: .name, enforcement: .enforcement}'
+  --jq '.[] | select(.name == "Block Malformed Branch Names" or .name == "Main Branch Merge Requirements") | {name: .name, enforcement: .enforcement}'
 ```
 
 ## Change Logging
@@ -135,6 +129,7 @@ gh api /repos/ccharland/CharlandCustomizations/rulesets | Out-File -FilePath $ou
 
 ## Notes
 
-- `bypass_actors` is empty, meaning no one (including admins) can bypass these rules. Add actors if a hotfix escape hatch is needed.
-- The existing legacy branch protection for `main` is configured separately and is not replaced by these ruleset files.
+- `bypass_actors` is empty, meaning no one (including admins) can bypass these rules. Add actors if a hotfix escape hatch is needed. Note: on personal repos, admins can still bypass via the GitHub UI.
+- The "Copilot review for default branch" ruleset is configured directly on GitHub and has no local JSON file. It triggers automatic Copilot code review on PRs to `main` but is advisory only — Copilot leaves "Comment" reviews that do not count toward required approvals and cannot block merge.
 - GitHub ruleset ref-name conditions use glob patterns, not full semantic-version regular expressions. Workflows must perform strict version validation.
+- AI-tool branches (`copilot/`, `codex/`, `kiro/`) are allowed by the branch name ruleset for creation, but `Test-BranchPathPolicy.ps1` blocks ALL path changes on those prefixes. This forces a rename to the scoped variant (`-code/` or `-infra/`) before merge.
