@@ -4,6 +4,7 @@
 #>
 BeforeAll {
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
+    . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Test-CHARAWSCmdlet.ps1"
     . "$PSScriptRoot/../../../src/CharlandCustomizations/Public/Invoke-CHARScriptMultiRegionProfile.ps1"
 }
 

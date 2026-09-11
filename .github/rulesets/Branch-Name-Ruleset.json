@@ -27,7 +27,11 @@
         "refs/heads/codex-infra/*",
         "refs/heads/copilot-infra/*",
         "refs/heads/kiro-infra/*",
-        "refs/heads/publish/*"
+        "refs/heads/codex/*",
+        "refs/heads/copilot/*",
+        "refs/heads/kiro/*",
+        "refs/heads/publish/*",
+        "refs/heads/dependabot/*"
       ]
     }
   },

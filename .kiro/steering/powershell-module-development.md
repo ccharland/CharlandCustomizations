@@ -44,7 +44,15 @@ Domain-specific folders under `Public/AWS/` use `.psm1` files rather than indivi
 
 ## Working with signed modules:
 
-If you modify any signed files, clear the signature before editing and saving. I'll resign it when necessary. 
+If you modify any signed files, clear the signature before editing and saving. I'll resign it when necessary.
+
+Use the existing helper to strip signatures — do not rewrite it or hand-roll a script:
+
+```powershell
+./.vscode/Remove-SignatureBlock.ps1 ./Scripts/Test-BranchPathPolicy.ps1
+```
+
+It removes everything from `# SIG # Begin signature block` onward. There is also a VS Code task "Remove Authenticode Signature Block" that runs it.
 
 
 ## Code Standards
@@ -55,7 +63,7 @@ Scripts will be analyzed using PSScriptAnalyzer.
 - Avoid trailing whitespace on lines
 - One function per `.ps1` file in `Public/` or `Private/`
 - File name must match the function name (e.g., `Get-Something.ps1` contains `function Get-Something`)
-- When modifying a signed file, delete the `# SIG # Begin signature block` through `# SIG # End signature block` section. The signature will be invalid after edits and must be re-applied by the build/signing process.
+- When modifying a signed file, strip its signature with `./.vscode/Remove-SignatureBlock.ps1 <path>` (do not rewrite that helper). This removes the `# SIG # Begin signature block` through `# SIG # End signature block` section. The signature will be invalid after edits and must be re-applied by the build/signing process.
 
 ## Comment-Based Help Standard
 
@@ -224,6 +232,28 @@ The helper automatically filters `$PSBoundParameters` to include only the recogn
 - Splat `@awsParams` into every AWS cmdlet call in the function
 - Include all 8 AWS common parameters in the param block for consistency
 - This applies to all module functions that call AWS cmdlets
+
+## AWS Cmdlet Availability
+
+AWS-facing functions must validate that their required AWS Tools service modules are available before making API calls. Pass the first cmdlet used from each distinct service module to `Test-CHARAWSCmdlet`:
+
+```powershell
+begin {
+    @(
+        'Get-EC2Instance',
+        'Get-S3Bucket'
+    ) | Test-CHARAWSCmdlet | Out-Null
+
+    $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+}
+```
+
+- Check one representative cmdlet per AWS Tools service module, not every cmdlet from that module.
+- Use the first cmdlet the function invokes from that service module.
+- Perform the checks before the first AWS API call.
+- Do not pass `-Force` implicitly. Unattended callers can preflight dependencies with `Test-CHARAWSCmdlet -Force` before invoking the function.
+- Do not add redundant checks for `AWS.Tools.Common`; the root module loader validates that prerequisite.
+- A wrapper that only calls another CHAR function can rely on the called function's dependency checks.
 
 ### Backward Compatibility
 

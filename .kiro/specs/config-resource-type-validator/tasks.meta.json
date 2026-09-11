@@ -1,0 +1,368 @@
+{
+  "pbtResults": {
+    "4.3 Write property tests for output format invariant": {
+      "status": "passed",
+      "lastRunTimestamp": 1786847593707
+    },
+    "4.7 Write property tests for no-throw guarantee": {
+      "status": "passed",
+      "lastRunTimestamp": 1786847841684
+    },
+    "4.4 Write property tests for correction idempotence": {
+      "status": "passed",
+      "lastRunTimestamp": 1786847843554
+    },
+    "4.5 Write property tests for whitespace invariance": {
+      "status": "passed",
+      "lastRunTimestamp": 1786847875696
+    },
+    "4.6 Write property tests for invalid input rejection": {
+      "status": "passed",
+      "lastRunTimestamp": 1786847876692
+    },
+    "4.9 Write property tests for non-existent type rejection with populated cache": {
+      "status": "passed",
+      "lastRunTimestamp": 1786848016906
+    },
+    "4.10 Write property tests for pipeline independence": {
+      "status": "passed",
+      "lastRunTimestamp": 1786848058568
+    }
+  },
+  "executionHistory": {
+    "1.1 Add module-scoped cache variable and implement the correction pipeline function": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266434
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846273307
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846487402
+      }
+    ],
+    "1.2 Update Export-ModuleMember and module manifest": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266497
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846490827
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846563840
+      }
+    ],
+    "2.1 Add validator call to Get-CHARConfigResourceCreationDate": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266522
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846567805
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846656261
+      }
+    ],
+    "2.2 Add validator call to Get-CHARConfigResourceDeleteDate": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266548
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846568551
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846656928
+      }
+    ],
+    "2.3 Add validator call to Get-CHARConfigResourceComplianceReport": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266571
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846569314
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846657699
+      }
+    ],
+    "3. Checkpoint - Verify module loads correctly": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266622
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846663494
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846717651
+      }
+    ],
+    "4.1 Create test file with input generator helpers and correction pipeline tests": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266647
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846721440
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846885278
+      }
+    ],
+    "4.2 Add cache-based validation and pipeline tests": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266672
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846889729
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846962728
+      }
+    ],
+    "5.1 Add Test-CHARConfigResourceType mock to existing Config-Operations test files": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266696
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846722216
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846886243
+      }
+    ],
+    "6. Final checkpoint - Verify all tests pass": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846266722
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846984468
+      },
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786847028267
+      }
+    ],
+    "1. Implement Test-CHARConfigResourceType core function": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846563870
+      }
+    ],
+    "2. Integrate validator into existing functions": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846657721
+      }
+    ],
+    "5. Update existing function tests to mock the validator": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846886269
+      }
+    ],
+    "4. Create Pester tests for Test-CHARConfigResourceType": [
+      {
+        "executionId": "00e21f44-2454-4cef-bce2-6c5aee804973",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786846962766
+      }
+    ],
+    "4.3 Write property tests for output format invariant": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417356
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847432772
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847893330
+      }
+    ],
+    "4.4 Write property tests for correction idempotence": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417388
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847433530
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847894011
+      }
+    ],
+    "4.5 Write property tests for whitespace invariance": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417415
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847434375
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847894719
+      }
+    ],
+    "4.6 Write property tests for invalid input rejection": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417447
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847435280
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847895493
+      }
+    ],
+    "4.7 Write property tests for no-throw guarantee": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417478
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847436137
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847896198
+      }
+    ],
+    "4.8 Write property tests for cache-based case correction": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417505
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847899638
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786848074279
+      }
+    ],
+    "4.9 Write property tests for non-existent type rejection with populated cache": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417530
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847900459
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786848075131
+      }
+    ],
+    "4.10 Write property tests for pipeline independence": [
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847417562
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786847901218
+      },
+      {
+        "executionId": "7fe15157-6a9e-4e95-95f7-7ca36c2d236f",
+        "chatSessionId": "sess_3581da72-9c5c-45df-8d0f-7a6e47c4dc78",
+        "timestamp": 1786848075859
+      }
+    ]
+  }
+}

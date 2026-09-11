@@ -45,7 +45,7 @@ Invoke-Pester -Path ./tests -Output Detailed
 
 All branches must use an approved prefix. The pre-commit hook and CI will reject commits on unrecognized branches.
 
-**Code branches** (modify `src/` and `tests/src/`):
+**Code branches** (modify `src/`, `tests/src/`, and `.vscode/cspell.json`):
 
 - `feature/<description>` — New functionality
 - `bugfix/<description>` — Bug fixes
@@ -65,6 +65,10 @@ All branches must use an approved prefix. The pre-commit hook and CI will reject
 - `ci/<description>`
 - `kiro-infra/<description>` or `copilot-infra/<description>` or `codex-infra/<description>`
 
+**Bare AI-root branches** (`copilot/*`, `codex/*`, `kiro/*`):
+
+These are the prefixes AI tools create automatically. They may be used for background work, but they block **all** paths and cannot merge into `main`. Rename to a `-code/` variant (source changes) or a `-infra/` variant (workflow/infrastructure changes) before opening a PR.
+
 **Publish branches** (restricted to release prep — signing, changelog, version bump only):
 
 - `publish/<description>` — Release preparation only: version bump, re-signing, changelog (e.g., `publish/v0.5.0`)
@@ -75,9 +79,10 @@ The pre-commit hook enforces separation between code and infrastructure work. Th
 
 | Branch Type | Blocked Paths | Everything Else |
 |-------------|---------------|-----------------|
-| Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `docs/`, root files, `assets/`) |
+| Code branches | `.github/`, `Scripts/`, `.githooks/`, `.kiro/settings/`, `.vscode/` except `.vscode/cspell.json`, `tests/scripts/` | Allowed (including `src/`, `tests/src/`, `.vscode/cspell.json`, `docs/`, root files, `assets/`) |
 | Infrastructure branches | `src/`, `tests/src/` | Allowed (including `.github/`, `Scripts/`, `.githooks/`, `.kiro/`, `.vscode/`, `tests/scripts/`, `docs/`, root files, `assets/`) |
 | Publish branches | `.github/`, `.githooks/`, `.kiro/`, `.vscode/`, `Scripts/`, `tests/` | Allowed (only `src/`, `docs/`, root files, `assets/`) |
+| Bare AI-root branches (`copilot/*`, `codex/*`, `kiro/*`) | All paths | Nothing (rename to a `-code/` or `-infra/` variant before merge) |
 
 For exceptional mixed-scope commits, use the override deliberately:
 
@@ -130,6 +135,7 @@ src/CharlandCustomizations/
 3. **Nested module boundaries** — Each `.psm1` under `Public/` is a domain boundary. Don't move functions between nested modules without updating the manifest.
 4. **Manifest alignment** — When adding or removing exported functions, update `FunctionsToExport` in `CharlandCustomizations.psd1`. Keep the array sorted alphabetically, one entry per line.
 5. **AWS common parameters** — Functions calling AWS cmdlets must accept the standard parameter set (`Region`, `ProfileName`, `AccessKey`, `SecretKey`, `SessionToken`, `Credential`, `ProfileLocation`, `EndpointUrl`) and splat them using `New-AWSParamSplat`.
+6. **AWS cmdlet availability** — Before making AWS calls, validate the first cmdlet used from each AWS Tools service module with `Test-CHARAWSCmdlet`. One representative check per service module is sufficient; the root module already validates `AWS.Tools.Common`.
 
 ### Adding a New Function
 

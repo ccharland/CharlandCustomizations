@@ -4,7 +4,7 @@ applyTo: "Scripts/**/*.ps1,src/CharlandCustomizations/**/*.ps1,src/CharlandCusto
 ---
 # Signed PowerShell Editing
 
-- Before modifying a signed `.ps1`, `.psm1`, or `.psd1` file, remove the existing Authenticode signature block first.
+- Before modifying a signed `.ps1`, `.psm1`, or `.psd1` file, remove the existing Authenticode signature block first using `./.vscode/Remove-SignatureBlock.ps1 <path>` (do not rewrite that helper).
 - Use the repository signing workflow after the edit instead of editing through an existing signature block.
 - Treat signature removal and re-signing as part of the normal change flow for signed release files.
 - Keep every `.psd1` array and `.psm1` `Export-ModuleMember -Function` array sorted alphabetically with one element per line. Run `./Scripts/Test-ManifestCompliance.ps1` after manifest or nested module export edits because the PR gate enforces this format.

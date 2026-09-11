@@ -36,6 +36,7 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             -RemoveParameterValidation $removeValidation {
             [PSCustomObject]@{
                 DeviceCode              = 'device123'
+                UserCode                = 'ABCD-1234'
                 VerificationUriComplete = 'https://example.com/verify'
             }
         }
@@ -143,6 +144,16 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
 
             Should -Invoke Start-Process -ModuleName $moduleName -Times 1 -Exactly
+        }
+
+        It 'Prints the SSO verification code for user verification' {
+            Mock Write-Output -ModuleName $moduleName {}
+
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -Force
+
+            Should -Invoke Write-Output -ModuleName $moduleName -Times 1 -ParameterFilter {
+                $InputObject -eq 'SSO verification code: ABCD-1234'
+            }
         }
 
         It 'Calls SSO OIDC cmdlets in correct order: Register, Authorize, Token' {
@@ -262,6 +273,12 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
 
             $result.CredentialFile | Should -Not -BeNullOrEmpty
         }
+
+        It 'Does NOT write config file when SaveCredentials is specified' {
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' -Region 'us-east-1' -SaveCredentials -Force
+
+            Should -Invoke Set-Content -ModuleName $moduleName -Times 0 -Exactly
+        }
     }
 
     Context 'SSOSessionName parameter' {
@@ -273,10 +290,10 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
             }
 
             Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
-                -SSOSessionName 'CharlandOrg' -Region 'us-east-1' -Force
+                -SSOSessionName 'ExampleOrg' -Region 'us-east-1' -Force
 
-            $script:capturedContent | Should -Match '\[sso-session CharlandOrg\]'
-            $script:capturedContent | Should -Match 'sso_session = CharlandOrg'
+            $script:capturedContent | Should -Match '\[sso-session ExampleOrg\]'
+            $script:capturedContent | Should -Match 'sso_session = ExampleOrg'
         }
 
         It 'Auto-derives SSOSessionName from StartUrl when not specified' {
@@ -285,11 +302,11 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
                 $script:capturedContent = $Value
             }
 
-            Update-CHARSSOCredentialList -StartUrl 'https://d-9067171d80.awsapps.com/start' `
+            Update-CHARSSOCredentialList -StartUrl 'https://d-1234567890.awsapps.com/start' `
                 -Region 'us-east-1' -Force
 
             # Should strip URL parts and non-alphanumeric chars
-            $script:capturedContent | Should -Match '\[sso-session d9067171d80\]'
+            $script:capturedContent | Should -Match '\[sso-session d1234567890\]'
         }
     }
 
@@ -317,6 +334,27 @@ Describe 'Update-CHARSSOCredentialList' -Tag 'Unit' {
                 -Region 'us-east-1' -Force
 
             $script:capturedContent | Should -Match '\[profile AWSAdministratorAccess-111111111111\]'
+        }
+
+        It 'Generates profile names using account name when UseAccountName is specified' {
+            $capturedContent = $null
+            Mock Set-Content -ModuleName $moduleName -ParameterFilter { $true } {
+                $script:capturedContent = $Value
+            }
+
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -UseAccountName -Force
+
+            $script:capturedContent | Should -Match '\[profile AWSAdministratorAccess-dev-account\]'
+        }
+
+        It 'Uses account name in saved credential profile names when UseAccountName is specified' {
+            Update-CHARSSOCredentialList -StartUrl 'https://example.awsapps.com/start' `
+                -Region 'us-east-1' -UseAccountName -SaveCredentials -Force
+
+            Should -Invoke Set-AWSCredential -ModuleName $moduleName -Times 1 -ParameterFilter {
+                $StoreAs -eq 'AWSAdministratorAccess-dev-account'
+            }
         }
     }
 

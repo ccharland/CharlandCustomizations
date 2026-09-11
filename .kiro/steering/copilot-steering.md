@@ -64,6 +64,7 @@ Implementation pattern:
    `New-AWSParamSplat -BoundParameters $PSBoundParameters`
    Place this in `begin` or at the top of `process` depending on function design.
 3. Splat `@awsParams` into each AWS cmdlet invocation.
+4. Before the first AWS call, use `Test-CHARAWSCmdlet` to validate the first cmdlet used from each distinct AWS Tools service module. Do not validate every cmdlet from the same module, and do not repeat the root loader's `AWS.Tools.Common` check.
 
 This is the preferred pattern for new/refactored AWS code.
 
@@ -147,3 +148,4 @@ Before finishing a code change, verify:
 3. AWS cmdlet functions follow the shared splatting pattern.
 4. Analyzer and tests were run (or clearly reported if not run).
 5. Documentation was updated when externally visible behavior changed.
+6. README files in affected directories were updated to reflect the changes (added/removed/renamed files, updated descriptions).

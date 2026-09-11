@@ -2,6 +2,86 @@
 
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
+## [Unreleased]
+
+## [0.7.0] - 2026-08-23
+
+### Added
+
+- `Config-Operations.psm1` — new nested module under `Public/AWS/Config/` providing AWS Config resource lifecycle and compliance query functions (#113)
+- `Get-CHARConfigResourceCreationDate` — determines when an AWS resource was first recorded by Config and correlates with CloudTrail to identify the creating principal (#113)
+- `Get-CHARConfigResourceDeleteDate` — determines when an AWS resource was deleted and correlates with CloudTrail to identify the deleting principal (#113)
+- `Get-CHARConfigNonCompliantResource` — retrieves all resources evaluated as non-compliant by a specified AWS Config rule (#113)
+- `Get-CHARConfigResourceComplianceReport` — retrieves all Config rule compliance evaluations for a specific resource (#113)
+- `Test-CHARConfigResourceType` — correction-first validator for AWS Config resource type strings with dynamic enum caching from `Get-CFGDiscoveredResourceCount` (#113)
+- `Test-CHARIsWindows` — private helper function wrapping `$IsWindows` to enable mocking in Pester tests
+- Comprehensive Pester test suite for all Config-Operations functions including property-based tests for the resource type validator
+- `publish.yml` workflow now accepts a `tag` input for manual dispatch, enabling publish from branch refs without requiring the tag to be the triggering ref (#115)
+- `publish.yml` adds a `resolve-tag` job that determines the effective tag from either input or push event, improving reliability for manual runs (#109, #115)
+
+### Changed
+
+- `Set-CHARAuthenticodeSignature` — refactored platform check to use `Test-CHARIsWindows` instead of a script-scoped `$CHARIsWindows` variable; added SSL.com certificate issuer support (falls back to Sectigo timestamp server) (#117)
+- `Set-CHARAuthenticodeSignature` — standalone script `Path` parameter changed from `ValueFromPipeline` to positional `[Parameter(Position = 0)]` to fix parse error (#117)
+- `auto-tag-publish.yml` — uses `RELEASE_PAT` secret for tag push so downstream workflows are triggered (tags pushed with `GITHUB_TOKEN` do not trigger `on:push` workflows) (#109)
+- Branch name ruleset simplified: replaced per-tool code/infra prefixes (`copilot-code/*`, `kiro-infra/*`, etc.) with unified AI tool prefixes (`copilot/*`, `codex/*`, `kiro/*`) and added `dependabot/*` (#112)
+- ADR-002 (branch path policy) amended to document AI-generated branch prefix allowance and clarify that PR path enforcement still applies (#112)
+- Module manifest version bumped to `0.7.0`; `NestedModules` updated to include `Config-Operations.psm1`; `FunctionsToExport` expanded with 5 new functions (52 total exported functions)
+- cSpell dictionary expanded with project-specific terms
+
+### Removed
+
+- `tests/Unit/Core/Set-CHARFileSignature.Tests.ps1` — replaced by updated `tests/src/Public/Set-CHARAuthenticodeSignature.Tests.ps1` that uses `Test-CHARIsWindows` mocking
+
+### Infrastructure
+
+- Kiro spec documents added for `aws-config-operations` and `config-resource-type-validator` features
+- Ruleset activation logs updated for branch name changes (#112)
+
+## [0.6.0] - 2026-08-05
+
+### Changed
+
+- AWS-facing functions now call `Test-CHARAWSCmdlet` before their first AWS operation, checking one representative cmdlet from each AWS Tools service module they use (#100)
+- `Test-CHARAWSCmdlet` enhanced to support pipeline input of multiple cmdlet names, improved error messaging, and streamlined module-version matching logic (#103)
+- AWS cmdlet validation documentation updated across all nested modules with consistent usage examples (#102)
+- `auto-tag-publish.yml` workflow updated to use current GitHub Actions versions, replacing deprecated Node.js 16 action runners (#98)
+- `tests/Run-PesterFailedOnly.ps1` now excludes ignored test cases from failed-only output (#105)
+- `.github/rulesets` updated to allow `code/*` branches to modify repository cSpell configuration (#107)
+- All source files re-signed with current Authenticode certificates
+- Module manifest version bumped to `0.6.0`
+
+## [0.5.0] - 2026-07-26
+
+### Added
+
+- `Get-CHARAWSRegionFromIp` — resolves an IPv4 or IPv6 address to the matching AWS region using the official AWS IP ranges dataset, with 24-hour in-memory caching (#90)
+- `Test-CHARAWSCmdlet` — verifies an AWS Tools cmdlet is available; if missing, discovers the owning module from PSGallery, prompts before installing it at the matching AWS.Tools.Common version, and confirms availability (#95)
+- `Export-CHARPfxCertificatePem` — converts PFX/P12 files to PEM format (certificate, private key, chain) and writes them to disk (#92)
+- `Import-CHARPfxCertificateToACM` — imports PFX certificate material directly into AWS Certificate Manager (#92)
+- `Update-CHARPfxCertificateInACM` — replaces an existing ACM certificate with renewed PFX material, preserving the ARN and service associations (#92)
+- `Test-CHARPfxCertificate` — inspects a local PFX/P12 file and reports identity, validity, private-key, and chain-validation status (#92)
+- `Test-CHARACMCertificate` — validates the status and remaining lifetime of an ACM certificate (#92)
+- `Get-CHARACMCertificateInventory` — lists ACM certificates in a region with detailed status, expiration, and service-association data (#92)
+- `ACM-Customizations.psm1` nested module added under `Public/AWS/ACM/` (#92)
+- `Update-CHARSSOCredentialList` — `-UseAccountName` parameter to generate profile names using AWS account name instead of account ID (#96)
+- `Update-CHARSSOCredentialList` — SSO verification code now printed to output for user confirmation during device authorization flow (#96)
+- `tests/Run-PesterFailedOnly.ps1` helper script for running Pester and displaying only failures
+- Comprehensive Pester test coverage for all new functions
+
+### Changed
+
+- `Update-CHARSSOCredentialList` — `-SaveCredentials` mode no longer writes to the AWS config file; only credential-file updates occur (#96)
+- `Update-CHARSSOCredentialList` — inline help examples sanitized to use generic placeholder URLs (`d-1234567890.awsapps.com`) and account IDs (`123456789012`) (#89)
+- Module manifest `NestedModules` updated to include `Public/AWS/ACM/ACM-Customizations.psm1`
+- Module manifest `FunctionsToExport` expanded with 8 new functions (48 total exported functions)
+- Module manifest arrays reformatted to omit trailing commas (PowerShell style preference)
+- Module manifest version bumped to `0.5.0`
+
+### Security
+
+- Removed real SSO portal URLs and account IDs from inline help examples (#89)
+
 ## [0.4.1] - 2026-07-12
 
 ### Added
@@ -38,6 +118,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - Kiro steering and development-standards documentation updated (#72)
 - Ruleset activation logs updated for publish branch additions (#73)
+
 ### Workflow Testing
 
 - Workflow test added to validate that merging triggers the publish workflow
@@ -114,6 +195,7 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 - `Invoke-CCScriptMultiAccountRegion` region iteration — AWS session globals are now properly saved/restored in the `finally` block, preventing state leakage between iterations
 - `Edit-CCCFTTEbsVolume` property-based test reliability — mock re-registration per iteration replaced with script-scoped variable pattern to avoid Pester overhead
+
 ## [0.3.0] - 2026-06-11
 
 ### Added

@@ -8,6 +8,12 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 > **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
+## What's new in v0.6.0
+
+- **Proactive AWS dependency checks** — All AWS-facing functions now call `Test-CHARAWSCmdlet` before their first API operation, automatically detecting and offering to install missing AWS.Tools service modules
+- **Enhanced dependency validation** — `Test-CHARAWSCmdlet` supports pipeline input of multiple cmdlet names, improved error messaging, and streamlined module-version matching
+- **CI modernization** — GitHub Actions workflows updated to current action versions, replacing deprecated Node.js 16 runners
+
 ## Goals
 
 I'm using this project to learn how to build and maintain a PowerShell module, and to share useful functions that I create for my own work. The module is focused on AWS automation, but may include other utilities as well, especially around module deployment, code signing, and PowerShell Gallery publishing.
@@ -41,7 +47,14 @@ CharlandCustomizations/
     │   └── CharlandCustomizations/
     │       ├── CharlandCustomizations.psd1
     │       ├── CharlandCustomizations.psm1
-    │       ├── Public/          # Exported functions (AWS, Git, signing)
+    │       ├── Public/          # Exported functions
+    │       │   ├── AWS/
+    │       │   │   ├── ACM/     # Certificate Manager tools
+    │       │   │   ├── Audit/   # Account audit functions
+    │       │   │   ├── CloudFormation/
+    │       │   │   ├── Lambda/
+    │       │   │   └── S3/
+    │       │   └── Git/         # Git helpers
     │       └── Private/         # Internal helpers
     ├── tests/                   # Pester tests
     ├── build/                   # Build output (gitignored)

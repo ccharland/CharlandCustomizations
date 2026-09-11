@@ -30,6 +30,30 @@ BeforeAll {
 
 Describe 'Get-CHARAWSObjectCount' -Tag 'Unit' {
 
+    It 'checks one representative cmdlet for each AWS service module used' {
+        Mock Test-CHARAWSCmdlet { $true } -ModuleName AWSCustomizations
+        Mock Get-EC2Region { @([PSCustomObject]@{ RegionName = 'us-east-1' }) } -ModuleName AWSCustomizations
+        Mock Get-CFNStack { @() } -ModuleName AWSCustomizations
+        Mock Get-EC2Vpc { @() } -ModuleName AWSCustomizations
+        Mock Get-EC2Instance { @() } -ModuleName AWSCustomizations
+        Mock Get-S3Bucket { @() } -ModuleName AWSCustomizations
+        Mock Get-LMFunctionList { @() } -ModuleName AWSCustomizations
+
+        $null = Get-CHARAWSObjectCount -Region 'us-east-1'
+
+        Should -Invoke Test-CHARAWSCmdlet -ModuleName AWSCustomizations -Times 4 -Exactly
+        foreach ($commandName in 'Get-EC2Region', 'Get-S3Bucket', 'Get-CFNStack', 'Get-LMFunctionList') {
+            Should -Invoke Test-CHARAWSCmdlet -ModuleName AWSCustomizations -Times 1 -Exactly -ParameterFilter {
+                $Name -eq $commandName
+            }
+        }
+        foreach ($commandName in 'Get-EC2Instance', 'Get-EC2Vpc', 'Get-S3BucketLocation') {
+            Should -Invoke Test-CHARAWSCmdlet -ModuleName AWSCustomizations -Times 0 -Exactly -ParameterFilter {
+                $Name -eq $commandName
+            }
+        }
+    }
+
     Context 'Output contains required properties' {
 
         BeforeAll {

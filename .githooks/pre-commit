@@ -12,7 +12,7 @@ fi
 BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)"
 STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMRD)"
 
-APPROVED_PREFIX_TEXT="'feature/*', 'bugfix/*', 'hotfix/*', 'workflow/*', 'workflows/*', 'infrastructure/*', 'infra/*', 'ci/*', 'architecture/*', 'breaking/*', 'docs/*', 'chore/*', 'publish/*', 'codex-code/*', 'copilot-code/*', 'kiro-code/*', 'codex-infra/*', 'copilot-infra/*', and 'kiro-infra/*'"
+APPROVED_PREFIX_TEXT="'feature/*', 'bugfix/*', 'hotfix/*', 'workflow/*', 'workflows/*', 'infrastructure/*', 'infra/*', 'ci/*', 'architecture/*', 'breaking/*', 'docs/*', 'chore/*', 'publish/*', 'codex/*', 'copilot/*', 'kiro/*', 'codex-code/*', 'copilot-code/*', 'kiro-code/*', 'codex-infra/*', 'copilot-infra/*', and 'kiro-infra/*'"
 
 if [ -z "$STAGED_FILES" ]; then
     exit 0
@@ -23,12 +23,14 @@ classify_branch_policy() {
         feature/*|bugfix/*|hotfix/*|architecture/*|breaking/*|docs/*|chore/*|codex-code/*|copilot-code/*|kiro-code/*)
             POLICY_NAME='normal code branch'
             BLOCKED_PATTERN='^(\.github|\.githooks|\.kiro/settings|\.vscode|Scripts|tests/scripts)(/|$)'
+            ALLOWED_PATTERN='^\.vscode/cspell\.json$'
             BLOCKED_PATHS='.github/, .githooks/, .kiro/settings/, .vscode/, Scripts/, and tests/scripts/'
             return 0
             ;;
         workflow/*|workflows/*|infrastructure/*|infra/*|ci/*|codex-infra/*|copilot-infra/*|kiro-infra/*)
             POLICY_NAME='workflow/infrastructure branch'
             BLOCKED_PATTERN='^(src|tests/src)(/|$)'
+            ALLOWED_PATTERN=''
             BLOCKED_PATHS='src/ and tests/src/'
             return 0
             ;;
@@ -36,7 +38,17 @@ classify_branch_policy() {
             POLICY_NAME='publish/release branch'
             # Publish branches are restricted to release prep only: signing, manifest, changelog
             BLOCKED_PATTERN='^(\.github|\.githooks|\.kiro|\.vscode|Scripts|tests)(/|$)'
+            ALLOWED_PATTERN=''
             BLOCKED_PATHS='.github/, .githooks/, .kiro/, .vscode/, Scripts/, and tests/'
+            return 0
+            ;;
+        codex/*|copilot/*|kiro/*)
+            # Bare AI-root prefixes block ALL paths: any staged change matches, forcing
+            # a rename to a -code/ or -infra/ variant before the work can merge into main.
+            POLICY_NAME='AI root branch (rename to -code/ or -infra/ before merge)'
+            BLOCKED_PATTERN='.'
+            ALLOWED_PATTERN=''
+            BLOCKED_PATHS='any path (rename to a -code/ or -infra/ variant)'
             return 0
             ;;
         *)
@@ -47,6 +59,9 @@ classify_branch_policy() {
 
 if classify_branch_policy "$BRANCH"; then
     BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E "$BLOCKED_PATTERN" || true)"
+    if [ -n "$ALLOWED_PATTERN" ] && [ -n "$BLOCKED_FILES" ]; then
+        BLOCKED_FILES="$(printf '%s\n' "$BLOCKED_FILES" | grep -Ev "$ALLOWED_PATTERN" || true)"
+    fi
 else
     BRANCH_PREFIX="$(printf '%s' "$BRANCH" | cut -d/ -f1 | tr '[:upper:]' '[:lower:]')"
     echo "Commit blocked by CC git path policy." >&2

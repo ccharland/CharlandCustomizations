@@ -1,0 +1,261 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `src/CharlandCustomizations/Public/AWS/Config/Config-Operations.psm1` with module-level comment-based help, dot-source statements for `New-AWSParamSplat.ps1` and `Test-CHARAWSCmdlet.ps1`, and implement `Get-CHARConfigResourceCreationDate`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929305
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715974472
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716121865
+      }
+    ],
+    "2.1 Implement `Get-CHARConfigResourceDeleteDate` in `Config-Operations.psm1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929331
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716126941
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716381098
+      }
+    ],
+    "2.2 Implement `Get-CHARConfigNonCompliantResource` in `Config-Operations.psm1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929355
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716127789
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716381993
+      }
+    ],
+    "2.3 Implement `Get-CHARConfigResourceComplianceReport` in `Config-Operations.psm1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929381
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716128738
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716382865
+      }
+    ],
+    "3.1 Add `Config-Operations.psm1` to `NestedModules` in `CharlandCustomizations.psd1` and add all four function names to `FunctionsToExport`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929415
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716387490
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716909323
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716927660
+      }
+    ],
+    "4. Checkpoint - Verify module loads cleanly": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929439
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717424729
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717488646
+      }
+    ],
+    "5.1 Create `tests/src/Public/AWS/Config/Config-Operations/Config-Operations.Tests.ps1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929463
+      },
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716388370
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716910212
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716928687
+      }
+    ],
+    "6.1 Create `tests/src/Public/AWS/Config/Config-Operations/Get-CHARConfigResourceCreationDate.Tests.ps1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929495
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716933441
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717417900
+      }
+    ],
+    "6.2 Create `tests/src/Public/AWS/Config/Config-Operations/Get-CHARConfigResourceDeleteDate.Tests.ps1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929526
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716934335
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717418803
+      }
+    ],
+    "7.1 Create `tests/src/Public/AWS/Config/Config-Operations/Get-CHARConfigNonCompliantResource.Tests.ps1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929547
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716935336
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717419713
+      }
+    ],
+    "7.2 Create `tests/src/Public/AWS/Config/Config-Operations/Get-CHARConfigResourceComplianceReport.Tests.ps1`": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929571
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716936403
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717420642
+      }
+    ],
+    "8. Final checkpoint - Run full Pester test suite": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786715929595
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717492104
+      },
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717538320
+      }
+    ],
+    "1. Create module file with initialization and first function": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716121893
+      }
+    ],
+    "2. Implement remaining lifecycle and compliance functions": [
+      {
+        "executionId": "bfcbc3e2-c5ba-46ef-9850-694db8cc2c62",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716382897
+      }
+    ],
+    "3. Update module manifest": [
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716927690
+      }
+    ],
+    "5. Create module-level Pester test file": [
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786716928720
+      }
+    ],
+    "6. Create per-function test files for lifecycle functions": [
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717418831
+      }
+    ],
+    "7. Create per-function test files for compliance functions": [
+      {
+        "executionId": "37e63062-84b2-48a5-95db-861ed63b5a64",
+        "chatSessionId": "sess_a6f76c57-21f6-461d-bc70-3ec7c748e524",
+        "timestamp": 1786717420666
+      }
+    ]
+  }
+}
