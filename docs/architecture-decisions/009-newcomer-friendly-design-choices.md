@@ -48,14 +48,14 @@ The intent: the wrapper should behave the way a reasonable user expects on the f
 
 `Invoke-CHARScriptMultiRegionProfile` lets a user run a script block across many profiles and regions without writing their own credential/region loops. It handles ambient credentials (CloudShell, instance/task roles), per-iteration error capture, and consistent output shape so failures in one region do not derail the run.
 
-**Wrapper compatibility is a design requirement, not a coincidence.** The runner injects `$Region`, `$ProfileName`, and `$PSDefaultParameterValues` into the script block scope, so any function that accepts `-Region`/`-ProfileName` (which every AWS wrapper here does, per [ADR-005](005-aws-common-parameter-splatting.md)) automatically picks up the current iteration's values without the user passing them explicitly. New AWS wrappers must preserve this compatibility: accept the AWS common parameters and honor injected defaults so they drop cleanly into a multi-region/profile run.
+**Wrapper compatibility is a design requirement, not a coincidence.** The runner injects `$Region`, `$ProfileName`, and `$PSDefaultParameterValues` into the script block scope, so wrappers that declare `-Region`/`-ProfileName` can pick up the current iteration's values without the user passing them explicitly. New region/profile-aware AWS wrappers must preserve this compatibility: accept the AWS common parameters and honor injected defaults so they drop cleanly into a multi-region/profile run.
 
 ## Consequences
 
 ### Positive
 
 - Newcomers can run a function and be guided through installing the correct, version-matched service module instead of hitting a cryptic failure.
-- `AWS.Tools.*` service modules stay aligned with `AWS.Tools.Common`, avoiding a whole class of version-mismatch bugs.
+- `AWS.Tools.*` service modules installed on demand are pinned to the local `AWS.Tools.Common` version, reducing version-mismatch risk for newly installed dependencies.
 - Forgiving wrappers and sensible defaults mean a first attempt is more likely to succeed, which keeps newcomers engaged.
 - Estate-wide data gathering is a one-liner, and every conforming wrapper works inside it for free.
 
