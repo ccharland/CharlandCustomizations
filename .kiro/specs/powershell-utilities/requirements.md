@@ -21,8 +21,8 @@ This feature adds a new PowerShell utilities nested module (`PowerShell-Utilitie
 #### Acceptance Criteria
 
 1. THE Module SHALL exist at the path `src/CharlandCustomizations/Public/PowerShell/PowerShell-Utilities.psm1`
-2. THE Module SHALL dot-source all `.ps1` function files in its immediate directory (non-recursive)
-3. THE Module SHALL call `Export-ModuleMember -Function` with an explicit, alphabetically sorted list of all functions defined in the dot-sourced `.ps1` files
+2. THE Module SHALL define its functions directly within the `.psm1` (or dot-source sibling `.ps1` files) and SHALL carry module-level comment-based help
+3. THE Module SHALL call `Export-ModuleMember -Function` with an explicit, alphabetically sorted list of all functions it defines
 4. THE manifest `NestedModules` array SHALL include the entry `Public/PowerShell/PowerShell-Utilities.psm1` in alphabetical position relative to existing entries
 5. THE manifest `FunctionsToExport` array SHALL include `ConvertTo-CHARHashtable`
 
