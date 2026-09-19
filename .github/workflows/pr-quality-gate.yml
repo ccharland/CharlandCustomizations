@@ -69,6 +69,16 @@ jobs:
         shell: pwsh
         run: ./Scripts/Test-CodeQuality.ps1
 
+      - name: Run Test-CHARAWSCmdlet custom rule
+        shell: pwsh
+        run: |
+          Import-Module PSScriptAnalyzer -ErrorAction Stop
+          $results = Invoke-ScriptAnalyzer -Path './src/CharlandCustomizations' -Recurse -CustomRulePath './.github/PSScriptAnalyzer/Test-CHARAWSCmdletRule.psm1'
+          if ($results) {
+            $results | Format-Table -Property Severity, RuleName, ScriptName, Line, Message -AutoSize
+            throw "Found $(@($results).Count) Test-CHARAWSCmdlet rule violation(s)."
+          }
+
   help-validation:
     name: Comment-Based Help
     runs-on: windows-latest
