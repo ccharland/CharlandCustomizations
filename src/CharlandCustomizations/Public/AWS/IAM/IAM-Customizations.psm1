@@ -136,7 +136,7 @@ function Find-CHARDeletedPrincipalPolicy {
             Write-Verbose "Checking policy: $($policy.PolicyName)"
 
             try {
-                $policyVersion = Get-IAMPolicyVersion -PolicyArn $policy.Arn -VersionId $policy.DefaultVersionId @awsParams
+                $policyVersion = Get-IAMPolicyVersion -PolicyArn $policy.Arn -VersionId $policy.DefaultVersionId @awsParams -ErrorAction Stop
             }
             catch {
                 Write-Warning "Failed to retrieve policy version for $($policy.PolicyName): $_"
@@ -472,7 +472,7 @@ function Search-CHARPolicyStatement {
             Write-Verbose "Searching policy: $($policy.PolicyName)"
 
             try {
-                $policyVersion = Get-IAMPolicyVersion -PolicyArn $policy.Arn -VersionId $policy.DefaultVersionId @awsParams
+                $policyVersion = Get-IAMPolicyVersion -PolicyArn $policy.Arn -VersionId $policy.DefaultVersionId @awsParams -ErrorAction Stop
             }
             catch {
                 Write-Warning "Failed to retrieve policy version for $($policy.PolicyName): $_"
