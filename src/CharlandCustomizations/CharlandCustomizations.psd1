@@ -75,13 +75,15 @@ NestedModules = @(
     'Public/AWS/IAM/IAM-Customizations.psm1',
     'Public/AWS/Lambda/Lambda-Customizations.psm1',
     'Public/AWS/S3/S3Customizations.psm1',
-    'Public/Git/GitCustomizations.psm1'
+    'Public/Git/GitCustomizations.psm1',
+    'Public/PowerShell/PowerShell-Utilities.psm1'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = @(
     'Clear-CHARAuthenticodeSignature',
     'Clear-CHARS3Bucket',
+    'ConvertTo-CHARHashtable',
     'Edit-CHARCFTTEbsVolume',
     'Export-CHARPfxCertificatePem',
     'Find-CHARCFNStackError',
