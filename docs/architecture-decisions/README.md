@@ -27,6 +27,7 @@ Each ADR follows a lightweight template:
 | [006](006-enforce-quality-gates-early.md) | Enforce quality gates early, even for a small project | Accepted | 2026-07-04 |
 | [007](007-intentional-ai-assisted-development.md) | Intentional AI-assisted development | Accepted | 2026-07-04 |
 | [008](008-publish-branch-for-release-prep.md) | Publish branch for release preparation | Accepted | 2026-07-04 |
+| [009](009-newcomer-friendly-design-choices.md) | Newcomer-friendly design choices | Accepted | 2026-08-28 |
 
 ## Creating a New ADR
 
