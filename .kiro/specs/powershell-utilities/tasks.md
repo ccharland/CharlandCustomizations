@@ -59,8 +59,9 @@
   - _Requirements: 1.4, 1.5_
 
 - [ ] 9. Write Pester v5 unit tests
-  - Create `tests/Unit/Core/ConvertTo-CHARHashtable.Tests.ps1` with `.NOTES` attribution,
-    a `BeforeAll` that dot-sources the function, and `Describe ... -Tag 'Unit'`
+  - Create `tests/src/Public/PowerShell/PowerShell-Utilities/ConvertTo-CHARHashtable.Tests.ps1`
+    (under the `tests/src/` mirror tree scanned by the SourceLayout gate) with `.NOTES`
+    attribution, a `BeforeAll` that imports the module, and `Describe ... -Tag 'Unit'`
   - Cover the 12 scenarios from the design Testing Strategy: basic conversion, pipeline
     equivalence, streaming order, `-Property`, `-ExcludeProperty`, combined filters, null
     warning, empty object, invalid type error, nested default depth, `-Depth 2` recursion,

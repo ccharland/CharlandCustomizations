@@ -206,9 +206,11 @@ well-behaved pipeline citizen and never aborts a batch on a single bad item.
 
 ## Testing Strategy
 
-Pester v5 unit tests at `tests/Unit/Core/ConvertTo-CHARHashtable.Tests.ps1`, following the
-project convention: `.NOTES` attribution header, a `BeforeAll` that dot-sources the
-function under test via relative path, a `Describe` tagged `'Unit'`, and
+Pester v5 unit tests at
+`tests/src/Public/PowerShell/PowerShell-Utilities/ConvertTo-CHARHashtable.Tests.ps1`
+(the `tests/src/` tree mirrors the source layout and is what the SourceLayout gate scans),
+following the project convention: `.NOTES` attribution header, a `BeforeAll` that imports
+the module under test via a `$RepoRoot`-relative path, a `Describe` tagged `'Unit'`, and
 Context/Arrange-Act-Assert structure.
 
 Required `It` coverage (Req 8.2), one or more per scenario:

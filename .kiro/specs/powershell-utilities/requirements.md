@@ -102,7 +102,7 @@ This feature adds a new PowerShell utilities nested module (`PowerShell-Utilitie
 
 #### Acceptance Criteria
 
-1. THE test file SHALL exist at `tests/Unit/Core/ConvertTo-CHARHashtable.Tests.ps1` and SHALL use Pester v5 syntax with a `BeforeAll` block that dot-sources the function under test
+1. THE test file SHALL exist at `tests/src/Public/PowerShell/PowerShell-Utilities/ConvertTo-CHARHashtable.Tests.ps1` (matching the `tests/src/` layout scanned by the SourceLayout gate) and SHALL use Pester v5 syntax with a `BeforeAll` block that loads the function under test
 2. THE tests SHALL include at minimum one `It` block for each of the following scenarios: basic conversion of a PSCustomObject to a hashtable, pipeline input producing equivalent output to parameter-bound input, property filtering that returns only specified property keys, exclusion filtering that omits specified property keys from the output, null input emitting a Warning-stream message, empty object (zero properties) returning an empty hashtable, invalid type input (non-object such as a raw string or integer) producing a non-terminating error, nested object at default depth returning the child object unconverted, and recursive depth parameter converting nested objects to the specified depth level
 3. WHEN a test validates warning or error output, THE test SHALL capture the appropriate stream (Warning via `3>&1` or error via `Should -Throw` / `-ErrorVariable`) and assert on the presence of a descriptive message
 4. WHEN all tests in the file pass with zero failures, THE Converter function SHALL be considered implementation-complete for merge acceptance
