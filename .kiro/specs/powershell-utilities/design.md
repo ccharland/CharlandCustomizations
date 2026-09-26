@@ -48,7 +48,7 @@ src/CharlandCustomizations/
     └── PowerShell/                    (new directory)
         └── PowerShell-Utilities.psm1  (new — module help + ConvertTo-CHARHashtable)
 
-tests/Unit/Core/
+tests/src/Public/PowerShell/PowerShell-Utilities/   (mirrors source layout; scanned by SourceLayout gate)
 └── ConvertTo-CHARHashtable.Tests.ps1  (new — Pester v5 unit tests)
 ```
 
@@ -172,7 +172,11 @@ flowchart TD
 - **Value fidelity:** values are copied by reference without type coercion, so
   `.GetType()` in the result matches the source (Req 2.3). Round-tripping through
   `[pscustomobject]` reproduces the original object (Req 2.5).
-- **Ordered output:** properties are added in `psobject.Properties` order.
+- **Member type:** only `NoteProperty` members are converted (Req 2.1). Other members
+  surfaced by `psobject.Properties` (`ScriptProperty`, `AliasProperty`, `CodeProperty`)
+  are filtered out so computed/alias members never leak into the result.
+- **Ordered output:** the surviving `NoteProperty` members are added in
+  `psobject.Properties` order.
 - **Recursion:** only `PSCustomObject` values recurse. Arrays, hashtables, and primitives
   are passed through untouched even under `-Depth > 1`, matching the requirement's scope
   (nested *PSCustomObject* conversion only). At the depth limit remaining nested objects

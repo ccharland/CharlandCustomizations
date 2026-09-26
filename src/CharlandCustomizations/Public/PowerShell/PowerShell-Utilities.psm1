@@ -114,14 +114,22 @@ function ConvertTo-CHARHashtable {
             return
         }
 
-        $sourceProperties = @($InputObject.psobject.Properties)
-        Write-Verbose "ConvertTo-CHARHashtable: converting object with $($sourceProperties.Count) propertie(s)."
+        # Only NoteProperty members are part of the conversion contract (Req 2.1).
+        # psobject.Properties also surfaces ScriptProperty, AliasProperty, CodeProperty,
+        # etc.; including those would leak extra keys that were never data on the object.
+        $sourceProperties = @($InputObject.psobject.Properties | Where-Object {
+            $_.MemberType -eq 'NoteProperty'
+        })
+        Write-Verbose "ConvertTo-CHARHashtable: converting object with $($sourceProperties.Count) note propertie(s)."
 
         # -Property is an explicit inclusion allow-list. When supplied (even as an empty
         # array), only names present in it are considered. Comparison is case-insensitive,
         # but we keep the source object's original casing for the emitted keys.
+        # NB: a default @{} hashtable is already case-insensitive; we construct with an
+        # explicit OrdinalIgnoreCase comparer so the matching semantics are intentional and
+        # not culture-dependent (property names are identifiers, not culture-sensitive text).
         if ($PSBoundParameters.ContainsKey('Property')) {
-            $includeLookup = @{}
+            $includeLookup = [System.Collections.Hashtable]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($name in $Property) { $includeLookup[$name] = $true }
             $selected = $sourceProperties | Where-Object {
                 $includeLookup.ContainsKey($_.Name)
@@ -132,7 +140,7 @@ function ConvertTo-CHARHashtable {
 
         # -ExcludeProperty removes names from whatever survived the inclusion filter.
         if ($PSBoundParameters.ContainsKey('ExcludeProperty') -and $ExcludeProperty.Count -gt 0) {
-            $excludeLookup = @{}
+            $excludeLookup = [System.Collections.Hashtable]::new([System.StringComparer]::OrdinalIgnoreCase)
             foreach ($name in $ExcludeProperty) { $excludeLookup[$name] = $true }
             $selected = $selected | Where-Object {
                 -not $excludeLookup.ContainsKey($_.Name)

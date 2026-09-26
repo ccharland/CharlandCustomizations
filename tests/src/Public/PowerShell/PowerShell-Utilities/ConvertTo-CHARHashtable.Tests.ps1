@@ -46,6 +46,22 @@ Describe 'ConvertTo-CHARHashtable' -Tag 'Unit' {
             $result = ConvertTo-CHARHashtable -InputObject $obj
             $result.Keys.Count | Should -Be 0
         }
+
+        It 'Includes only NoteProperty members, excluding ScriptProperty and others' {
+            # Req 2.1: the contract is one key per NoteProperty. psobject.Properties also
+            # surfaces ScriptProperty/AliasProperty, which must not leak into the result.
+            $obj = [pscustomobject]@{ Name = 'x'; Port = 80 }
+            $obj | Add-Member -MemberType ScriptProperty -Name Computed -Value { $this.Port * 2 }
+            $obj | Add-Member -MemberType AliasProperty -Name Alias -Value 'Name'
+
+            $result = ConvertTo-CHARHashtable -InputObject $obj
+
+            $result.Keys.Count | Should -Be 2
+            $result.Contains('Name') | Should -BeTrue
+            $result.Contains('Port') | Should -BeTrue
+            $result.Contains('Computed') | Should -BeFalse
+            $result.Contains('Alias') | Should -BeFalse
+        }
     }
 
     Context 'Value type fidelity' {
