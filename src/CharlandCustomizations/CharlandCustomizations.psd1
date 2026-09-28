@@ -108,6 +108,7 @@ FunctionsToExport = @(
     'Get-CHAREC2VolumeReport',
     'Get-CHARGlobalAuditReportItem',
     'Get-CHARIAMAuditList',
+    'Get-CHARPrincipalPermission',
     'Import-CHARPfxCertificateToACM',
     'Install-CHARGitHook',
     'Install-CHARProfilesFromSource',
