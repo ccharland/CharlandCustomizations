@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Provides functions for auditing IAM policies and roles, including detection of
-    deleted principals in policy statements and trust policies, and searching
+    deleted principals movein policy statements and trust policies, and searching
     customer-managed policy statement content.
 
 .NOTES
@@ -14,6 +14,255 @@
 Write-Verbose "Loading IAM-Customizations.psm1"
 
 . "$PSScriptRoot/../../../Private/New-AWSParamSplat.ps1"
+# Nested modules have their own scope; the root module's Private dot-sourcing does not
+# reach them, so load the IAM private helpers here (same pattern as the other nested
+# modules). These back Get-CHARPrincipalPermission and are intentionally not exported.
+. "$PSScriptRoot/../../../Private/IAMPrivateFunctions.ps1"
+
+function Get-CHARPrincipalPermission {
+    <#
+    .SYNOPSIS
+        Reports the permissions attached directly to a single IAM principal, with an
+        optional effective-access verdict for a queried action.
+
+    .DESCRIPTION
+        Aggregates the managed and inline policies attached DIRECTLY to a single IAM
+        principal (Role, User, or Group) and reports each contributing policy statement
+        as a structured, typed record. The principal type is derived from the supplied
+        ARN, so no separate type parameter is required.
+
+        Scope is intentionally limited to a single hop of policy resolution on the named
+        principal. The function does NOT resolve Group membership for a User, and it does
+        NOT consider permissions boundaries, service control policies, session policies,
+        or resource-based policies. Every emitted record therefore traces back to a
+        policy literally attached to (or embedded on) the named principal.
+
+        Action matching (when -Action is supplied) uses a bidirectional wildcard overlap:
+        a statement matches when ANY of its action patterns overlaps the queried action
+        in at least one concrete action, regardless of which side carries the '*'/'?'
+        wildcard and case-insensitively on the service prefix and action name. When
+        -Action is omitted, every aggregated statement is reported and no verdict is
+        computed.
+
+        Effect handling always surfaces explicit Deny. When -Effect is 'Allow', matching
+        Allow records are returned together with ALL matching Deny records; when -Effect
+        is 'Deny', only matching Deny records are returned; when -Effect is omitted, both
+        effects are returned. The Effective_Access_Verdict is computed over the matching
+        set BEFORE the display filter is applied, so narrowing the displayed rows to
+        Allow can never hide a Deny that flips the verdict. Verdict precedence mirrors
+        AWS IAM: any matching Deny yields 'Deny'; otherwise any matching Allow yields
+        'Allow'; otherwise 'ImplicitDeny'.
+
+    .PARAMETER PrincipalArn
+        The IAM principal ARN to audit. Must be a role, user, or group ARN of the form
+        'arn:aws:iam::<account-id>:role|user|group/<name>'. Mandatory. Accepts pipeline
+        input by value and by the 'PrincipalArn' property name; alias 'Arn'.
+
+    .PARAMETER Action
+        Optional queried IAM action pattern (for example 'ec2:DescribeInstances' or
+        'ec2:Describe*'). May contain '*' and '?' wildcards. When supplied, only matching
+        statements are reported and an Effective_Access_Verdict is included. When omitted,
+        every aggregated statement is reported and the verdict is not set.
+
+    .PARAMETER Effect
+        Optional Effect display filter. 'Allow' returns matching Allow records plus all
+        matching Deny records (Deny is always surfaced); 'Deny' returns only matching
+        Deny records; omitting the parameter returns both effects.
+
+    .PARAMETER Region
+        AWS region. If not specified, uses your default region.
+
+    .PARAMETER ProfileName
+        AWS profile name. Optional.
+
+    .PARAMETER AccessKey
+        AWS access key. Optional.
+
+    .PARAMETER SecretKey
+        AWS secret key. Optional.
+
+    .PARAMETER SessionToken
+        AWS session token for temporary credentials. Optional.
+
+    .PARAMETER Credential
+        Pre-built AWS credential object. Optional.
+
+    .PARAMETER ProfileLocation
+        Custom credential file path. Optional.
+
+    .PARAMETER EndpointUrl
+        Custom AWS service endpoint URL. Optional.
+
+    .INPUTS
+        System.String
+            You can pipe a principal ARN to this function, by value or by the
+            'PrincipalArn'/'Arn' property name.
+
+    .OUTPUTS
+        PSCustomObject (PSTypeName 'AWS.IAM.PrincipalPermission') with properties:
+            PrincipalArn  - The audited principal ARN
+            PrincipalType - The principal type: 'Role', 'User', or 'Group'
+            PolicyName    - The source policy name
+            PolicyType    - The source policy type: 'Managed' or 'Inline'
+            Effect        - The statement Effect: 'Allow' or 'Deny'
+            Action        - The statement's action pattern(s), as an array
+            Resource      - The statement's resource set, as an array
+            Verdict       - The Effective_Access_Verdict ('Allow'|'Deny'|'ImplicitDeny')
+                            when -Action is supplied; otherwise $null
+
+    .EXAMPLE
+        Get-CHARPrincipalPermission -PrincipalArn 'arn:aws:iam::123456789012:role/read-only'
+
+        Reports every policy statement attached directly to the 'read-only' role. No
+        action is queried, so every aggregated statement is returned and Verdict is $null.
+
+    .EXAMPLE
+        Get-CHARPrincipalPermission -PrincipalArn 'arn:aws:iam::123456789012:user/alice' -Action 'ec2:DescribeInstances' -ProfileName prod
+
+        Reports the statements on user 'alice' whose actions overlap 'ec2:DescribeInstances'
+        and includes an Effective_Access_Verdict. AWS calls use the 'prod' profile.
+
+    .EXAMPLE
+        'arn:aws:iam::123456789012:group/admins' | Get-CHARPrincipalPermission -Action 's3:*' -Effect Allow
+
+        Pipes a group ARN, matches statements overlapping 's3:*', and returns matching
+        Allow records plus all matching Deny records (Deny is always surfaced).
+
+    .NOTES
+        Generated by Kiro using Claude Opus 4.8, reviewed by ccharland
+        Created: August 2026
+
+    .LINK
+        https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
+    #>
+    [CmdletBinding()]
+    [OutputType([PSCustomObject])]
+    param(
+        # The parameter is already named 'PrincipalArn', which serves both the -PrincipalArn
+        # switch and property-name pipeline binding; only 'Arn' is added as a distinct alias
+        # (a redundant 'PrincipalArn' alias is rejected as conflicting with the param name).
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [Alias('Arn')]
+        [string]$PrincipalArn,
+
+        [Parameter()]
+        [string]$Action,
+
+        [Parameter()]
+        [ValidateSet('Allow', 'Deny')]
+        [string]$Effect,
+
+        [Parameter()]
+        [string]$Region,
+
+        [Parameter()]
+        [string]$ProfileName,
+
+        [Parameter()]
+        [string]$AccessKey,
+
+        [Parameter()]
+        [string]$SecretKey,
+
+        [Parameter()]
+        [string]$SessionToken,
+
+        [Parameter()]
+        [object]$Credential,
+
+        [Parameter()]
+        [string]$ProfileLocation,
+
+        [Parameter()]
+        [string]$EndpointUrl
+    )
+
+    begin {
+        # Build the AWS common-parameter splat once from the caller's bound parameters.
+        # Only genuine AWS connection keys are included; -PrincipalArn/-Action/-Effect
+        # are filtered out by New-AWSParamSplat so they never reach the AWS cmdlets.
+        $awsParams = New-AWSParamSplat -BoundParameters $PSBoundParameters
+
+        # A query is active only when -Action was supplied. This single flag drives both
+        # the match filter (Req 3.1/3.7) and whether a verdict is emitted (Req 5.1/6.4).
+        $hasActionQuery = $PSBoundParameters.ContainsKey('Action')
+    }
+
+    process {
+        # Resolve the principal type/name from the ARN. Resolve-CHARPrincipalArn throws a
+        # terminating error for malformed / non-IAM ARNs (Req 1.4), so a bad ARN fails
+        # fast here rather than reaching any AWS call.
+        $principal = Resolve-CHARPrincipalArn -PrincipalArn $PrincipalArn
+
+        Write-Verbose "Auditing $($principal.Type) '$($principal.Name)' ($PrincipalArn)"
+
+        # Aggregate the directly-attached managed + inline statements. The helper already
+        # normalizes Action/Resource to arrays and Effect to a scalar, and forwards the
+        # AWS connection splat to every API call (Req 2.1-2.7).
+        $statements = @(Get-CHARPrincipalPolicyDocument -PrincipalType $principal.Type -PrincipalName $principal.Name -AwsParams $awsParams)
+
+        # Determine the MATCHING set. With a queried action, a statement matches when any
+        # of its action patterns overlaps the query via the bidirectional wildcard test
+        # (Req 3.1, 3.2). Without a query, every aggregated statement is a match (Req 3.7).
+        $matchingStatements = if ($hasActionQuery) {
+            @($statements | Where-Object {
+                    $stmt = $_
+                    @($stmt.Action | Where-Object {
+                            Test-CHARIamActionOverlap -PatternA $Action -PatternB $_
+                        }).Count -gt 0
+                })
+        }
+        else {
+            $statements
+        }
+
+        # Compute the Effective_Access_Verdict over the MATCHING set, BEFORE any Effect
+        # display filter is applied (Req 5). Ordering the display to Allow must never hide
+        # a Deny that flips the verdict, so the verdict is derived from $matches directly.
+        # Verdict precedence: any Deny -> Deny; else any Allow -> Allow; else ImplicitDeny.
+        # Only meaningful when an action was queried; otherwise it stays $null (Req 6.4).
+        $verdict = $null
+        if ($hasActionQuery) {
+            if (@($matchingStatements | Where-Object { $_.Effect -eq 'Deny' }).Count -gt 0) {
+                $verdict = 'Deny'
+            }
+            elseif (@($matchingStatements | Where-Object { $_.Effect -eq 'Allow' }).Count -gt 0) {
+                $verdict = 'Allow'
+            }
+            else {
+                $verdict = 'ImplicitDeny'
+            }
+        }
+
+        # Apply the Effect DISPLAY filter to the matching set (Req 4). Deny is always
+        # surfaced: under the 'Allow' filter, matching Deny records are still returned
+        # alongside the Allow records so an explicit Deny is never hidden (Req 4.3).
+        $display = switch ($Effect) {
+            'Allow' { @($matchingStatements | Where-Object { $_.Effect -eq 'Allow' -or $_.Effect -eq 'Deny' }) }
+            'Deny' { @($matchingStatements | Where-Object { $_.Effect -eq 'Deny' }) }
+            default { $matchingStatements }   # no filter -> both effects (Req 4.4)
+        }
+
+        # Emit one typed Permission_Record per displayed statement (Req 6). PSTypeName
+        # stamps the type onto each object for downstream Format-*/type-based filtering.
+        # The Action field carries the statement's matched action pattern(s); Verdict is
+        # wired from the pre-filter computation above (or $null when no action was queried).
+        foreach ($stmt in $display) {
+            [PSCustomObject]@{
+                PSTypeName    = 'AWS.IAM.PrincipalPermission'
+                PrincipalArn  = $PrincipalArn
+                PrincipalType = $principal.Type
+                PolicyName    = $stmt.PolicyName
+                PolicyType    = $stmt.PolicyType
+                Effect        = $stmt.Effect
+                Action        = @($stmt.Action)
+                Resource      = @($stmt.Resource)
+                Verdict       = $verdict
+            }
+        }
+    }
+}
 
 function Find-CHARDeletedPrincipalPolicy {
     <#
@@ -521,5 +770,6 @@ function Search-CHARPolicyStatement {
 Export-ModuleMember -Function @(
     'Find-CHARDeletedPrincipalPolicy',
     'Find-CHARDeletedPrincipalRole',
+    'Get-CHARPrincipalPermission',
     'Search-CHARPolicyStatement'
 )
