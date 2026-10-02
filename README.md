@@ -8,11 +8,11 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 > **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
-## What's new in v0.6.0
+## What's new in v0.8.0
 
-- **Proactive AWS dependency checks** — All AWS-facing functions now call `Test-CHARAWSCmdlet` before their first API operation, automatically detecting and offering to install missing AWS.Tools service modules
-- **Enhanced dependency validation** — `Test-CHARAWSCmdlet` supports pipeline input of multiple cmdlet names, improved error messaging, and streamlined module-version matching
-- **CI modernization** — GitHub Actions workflows updated to current action versions, replacing deprecated Node.js 16 runners
+- **IAM policy auditing** — `Find-CHARDeletedPrincipalPolicy` and `Find-CHARDeletedPrincipalRole` detect policy and trust-policy references to deleted principals, and `Search-CHARPolicyStatement` searches customer-managed policy documents for arbitrary text
+- **Pipeline-friendly splatting** — `ConvertTo-CHARHashtable` converts a `PSCustomObject` into an ordered hashtable for splatting, with include/exclude filtering and optional recursive conversion
+- **New PowerShell-Utilities module** — a nested module for general-purpose helpers not tied to a specific AWS service
 
 ## Goals
 
@@ -52,9 +52,12 @@ CharlandCustomizations/
     │       │   │   ├── ACM/     # Certificate Manager tools
     │       │   │   ├── Audit/   # Account audit functions
     │       │   │   ├── CloudFormation/
+    │       │   │   ├── Config/  # AWS Config operations
+    │       │   │   ├── IAM/     # IAM policy/role audit tools
     │       │   │   ├── Lambda/
     │       │   │   └── S3/
-    │       │   └── Git/         # Git helpers
+    │       │   ├── Git/         # Git helpers
+    │       │   └── PowerShell/  # General-purpose helpers
     │       └── Private/         # Internal helpers
     ├── tests/                   # Pester tests
     ├── build/                   # Build output (gitignored)

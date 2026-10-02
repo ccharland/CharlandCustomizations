@@ -40,12 +40,15 @@ CharlandCustomizations/
 │           │   ├── ACM/ACM-Customizations.psm1
 │           │   ├── Audit/Audit-AWSAccount.psm1
 │           │   ├── CloudFormation/CloudFormation-TemplateProcessing.psm1
+│           │   ├── Config/Config-Operations.psm1
+│           │   ├── IAM/IAM-Customizations.psm1
 │           │   ├── Lambda/Lambda-Customizations.psm1
 │           │   └── S3/S3Customizations.psm1
-│           └── Git/
-│               ├── GitCustomizations.psm1
-│               ├── Install-CHARGitHook.ps1
-│               └── Test-CHARCommitSignature.ps1
+│           ├── Git/
+│           │   ├── GitCustomizations.psm1
+│           │   ├── Install-CHARGitHook.ps1
+│           │   └── Test-CHARCommitSignature.ps1
+│           └── PowerShell/PowerShell-Utilities.psm1
 ├── tests/                         # Pester tests
 ├── build/                         # Build output (gitignored)
 ├── docs/                          # Documentation
