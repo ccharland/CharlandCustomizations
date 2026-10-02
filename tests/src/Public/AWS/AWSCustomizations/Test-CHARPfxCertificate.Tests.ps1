@@ -24,7 +24,7 @@ BeforeAll {
     if ($IsMacOS) {
         $testKeyPath = Join-Path $script:testRoot 'unit-test.key'
         $testCertPath = Join-Path $script:testRoot 'unit-test.crt'
-        & openssl req -x509 -newkey rsa:2048 -keyout $testKeyPath -out $testCertPath -days 45 -nodes -subj '/CN=unit-test.example' 2>$null
+        & openssl req -x509 -newkey rsa:2048 -keyout $testKeyPath -out $testCertPath -days 45 -nodes -subj '/CN=unit-test.example' -addext 'subjectAltName=DNS:unit-test.example,DNS:www.unit-test.example' 2>$null
         & openssl pkcs12 -export -legacy -out $script:testPfxPath -inkey $testKeyPath -in $testCertPath -passout "pass:$($script:testPasswordPlain)" 2>$null
         if ($LASTEXITCODE -ne 0) {
             throw 'OpenSSL failed to create the macOS PFX test fixture.'
@@ -39,6 +39,10 @@ BeforeAll {
                 [System.Security.Cryptography.HashAlgorithmName]::SHA256,
                 [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
             )
+            $sanBuilder = [System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder]::new()
+            $sanBuilder.AddDnsName('unit-test.example')
+            $sanBuilder.AddDnsName('www.unit-test.example')
+            $request.CertificateExtensions.Add($sanBuilder.Build())
             $certificate = $request.CreateSelfSigned(
                 [DateTimeOffset]::UtcNow.AddDays(-1),
                 [DateTimeOffset]::UtcNow.AddDays(45)
@@ -76,6 +80,9 @@ Describe 'Test-CHARPfxCertificate' -Tag 'Unit' {
 
         $result.Path | Should -Be (Resolve-Path $script:testPfxPath).ProviderPath
         $result.Subject | Should -Be 'CN=unit-test.example'
+        $result.SubjectAlternativeNames | Should -Contain 'unit-test.example'
+        $result.SubjectAlternativeNames | Should -Contain 'www.unit-test.example'
+        $result.SubjectAlternativeNameCount | Should -Be 2
         $result.HasPrivateKey | Should -BeTrue
         $result.IsExpired | Should -BeFalse
         $result.IsCurrentlyValid | Should -BeTrue
