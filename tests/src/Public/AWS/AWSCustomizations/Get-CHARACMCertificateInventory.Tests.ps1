@@ -36,6 +36,7 @@ Describe 'Get-CHARACMCertificateInventory' -Tag 'Unit' {
             [PSCustomObject]@{
                 CertificateArn = $CertificateArn
                 DomainName = if ($CertificateArn -like '*/one') { 'one.example' } else { 'two.example' }
+                SubjectAlternativeNames = @('one.example', 'www.one.example')
                 Status = 'ISSUED'
                 NotAfter = [DateTime]::UtcNow.AddDays(90)
                 InUseBy = @("resource-for-$CertificateArn")
@@ -54,6 +55,9 @@ Describe 'Get-CHARACMCertificateInventory' -Tag 'Unit' {
         $results[0].PSObject.Properties.Name | Should -Contain 'NotAfter'
         $results[0].PSObject.Properties.Name | Should -Contain 'DaysRemaining'
         $results[0].PSObject.Properties.Name | Should -Contain 'InUseBy'
+        $results[0].PSObject.Properties.Name | Should -Contain 'SubjectAlternativeNames'
+        $results[0].PSObject.Properties.Name | Should -Contain 'SubjectAlternativeNameCount'
+        $results[0].SubjectAlternativeNameCount | Should -Be 2
 
         Should -Invoke Get-ACMCertificateList -ModuleName ACM-Customizations -Times 1
         Should -Invoke Get-ACMCertificateDetail -ModuleName ACM-Customizations -Times 2
