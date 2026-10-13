@@ -29,7 +29,8 @@ The design centers on four cooperating pieces:
    `ImplicitDeny`).
 
 The language is PowerShell, matching the existing module. Private helpers are defined
-inside the same `.psm1` and are not exported.
+in `src/CharlandCustomizations/Private/IAMPrivateFunctions.ps1`, dot-sourced by the
+nested IAM module, and are not exported.
 
 ## Architecture
 

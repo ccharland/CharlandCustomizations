@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Provides functions for auditing IAM policies and roles, including detection of
-    deleted principals movein policy statements and trust policies, and searching
+    deleted principals in policy statements and trust policies, and searching
     customer-managed policy statement content.
 
 .NOTES
