@@ -407,7 +407,7 @@ function Import-CHARPfxCertificateToACM {
               ForEach-Object { ([string]$_).TrimEnd('.').ToLowerInvariant() } |
               Sort-Object -Unique
           )
-          if (Compare-Object -ReferenceObject $existingNames -DifferenceObject $replacementNames) {
+          if ($existingNames.Count -eq 0 -or (Compare-Object -ReferenceObject $existingNames -DifferenceObject $replacementNames)) {
             throw "The replacement certificate DNS names do not match ACM certificate '$CertificateArn'. Specify -Force to replace it anyway."
           }
         }
