@@ -58,10 +58,14 @@ An escape hatch (`CC_GIT_HOOK_ALLOW_PATH_POLICY_OVERRIDE=1`) exists for genuinel
 
 AI automation tools (Copilot, Codex, Kiro) create branches using their own prefixes (`copilot/*`, `codex/*`, `kiro/*`). The branch creation ruleset now allows these prefixes so the tools can perform background work without being blocked. Dependabot also creates branches using its own prefix  (`dependabot/*`.) 
 
-This does **not** weaken merge protections. Existing required workflow checks (`branch-path-policy.yml`, `pr-quality-gate.yml`) still enforce path separation and status checks on any PR targeting `main`. AI-generated branches must be renamed to an approved prefix (e.g. `feature/*`, `infrastructure/*`) before merge to satisfy these checks.
+This does **not** weaken merge protections. Existing required workflow checks (`branch-path-policy.yml`, `pr-quality-gate.yml`) still enforce path separation and status checks on any PR targeting `main`. AI-generated branches must be renamed to an approved prefix before merge to satisfy these checks.
 
 ### 2026-08-30 — Bare AI-root branches block all paths before merge
 
 Previously the bare AI-root prefixes (`copilot/*`, `codex/*`, `kiro/*`) only blocked `src/`, `tests/src/`, and `Scripts/`. This left a gap: a bare AI-root branch that only touched `.github/`, `docs/`, `.kiro/`, or root files could pass the policy and merge into `main` without ever being renamed.
 
 `Test-BranchPathPolicy.ps1` now treats bare AI-root prefixes as a hard "rename required" gate using a `BlockAllPaths` flag. Any changed path fails the policy, so these branches must be renamed to a `-code/` or `-infra/` variant before merge. This approach is future-proof: new top-level directories are covered automatically without editing a blocked-path list. Branches with no changed paths still pass.
+
+### 2026-10-20 — Allow descriptive AI branch rename targets
+
+The branch-name ruleset allows AI-generated branches to be renamed from the bare `copilot/`, `codex/`, and `kiro/` prefixes to descriptive `*-feature/` or `*-infrastructure/` prefixes (for example, `copilot-feature/` and `kiro-infrastructure/`). This changes the permitted branch names only; it does not change the branch-path policy's accepted prefix list or required PR checks. The new prefixes must also be recognized by the branch-path policy before PRs using them can pass that check.
