@@ -647,8 +647,8 @@ function Test-CHARACMCertificate {
         NotAfter              = if ($hasExpiration) { [DateTime]$detail.NotAfter } else { $null }
         DaysRemaining         = $daysRemaining
         InUseBy               = @($detail.InUseBy)
-        SubjectAlternativeNames = @($detail.SubjectAlternativeNames)
-        SubjectAlternativeNameCount = @($detail.SubjectAlternativeNames).Count
+        SubjectAlternativeNames = @($detail.SubjectAlternativeNames | Where-Object { $null -ne $_ })
+        SubjectAlternativeNameCount = @($detail.SubjectAlternativeNames | Where-Object { $null -ne $_ }).Count
         IsIssued              = $isIssued
         IsExpired             = $isExpired
         HasMinimumValidity    = $hasMinimumValidity
