@@ -71,4 +71,10 @@ jobs:
           Write-Host 'Changed paths:'
           $changedPaths | ForEach-Object { Write-Host "  $_" }
 
-          ./Scripts/Test-BranchPathPolicy.ps1 -BranchName $branchName -ChangedPath $changedPaths
+          $policyBranchName = $branchName
+          if ($branchName.StartsWith('dependabot/', [StringComparison]::OrdinalIgnoreCase)) {
+              $policyBranchName = "feature/$branchName"
+              Write-Host "Classifying Dependabot branch as a code branch for path separation."
+          }
+
+          ./Scripts/Test-BranchPathPolicy.ps1 -BranchName $policyBranchName -ChangedPath $changedPaths

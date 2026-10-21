@@ -46,6 +46,18 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             )) | Should -Be 0
         }
 
+        It 'Allows dependency manifest changes when Dependabot is classified as a code branch' {
+            {
+                & $script:ScriptPath -BranchName 'feature/dependabot/pip-uv-update' -ChangedPath @(
+                    'requirements.txt'
+                )
+            } | Should -Not -Throw
+
+            (Invoke-BranchPolicyScript -BranchName 'feature/dependabot/pip-uv-update' -ChangedPath @(
+                'Scripts/Build-Module.ps1'
+            )) | Should -Be 1
+        }
+
         It 'Blocks all changes when branch prefix is not approved' {
             (Invoke-BranchPolicyScript -BranchName 'experiment/new-policy' -ChangedPath @(
                 'src/CharlandCustomizations/Public/Test-Thing.ps1'
