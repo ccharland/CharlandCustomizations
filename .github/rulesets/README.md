@@ -10,7 +10,7 @@ These files serve as documentation so the team can review, version-track, and re
 
 | File | Description |
 |------|-------------|
-| `Branch-Name-Ruleset.json` | Blocks branch creation unless the name uses one of the approved prefixes. Includes scoped AI-tool prefixes (`codex-code/`, `copilot-code/`, `kiro-code/`, `codex-infra/`, `copilot-infra/`, `kiro-infra/`) and bare AI-tool prefixes (`codex/`, `copilot/`, `kiro/`) for initial AI-generated branches that must be renamed before merge. |
+| `Branch-Name-Ruleset.json` | Blocks branch creation unless the name uses one of the approved prefixes. Includes scoped AI-tool prefixes (`codex-code/`, `copilot-code/`, `kiro-code/`, `codex-infra/`, `copilot-infra/`, `kiro-infra/`) and bare AI-tool prefixes (`codex/`, `copilot/`, `kiro/`) for initial AI-generated branches that must be renamed before merge. The Dependabot GitHub App is exempt from this creation-only ruleset so it can create security-update branches. |
 | `Block-Malformed-Tags.json` | Blocks tag creation outside the version, start, and feature tag namespaces. |
 | `Feature-Tag-Rules.json` | Makes `feature/*` tags immutable after creation. |
 | `protect-deployment-tags.json` | Protects version tags (`v*.*.*`) used to trigger module publishing. Requires GPG-signed tags, prevents force-pushes, and enforces that all PR quality gate checks have passed before a release tag is accepted. |
@@ -129,7 +129,7 @@ gh api /repos/ccharland/CharlandCustomizations/rulesets | Out-File -FilePath $ou
 
 ## Notes
 
-- `bypass_actors` is empty, meaning no one (including admins) can bypass these rules. Add actors if a hotfix escape hatch is needed. Note: on personal repos, admins can still bypass via the GitHub UI.
+- The branch-name ruleset exempts only the Dependabot GitHub App from its branch-creation restriction; it does not exempt Dependabot from PR checks. Other rulesets keep their separately configured bypass actors.
 - The "Copilot review for default branch" ruleset is configured directly on GitHub and has no local JSON file. It triggers automatic Copilot code review on PRs to `main` but is advisory only — Copilot leaves "Comment" reviews that do not count toward required approvals and cannot block merge.
 - GitHub ruleset ref-name conditions use glob patterns, not full semantic-version regular expressions. Workflows must perform strict version validation.
 - AI-tool branches (`copilot/`, `codex/`, `kiro/`) are allowed by the branch name ruleset for creation, but `Test-BranchPathPolicy.ps1` blocks ALL path changes on those prefixes. This forces a rename to the scoped variant (`-code/` or `-infra/`) before merge.

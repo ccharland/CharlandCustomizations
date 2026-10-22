@@ -1,5 +1,6 @@
 BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../../Scripts/Test-BranchPathPolicy.ps1"
+    . "$PSScriptRoot/../../.github/scripts/ConvertTo-BranchPathPolicyName.ps1"
 
     function Invoke-BranchPolicyScript {
         param(
@@ -11,7 +12,8 @@ BeforeAll {
             [string[]]$ChangedPath
         )
 
-            $null = & pwsh -NoProfile -ExecutionPolicy Bypass -File $script:ScriptPath -BranchName $BranchName -ChangedPath $ChangedPath 2>&1
+            $policyBranchName = ConvertTo-BranchPathPolicyName -BranchName $BranchName
+            $null = & pwsh -NoProfile -ExecutionPolicy Bypass -File $script:ScriptPath -BranchName $policyBranchName -ChangedPath $ChangedPath 2>&1
         return $LASTEXITCODE
     }
 }
@@ -44,6 +46,16 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             (Invoke-BranchPolicyScript -BranchName 'feature/add-command' -ChangedPath @(
                 'src/CharlandCustomizations/Public/Test-Thing.ps1'
             )) | Should -Be 0
+        }
+
+        It 'Allows dependency manifest changes when Dependabot is classified as a code branch' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'requirements.txt'
+            )) | Should -Be 0
+
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'Scripts/Build-Module.ps1'
+            )) | Should -Be 1
         }
 
         It 'Blocks all changes when branch prefix is not approved' {

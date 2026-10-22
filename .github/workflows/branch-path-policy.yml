@@ -39,6 +39,8 @@ jobs:
           PUSH_BEFORE_SHA: ${{ github.event.before }}
           PUSH_HEAD_SHA: ${{ github.sha }}
         run: |
+          . ./.github/scripts/ConvertTo-BranchPathPolicyName.ps1
+
           $branchName = if ($env:PR_BRANCH) { $env:PR_BRANCH } else { $env:REF_BRANCH }
 
           if ($env:EVENT_NAME -eq 'pull_request') {
@@ -71,4 +73,9 @@ jobs:
           Write-Host 'Changed paths:'
           $changedPaths | ForEach-Object { Write-Host "  $_" }
 
-          ./Scripts/Test-BranchPathPolicy.ps1 -BranchName $branchName -ChangedPath $changedPaths
+          $policyBranchName = ConvertTo-BranchPathPolicyName -BranchName $branchName
+          if ($policyBranchName -ne $branchName) {
+              Write-Host "Classifying Dependabot branch as a code branch for path separation."
+          }
+
+          ./Scripts/Test-BranchPathPolicy.ps1 -BranchName $policyBranchName -ChangedPath $changedPaths
