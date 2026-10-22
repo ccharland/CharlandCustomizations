@@ -27,6 +27,7 @@ Describe 'Test-CHARACMCertificate' -Tag 'Unit' {
             [PSCustomObject]@{
                 CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/valid'
                 DomainName = 'unit-test.example'
+                SubjectAlternativeNames = @('unit-test.example', 'www.unit-test.example')
                 Status = 'ISSUED'
                 NotAfter = [DateTime]::UtcNow.AddDays(60)
                 InUseBy = @('arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/test')
@@ -38,6 +39,8 @@ Describe 'Test-CHARACMCertificate' -Tag 'Unit' {
         $result = Test-CHARACMCertificate -CertificateArn 'arn:aws:acm:us-east-1:123456789012:certificate/valid' -MinimumDaysRemaining 30
 
         $result.Region | Should -Be 'us-east-1'
+        $result.SubjectAlternativeNames | Should -Contain 'www.unit-test.example'
+        $result.SubjectAlternativeNameCount | Should -Be 2
         $result.IsIssued | Should -BeTrue
         $result.IsExpired | Should -BeFalse
         $result.HasMinimumValidity | Should -BeTrue
