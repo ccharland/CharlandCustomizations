@@ -1,5 +1,11 @@
 version: 2
 updates:
+  # Scan Python dependencies, including security vulnerabilities in requirements.txt
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
   # Scan GitHub Actions dependencies
   # Dependabot can propose updates for actions (including those pinned to commit SHAs)
   - package-ecosystem: "github-actions"
