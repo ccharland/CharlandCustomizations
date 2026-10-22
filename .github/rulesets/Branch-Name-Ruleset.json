@@ -46,5 +46,11 @@
       "type": "creation"
     }
   ],
-  "bypass_actors": []
+  "bypass_actors": [
+    {
+      "actor_id": 29110,
+      "actor_type": "Integration",
+      "bypass_mode": "exempt"
+    }
+  ]
 }
