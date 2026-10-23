@@ -4,6 +4,34 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-01
+
+### Added
+
+- `PowerShell-Utilities.psm1` — new nested module under `Public/PowerShell/` providing general-purpose PowerShell helpers not tied to a specific AWS service (#127)
+- `ConvertTo-CHARHashtable` — converts a `PSCustomObject` into an ordered hashtable suitable for splatting, with inclusion filtering (`-Property`), exclusion filtering (`-ExcludeProperty`), and optional recursive conversion of nested objects (`-Depth`) (#127)
+- `IAM-Customizations.psm1` — new nested module under `Public/AWS/IAM/` providing IAM policy and role audit/search functions (#125)
+- `Find-CHARDeletedPrincipalPolicy` — enumerates customer-managed IAM policies and detects statements that reference deleted principals (identified by AWS unique-ID prefixes such as AIDA, AROA, AGPA) (#125)
+- `Find-CHARDeletedPrincipalRole` — enumerates IAM roles and detects trust-policy references to deleted principals (#125)
+- `Search-CHARPolicyStatement` — searches customer-managed IAM policy documents for a specified string, with case-insensitive matching by default and an optional `-CaseSensitive` switch (#125)
+- Comprehensive Pester test coverage for all new IAM and PowerShell-Utilities functions (#125, #127)
+- ADR-009 — architecture decision record documenting newcomer-friendly design choices (#126)
+
+### Changed
+
+- Module manifest version bumped to `0.8.0`; `NestedModules` updated to include `Public/AWS/IAM/IAM-Customizations.psm1` and `Public/PowerShell/PowerShell-Utilities.psm1`; `FunctionsToExport` expanded with 4 new functions (57 total exported functions) (#125, #127)
+- Branch name ruleset expanded and the main-branch merge requirements consolidated: `branch-path-policy.json` replaced by `main-branch-merge-requirements.json` (#122)
+- `Test-BranchPathPolicy.ps1` reworked and re-signed to align with the expanded branch ruleset (#122)
+- Pre-commit hook and `signed-powershell-editing.instructions.md` updated for the revised branch classifications (#122)
+- cSpell dictionary expanded with project-specific terms (#122)
+
+### Infrastructure
+
+- Kiro spec documents added for the `powershell-utilities` feature (#127)
+- Kiro steering (`copilot-steering.md`, `powershell-module-development.md`) updated (#122)
+- Ruleset activation logs updated for the branch ruleset changes (#122)
+- Added `tests/scripts/Test-BranchPathPolicy.Tests.ps1` and expanded `Install-CHARGitHook` tests (#122)
+
 ## [0.7.0] - 2026-08-23
 
 ### Added

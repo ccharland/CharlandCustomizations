@@ -5,8 +5,21 @@
 BeforeAll {
     # Stub AWS cmdlet if AWS Tools are not installed locally.
     if (-not (Get-Command Import-ACMCertificate -ErrorAction SilentlyContinue)) {
-        Set-Item -Path function:global:Import-ACMCertificate -Value { } -Force
+        Set-Item -Path function:global:Import-ACMCertificate -Value {
+            [CmdletBinding()]
+            param(
+                [byte[]]$Certificate,
+                [byte[]]$PrivateKey,
+                [byte[]]$CertificateChain,
+                [string]$CertificateArn,
+                [string]$Region
+            )
+        } -Force
         $script:createdImportStub = $true
+    }
+    if (-not (Get-Command Get-ACMCertificateDetail -ErrorAction SilentlyContinue)) {
+        Set-Item -Path function:global:Get-ACMCertificateDetail -Value { } -Force
+        $script:createdDetailStub = $true
     }
 
     . "$PSScriptRoot/../../../../../src/CharlandCustomizations/Private/New-AWSParamSplat.ps1"
@@ -22,7 +35,7 @@ BeforeAll {
     if ($IsMacOS) {
         $testKeyPath = Join-Path $script:testRoot 'unit-test.key'
         $testCertPath = Join-Path $script:testRoot 'unit-test.crt'
-        & openssl req -x509 -newkey rsa:2048 -keyout $testKeyPath -out $testCertPath -days 30 -nodes -subj '/CN=unit-test.example' 2>$null
+        & openssl req -x509 -newkey rsa:2048 -keyout $testKeyPath -out $testCertPath -days 30 -nodes -subj '/CN=unit-test.example' -addext 'subjectAltName=DNS:unit-test.example,DNS:www.unit-test.example' 2>$null
         & openssl pkcs12 -export -legacy -out $script:testPfxPath -inkey $testKeyPath -in $testCertPath -passout "pass:$($script:testPasswordPlain)" 2>$null
         if ($LASTEXITCODE -ne 0) {
             throw 'OpenSSL failed to create the macOS PFX test fixture.'
@@ -37,6 +50,10 @@ BeforeAll {
                 [System.Security.Cryptography.HashAlgorithmName]::SHA256,
                 [System.Security.Cryptography.RSASignaturePadding]::Pkcs1
             )
+            $sanBuilder = [System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder]::new()
+            $sanBuilder.AddDnsName('unit-test.example')
+            $sanBuilder.AddDnsName('www.unit-test.example')
+            $request.CertificateExtensions.Add($sanBuilder.Build())
             $certificate = $request.CreateSelfSigned(
                 [DateTimeOffset]::UtcNow.AddDays(-1),
                 [DateTimeOffset]::UtcNow.AddDays(30)
@@ -66,6 +83,9 @@ AfterAll {
     if ($script:createdImportStub -and (Test-Path function:global:Import-ACMCertificate)) {
         Remove-Item function:global:Import-ACMCertificate -Force -ErrorAction SilentlyContinue
     }
+    if ($script:createdDetailStub -and (Test-Path function:global:Get-ACMCertificateDetail)) {
+        Remove-Item function:global:Get-ACMCertificateDetail -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
@@ -77,6 +97,13 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
                 CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/test-cert'
             }
         }
+        Mock Get-ACMCertificateDetail -ModuleName ACM-Customizations {
+            [PSCustomObject]@{
+                CertificateArn = $CertificateArn
+                DomainName = 'unit-test.example'
+                SubjectAlternativeNames = @('unit-test.example', 'www.unit-test.example')
+            }
+        }
     }
 
     It 'Imports a PFX file into ACM and returns metadata' {
@@ -85,13 +112,19 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
         $result | Should -Not -BeNullOrEmpty
         $result.CertificateArn | Should -Be 'arn:aws:acm:us-east-1:123456789012:certificate/test-cert'
         $result.SourcePath | Should -Be (Resolve-Path $script:testPfxPath).ProviderPath
+        $result.SubjectAlternativeNames | Should -Contain 'unit-test.example'
+        $result.SubjectAlternativeNames | Should -Contain 'www.unit-test.example'
+        $result.SubjectAlternativeNameCount | Should -Be 2
 
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1
         Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
-            $Certificate -is [byte[]] -and
-            $PrivateKey -is [byte[]] -and
-            $Region -eq 'us-east-1' -and
-            $Certificate.Length -gt 0 -and
-            $PrivateKey.Length -gt 0
+            $Certificate -is [byte[]] -and $Certificate.Length -gt 0
+        }
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
+            $PrivateKey -is [byte[]] -and $PrivateKey.Length -gt 0
+        }
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
+            $Region -eq 'us-east-1'
         }
         Should -Invoke Test-CHARAWSCmdlet -ModuleName ACM-Customizations -Times 1 -Exactly -ParameterFilter {
             $Name -eq 'Import-ACMCertificate'
@@ -112,6 +145,52 @@ Describe 'Import-CHARPfxCertificateToACM' -Tag 'Unit' {
         $result = Import-CHARPfxCertificateToACM -PfxPath $script:testPfxPath -Password $script:testPasswordSecure
 
         $result.CertificateArn | Should -Be 'arn:aws:acm:us-east-1:123456789012:certificate/string-result'
+    }
+
+    It 'replaces an existing certificate when all DNS names match' {
+        $certificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/replace'
+
+        $result = Import-CHARPfxCertificateToACM -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -CertificateArn $certificateArn -Confirm:$false
+
+        $result.CertificateArn | Should -Be 'arn:aws:acm:us-east-1:123456789012:certificate/test-cert'
+        Should -Invoke Get-ACMCertificateDetail -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
+            $CertificateArn -eq 'arn:aws:acm:us-east-1:123456789012:certificate/replace'
+        }
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
+            $CertificateArn -eq 'arn:aws:acm:us-east-1:123456789012:certificate/replace'
+        }
+    }
+
+    It 'rejects replacement certificates with different DNS names unless forced' {
+        Mock Get-ACMCertificateDetail -ModuleName ACM-Customizations {
+            [PSCustomObject]@{
+                CertificateArn = $CertificateArn
+                DomainName = 'unit-test.example'
+                SubjectAlternativeNames = @('unit-test.example', 'other.example')
+            }
+        }
+        $certificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/replace'
+
+        {
+            Import-CHARPfxCertificateToACM -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -CertificateArn $certificateArn -Confirm:$false
+        } | Should -Throw '*DNS names do not match*'
+
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 0
+    }
+
+    It 'allows replacement with different DNS names when forced' {
+        Mock Get-ACMCertificateDetail -ModuleName ACM-Customizations {
+            [PSCustomObject]@{
+                CertificateArn = $CertificateArn
+                DomainName = 'unit-test.example'
+                SubjectAlternativeNames = @('unit-test.example', 'other.example')
+            }
+        }
+
+        $null = Import-CHARPfxCertificateToACM -PfxPath $script:testPfxPath -Password $script:testPasswordSecure -CertificateArn 'arn:aws:acm:us-east-1:123456789012:certificate/replace' -Force -Confirm:$false
+
+        Should -Invoke Get-ACMCertificateDetail -ModuleName ACM-Customizations -Times 0
+        Should -Invoke Import-ACMCertificate -ModuleName ACM-Customizations -Times 1
     }
 
     It 'Throws when the PFX path does not exist' {

@@ -53,4 +53,12 @@ Describe 'Update-CHARPfxCertificateInACM' -Tag 'Unit' {
 
         Should -Invoke Import-CHARPfxCertificateToACM -ModuleName ACM-Customizations -Times 0
     }
+
+    It 'passes Force through to the import function' {
+        $null = Update-CHARPfxCertificateInACM -CertificateArn 'arn:aws:acm:us-east-1:123456789012:certificate/replace' -PfxPath $script:testPfxPath -Force -Confirm:$false
+
+        Should -Invoke Import-CHARPfxCertificateToACM -ModuleName ACM-Customizations -Times 1 -ParameterFilter {
+            $Force
+        }
+    }
 }
