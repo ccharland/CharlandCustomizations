@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Check if merge came from a publish branch
         id: check-publish
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             // For manual dispatch, proceed only in dry-run mode to avoid bypassing publish/* gating
@@ -75,7 +75,7 @@ jobs:
 
       - name: Checkout main at merge commit
         if: steps.check-publish.outputs.is_publish == 'true'
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5
         with:
           ref: ${{ steps.check-publish.outputs.merge_sha }}
 
