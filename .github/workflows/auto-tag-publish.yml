@@ -75,9 +75,10 @@ jobs:
 
       - name: Checkout main at merge commit
         if: steps.check-publish.outputs.is_publish == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.check-publish.outputs.merge_sha }}
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Read version from manifest
         if: steps.check-publish.outputs.is_publish == 'true'
