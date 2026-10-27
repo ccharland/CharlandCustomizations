@@ -127,6 +127,15 @@ $approvedBranchPrefixes = @(
         BlockedPath = $WorkflowInfrastructureBranchBlockedPath
         BranchType = 'workflow/infrastructure branch'
     },
+    # Dependabot opens branches like 'dependabot/github_actions/...' (Actions bumps)
+    # and 'dependabot/pip/...' (requirements.txt bumps). Both touch only .github/ and
+    # root dependency manifests, so they fit the workflow/infrastructure bucket, which
+    # blocks only src/ and tests/src/ and leaves requirements.txt allowed.
+    [pscustomobject]@{
+        BranchPrefix = 'dependabot/'
+        BlockedPath = $WorkflowInfrastructureBranchBlockedPath
+        BranchType = 'workflow/infrastructure branch'
+    },
     [pscustomobject]@{
         BranchPrefix = 'architecture/'
         BlockedPath = $NormalCodeBranchBlockedPath
