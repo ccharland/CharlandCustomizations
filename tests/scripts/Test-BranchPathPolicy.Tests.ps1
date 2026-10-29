@@ -1,6 +1,5 @@
 BeforeAll {
     $script:ScriptPath = "$PSScriptRoot/../../Scripts/Test-BranchPathPolicy.ps1"
-    . "$PSScriptRoot/../../.github/scripts/ConvertTo-BranchPathPolicyName.ps1"
 
     function Invoke-BranchPolicyScript {
         param(
@@ -12,8 +11,13 @@ BeforeAll {
             [string[]]$ChangedPath
         )
 
-            $policyBranchName = ConvertTo-BranchPathPolicyName -BranchName $BranchName
-            $null = & pwsh -NoProfile -ExecutionPolicy Bypass -File $script:ScriptPath -BranchName $policyBranchName -ChangedPath $ChangedPath 2>&1
+        # Invoke via -Command (not -File) so a multi-element $ChangedPath array binds to the
+        # [string[]] parameter correctly. `pwsh -File` splits arrays into stray positional
+        # args, which breaks any test that passes more than one changed path.
+        $null = & pwsh -NoProfile -ExecutionPolicy Bypass -Command {
+            param($ScriptPath, $BranchName, $ChangedPath)
+            & $ScriptPath -BranchName $BranchName -ChangedPath $ChangedPath
+        } -args $script:ScriptPath, $BranchName, $ChangedPath 2>&1
         return $LASTEXITCODE
     }
 }
@@ -48,13 +52,61 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             )) | Should -Be 0
         }
 
-        It 'Allows dependency manifest changes when Dependabot is classified as a code branch' {
+        It 'Allows requirements.txt changes on Dependabot branches' {
             (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
                 'requirements.txt'
             )) | Should -Be 0
+        }
 
+        It 'Allows workflow changes on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/github_actions/checkout-5' -ChangedPath @(
+                '.github/workflows/publish.yml'
+            )) | Should -Be 0
+        }
+
+        It 'Allows requirements.txt and workflow changes together on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'requirements.txt',
+                '.github/workflows/pr-quality-gate.yml'
+            )) | Should -Be 0
+        }
+
+        It 'Blocks Scripts changes on Dependabot branches' {
             (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
                 'Scripts/Build-Module.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks src changes on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'src/CharlandCustomizations/Public/Test-Thing.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks non-workflow .github changes on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/github_actions/checkout-5' -ChangedPath @(
+                '.github/dependabot.yml'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks requirements.txt lookalikes on Dependabot branches' {
+            foreach ($path in @('requirements.txt.bak', 'requirements.txt-extra.ps1')) {
+                (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                    $path
+                )) | Should -Be 1
+            }
+        }
+
+        It 'Blocks a directory replacing the requirements.txt manifest on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'requirements.txt/payload.ps1'
+            )) | Should -Be 1
+        }
+
+        It 'Blocks a mix of allowed and disallowed paths on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'requirements.txt',
+                'docs/CHANGELOG.md'
             )) | Should -Be 1
         }
 
