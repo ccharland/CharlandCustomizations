@@ -45,7 +45,10 @@ classify_branch_policy() {
             POLICY_NAME='Dependabot branch'
             BLOCKED_PATTERN=''
             ALLOWED_PATTERN=''
-            ALLOWED_ONLY_PATTERN='^(requirements\.txt|\.github/workflows/)'
+            # requirements.txt is anchored end-of-path (exact file only, so lookalikes like
+            # requirements.txt.bak do not slip through); .github/workflows/ stays a prefix
+            # so any workflow file under it is allowed.
+            ALLOWED_ONLY_PATTERN='^(requirements\.txt$|\.github/workflows/)'
             BLOCKED_PATHS='anything other than requirements.txt and .github/workflows/'
             return 0
             ;;

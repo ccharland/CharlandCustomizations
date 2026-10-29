@@ -89,6 +89,20 @@ Describe 'Test-BranchPathPolicy' -Tag 'Unit' {
             )) | Should -Be 1
         }
 
+        It 'Blocks requirements.txt lookalikes on Dependabot branches' {
+            foreach ($path in @('requirements.txt.bak', 'requirements.txt-extra.ps1')) {
+                (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                    $path
+                )) | Should -Be 1
+            }
+        }
+
+        It 'Blocks a directory replacing the requirements.txt manifest on Dependabot branches' {
+            (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
+                'requirements.txt/payload.ps1'
+            )) | Should -Be 1
+        }
+
         It 'Blocks a mix of allowed and disallowed paths on Dependabot branches' {
             (Invoke-BranchPolicyScript -BranchName 'dependabot/pip/uv-update' -ChangedPath @(
                 'requirements.txt',

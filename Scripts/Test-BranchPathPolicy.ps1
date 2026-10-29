@@ -90,8 +90,17 @@ Set-Variable -Name WorkflowInfrastructureBranchBlockedPath -Option Constant -Val
 # to the Python manifest (pip ecosystem) and GitHub Actions workflows (github-actions
 # ecosystem) per .github/dependabot.yml. Anything else on a dependabot/ branch (src/,
 # Scripts/, .githooks/, docs/, a manual push, etc.) is a policy violation.
+#
+# The two allowed locations are matched differently on purpose:
+# - .github/workflows is a PREFIX: any workflow file under it is allowed.
+# - requirements.txt is an EXACT path: only the manifest file itself. Prefix matching
+#   here would also permit 'requirements.txt/payload.ps1' (manifest deleted and replaced
+#   by a directory), which must be blocked.
 Set-Variable -Name DependabotBranchAllowedPathPrefix -Option Constant -Value @(
     '.github/workflows'
+)
+
+Set-Variable -Name DependabotBranchAllowedExactPath -Option Constant -Value @(
     'requirements.txt'
 )
 
@@ -151,6 +160,7 @@ $approvedBranchPrefixes = @(
     [pscustomobject]@{
         BranchPrefix = 'dependabot/'
         AllowedPathPrefix = $DependabotBranchAllowedPathPrefix
+        AllowedExactPath = $DependabotBranchAllowedExactPath
         BranchType = 'Dependabot branch'
     },
     [pscustomobject]@{
@@ -320,31 +330,47 @@ Rename the branch to a '-code/' prefix (for source changes) or a '-infra/' prefi
 }
 
 # Allow-list branch types (e.g. Dependabot) invert the default policy: instead of
-# blocking a few paths and allowing the rest, they permit ONLY the listed path prefixes
-# and block everything else. Handled before the block-list logic so new directories can
+# blocking a few paths and allowing the rest, they permit ONLY the listed locations and
+# block everything else. Handled before the block-list logic so new directories can
 # never slip through on these tightly scoped branches.
+#
+# Two kinds of allow entry are supported and applied together:
+# - AllowedPathPrefix: directory prefixes (any path under them is allowed).
+# - AllowedExactPath: single files matched exactly, so a manifest cannot be swapped for a
+#   directory of the same name (e.g. requirements.txt/payload.ps1) to smuggle code in.
 $allowedPrefixes = @(
     if ($matchingBranchPolicy.PSObject.Properties.Name -contains 'AllowedPathPrefix') {
         $matchingBranchPolicy.AllowedPathPrefix | Where-Object { $_ }
     }
 )
+$allowedExactPaths = @(
+    if ($matchingBranchPolicy.PSObject.Properties.Name -contains 'AllowedExactPath') {
+        $matchingBranchPolicy.AllowedExactPath | Where-Object { $_ }
+    }
+)
 
-if ($allowedPrefixes.Count -gt 0) {
+if ($allowedPrefixes.Count -gt 0 -or $allowedExactPaths.Count -gt 0) {
     $disallowedPaths = @(
         foreach ($path in $ChangedPath) {
-            if (-not (Test-PathPrefix -Path $path -Prefix $allowedPrefixes)) {
+            $isAllowed = ($allowedPrefixes.Count -gt 0 -and (Test-PathPrefix -Path $path -Prefix $allowedPrefixes)) -or
+                ($allowedExactPaths.Count -gt 0 -and (Test-ExactPath -Path $path -ExactPath $allowedExactPaths))
+
+            if (-not $isAllowed) {
                 $path
             }
         }
     )
 
     if ($disallowedPaths.Count -gt 0) {
-        $allowedPrefixText = ($allowedPrefixes | ForEach-Object { $_.TrimEnd('/') }) -join ', '
+        $allowedText = (@(
+                $allowedPrefixes | ForEach-Object { "$($_.TrimEnd('/'))/" }
+                $allowedExactPaths
+            ) | Where-Object { $_ }) -join ', '
         Write-Error -ErrorAction Continue @"
 Branch path policy failed.
 
 Branch '$BranchName' is treated as a $branchType.
-This branch type may only change: $allowedPrefixText.
+This branch type may only change: $allowedText.
 
 Blocked changed paths:
 $($disallowedPaths -join [Environment]::NewLine)
@@ -403,10 +429,10 @@ Split this work into a branch whose name matches the kind of change being made.
 Write-Output "Branch path policy passed for '$BranchName'."
 exit $script:SuccessExitCode
 # SIG # Begin signature block
-# MIIgywYJKoZIhvcNAQcCoIIgvDCCILgCAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIIgzAYJKoZIhvcNAQcCoIIgvTCCILkCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAoA0v/iHfYnI0n
-# pqj234+scfHOipcoicxuwnAy2eomeaCCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDDjdkewRg6N1S2
+# 4lCTTFxJEuc3mqX9ZsIreQIWd6YH9KCCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
 # /xLZmv82guWnMAoGCCqGSM49BAMDMHwxCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVU
 # ZXhhczEQMA4GA1UEBwwHSG91c3RvbjEYMBYGA1UECgwPU1NMIENvcnBvcmF0aW9u
 # MTEwLwYDVQQDDChTU0wuY29tIFJvb3QgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkg
@@ -552,30 +578,30 @@ exit $script:SuccessExitCode
 # BEvgsbxe25yEhJ0IdGa1pwCYsarldJhJVMdNcAOU7jyIMqHcczav3wtIXp/SwbXZ
 # 3xX0mfsLfANSJ47G4qPgx1atb6GIlTaQXzu/p4fTQeAIUVzZXT4K984IyfuO7NLj
 # WMtog1wGUpZD98pv+4Mt9Y5bvfPUjaUVjtePy1DVdi0rl5ESNYi0zyOmXVxtA5zz
-# xu1H7RdLZOZugT/XjX69rY9bMYIEyTCCBMUCAQEwgYwweDELMAkGA1UEBhMCVVMx
+# xu1H7RdLZOZugT/XjX69rY9bMYIEyjCCBMYCAQEwgYwweDELMAkGA1UEBhMCVVMx
 # DjAMBgNVBAgMBVRleGFzMRAwDgYDVQQHDAdIb3VzdG9uMREwDwYDVQQKDAhTU0wg
 # Q29ycDE0MDIGA1UEAwwrU1NMLmNvbSBDb2RlIFNpZ25pbmcgSW50ZXJtZWRpYXRl
 # IENBIEVDQyBSMgIQUR3u8+0Mq1hXs5hyxM0vzzANBglghkgBZQMEAgEFAKCBhDAY
 # BgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3
 # AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqGSIb3DQEJBDEi
-# BCACkMMAOHqGgP1nIhuPFm2LlUdVZ5L5t5BcPCfi9WErATALBgcqhkjOPQIBBQAE
-# ZzBlAjAHHrudrFZqoGNiGjR8I/rbtn3hho0dvHewwzA9jYXF+BPWDcS+Beozf/RG
-# ZQ2d590CMQCBv0jOdUJ7aW/blsBQQkNPxKBXjzkT+QuM3vigQr/K0jnzrTwKcoe5
-# ZhG5i+rQM3ahggMjMIIDHwYJKoZIhvcNAQkGMYIDEDCCAwwCAQEwajBVMQswCQYD
-# VQQGEwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0
-# aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5nIENBIFI0MQIRAOdO8lWwUE/626bf9/yL
-# oxUwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwG
-# CSqGSIb3DQEJBTEPFw0yNjEwMjkxNzA5NTJaMD8GCSqGSIb3DQEJBDEyBDDOjcMp
-# 9WA32VFTJTwcJFxDzTOyXVGWmmY2RTWRwLIdf+AlUabOb/8/y8WCh3JrvV8wDQYJ
-# KoZIhvcNAQEBBQAEggIAsiQWogAOs/+EWNdqN2gTISZe16orwwzsnUgT8IqRCfBq
-# xs8WmzpX5Ji+FgHDItezLPe8Y46T3ZosAyMGfuhr/eKRPzAw28OxdUpOq3MgQ+2l
-# DGQadOCNoeTCTG+037a8RB0KrPsklhizrmuGu7MDSZ0id80cYzVkXl7s7UZJDkK/
-# 22Vx5NGGHxT6sTiz0OnFqpsA80n5dD+PVXlCJvAcHusS81iDvh5wQkfJD6nq1s8A
-# i/zdyEgpy/gnWltO0ZpTFzVQLB9LR5dJO9fIIUXcl8zFd6ggKMDi8c/4V4q/Wejt
-# uWRBCVcbjEl1o1t/2YKbzZHE85E24BkhnRd2Bx62jQOwTer2k+VlDjNpkweS6jVT
-# 2tOoIFExi6AKjztXlV9AVNPf5PmaJNUj2mUZbBorEF+Yaqc/OIcVbdW70wgFJodm
-# Vas9y3u+loXckD9dTV6fDlzveAyL0p26ivcLIGlBZp6+t2qmZSs6791HzLcBUBff
-# hRbn9fI6DlDK8ST1cTXskxTYM9/D1czyyJdyK2kgdVOyGGRFCGgxtZBYCkus6zyR
-# hWshPT4uJZVVhn/XQTmUlXZDZMcm8N+HUZzZGHT7BpgWgj8/3II6jgfyjApROgJK
-# /GkaCXXWElNobTgUdrehrhgXoRqRVd9ab3hvWd3QI0RSA2woYziG1SV4Ux3GaJU=
+# BCAQoQHPOc2HJfy/lXjnTg6XYo2W1yG9KO0NYoF/W4j0EzALBgcqhkjOPQIBBQAE
+# aDBmAjEAkB/PRJIZBg1+HE3+vpRUa+tb5+hYxzbUQk5J3sZxZbas8ZlNzRJnNiCQ
+# MocRokxBAjEAk9n/wOE/3bBENFu0Etu4LBC1mtR8wsBLn8mF/CUae8svqnBO/NiY
+# 1mE33ke0wYfDoYIDIzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkG
+# A1UEBhMCR0IxGDAWBgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2Vj
+# dGlnbyBQdWJsaWMgVGltZSBTdGFtcGluZyBDQSBSNDECEQDnTvJVsFBP+tum3/f8
+# i6MVMA0GCWCGSAFlAwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
+# BgkqhkiG9w0BCQUxDxcNMjYxMDI5MTcyMjEzWjA/BgkqhkiG9w0BCQQxMgQwso4d
+# NnoCvMRZxaBRZWfva83LaQRN08kvHMzNkYVAqk/wQaN9F/LhGbhUVhAR0TeiMA0G
+# CSqGSIb3DQEBAQUABIICAC3td/c5aFsb9QRd/2K1iIq3ru6IBKeivzPD7joIIP76
+# IPyhuf+pgEVWjbaPFWlr4oBWMYeVSuwHUpX9ipAFXr598gVjv/3N5gnXztf2kHW2
+# aHUXfrTeTF3A72MDNpFm37oPLUkKEgic36GxD2CHiyiDkWC3Q3diwQLqgk9nCEnj
+# 19cgQpKjZovtELiZbdsF4iASV8ahj7Rgd15MQEc/5vy74FuRCKJy5yuYJE0AB8Nj
+# Tb2Lsl2wU6KC2d67W8dB3aDhUd0RpKq/6HcypEsO6Wxbnq4TegVLnCLtIuvP/ecs
+# gYZlI3vpMx0c4lzUB4l4EbqTAa1lH28d+7YmptuBiLUp5OtDiDXws2W5Y7pnkzE1
+# E0D8q3LYMiUB52a5KvG5OJvFY1jsgZIyzkDK0U4qQilEJQNFPRuGBBc5r23jIFY2
+# R+rWGD2gHfv0euAkhwtarNDRRCE0/qgAfbYfhX49EBELGGmcUvYWdxpnpacVjqRK
+# ewB8t1x0i4jFcALGIlFR337Qqi7MjlvzimE22F/DbWaHdFZAEaw1czE79Z//vsUv
+# 78eHmAvpjnsEAmy1avTSPnRwtxFGg2za+XeKFa+W57SNm4w9p6AkPksWyOA734DS
+# rgz+gatSGhTtqxBwPIqwzwzyPZh+SIsj89fv7gdRqshB/GHZ8JiaJhkb4DGsaFZh
 # SIG # End signature block
