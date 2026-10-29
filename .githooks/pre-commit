@@ -19,6 +19,10 @@ if [ -z "$STAGED_FILES" ]; then
 fi
 
 classify_branch_policy() {
+    # Default allow-list to empty; only allow-list branch types (e.g. Dependabot) set it.
+    # Required because `set -u` errors on referencing an unset variable later.
+    ALLOWED_ONLY_PATTERN=''
+
     case "$1" in
         feature/*|bugfix/*|hotfix/*|architecture/*|breaking/*|docs/*|chore/*|codex-code/*|copilot-code/*|kiro-code/*)
             POLICY_NAME='normal code branch'
@@ -27,11 +31,22 @@ classify_branch_policy() {
             BLOCKED_PATHS='.github/, .githooks/, .kiro/settings/, .vscode/, Scripts/, and tests/scripts/'
             return 0
             ;;
-        workflow/*|workflows/*|infrastructure/*|infra/*|ci/*|codex-infra/*|copilot-infra/*|kiro-infra/*|dependabot/*)
+        workflow/*|workflows/*|infrastructure/*|infra/*|ci/*|codex-infra/*|copilot-infra/*|kiro-infra/*)
             POLICY_NAME='workflow/infrastructure branch'
             BLOCKED_PATTERN='^(src|tests/src)(/|$)'
             ALLOWED_PATTERN=''
             BLOCKED_PATHS='src/ and tests/src/'
+            return 0
+            ;;
+        dependabot/*)
+            # Dependabot only writes requirements.txt (pip) and .github/workflows/ (actions)
+            # per .github/dependabot.yml. This branch type is an allow-list: ALLOWED_ONLY
+            # permits exactly those paths and everything else is blocked.
+            POLICY_NAME='Dependabot branch'
+            BLOCKED_PATTERN=''
+            ALLOWED_PATTERN=''
+            ALLOWED_ONLY_PATTERN='^(requirements\.txt|\.github/workflows/)'
+            BLOCKED_PATHS='anything other than requirements.txt and .github/workflows/'
             return 0
             ;;
         publish/*)
@@ -58,9 +73,14 @@ classify_branch_policy() {
 }
 
 if classify_branch_policy "$BRANCH"; then
-    BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E "$BLOCKED_PATTERN" || true)"
-    if [ -n "$ALLOWED_PATTERN" ] && [ -n "$BLOCKED_FILES" ]; then
-        BLOCKED_FILES="$(printf '%s\n' "$BLOCKED_FILES" | grep -Ev "$ALLOWED_PATTERN" || true)"
+    if [ -n "$ALLOWED_ONLY_PATTERN" ]; then
+        # Allow-list mode: block every staged file that is NOT under an allowed path.
+        BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -Ev "$ALLOWED_ONLY_PATTERN" || true)"
+    else
+        BLOCKED_FILES="$(printf '%s\n' "$STAGED_FILES" | grep -E "$BLOCKED_PATTERN" || true)"
+        if [ -n "$ALLOWED_PATTERN" ] && [ -n "$BLOCKED_FILES" ]; then
+            BLOCKED_FILES="$(printf '%s\n' "$BLOCKED_FILES" | grep -Ev "$ALLOWED_PATTERN" || true)"
+        fi
     fi
 else
     BRANCH_PREFIX="$(printf '%s' "$BRANCH" | cut -d/ -f1 | tr '[:upper:]' '[:lower:]')"
