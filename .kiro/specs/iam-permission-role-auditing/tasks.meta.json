@@ -1,0 +1,287 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add `Resolve-CHARPrincipalArn` private helper to `IAM-Customizations.psm1`": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550733
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610559226
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612248649
+      }
+    ],
+    "2.1 Add `Test-CHARGlobIntersect` private helper implementing the memoized glob-intersection recurrence": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550786
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612251641
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612418489
+      }
+    ],
+    "2.2 Add `Test-CHARIamActionOverlap` private helper wrapping the intersection": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550812
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612421394
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612490316
+      }
+    ],
+    "3. Checkpoint - Ensure helper tests pass": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550850
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612503140
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613170224
+      }
+    ],
+    "4.1 Add `Get-CHARPrincipalPolicyDocument` private helper to `IAM-Customizations.psm1`": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550871
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613174501
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613303551
+      }
+    ],
+    "4.2 Add per-policy failure resilience to `Get-CHARPrincipalPolicyDocument`": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550891
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613180478
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613304534
+      }
+    ],
+    "5.1 Add `Get-CHARPrincipalPermission` public function signature and pipeline scaffolding": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550914
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613316738
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613982176
+      }
+    ],
+    "5.2 Implement statement normalization and action matching": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550946
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613318825
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613984785
+      }
+    ],
+    "6.1 Implement Effect filtering that always surfaces Deny": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550968
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613324410
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613985221
+      }
+    ],
+    "6.2 Implement `Effective_Access_Verdict` over the matching set (pre-display-filter)": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610550990
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613325856
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613985915
+      }
+    ],
+    "7.1 Emit `Permission_Record` PSCustomObjects": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610551007
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613327078
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613987018
+      }
+    ],
+    "8.1 Add `Get-CHARPrincipalPermission` to `Export-ModuleMember` in `IAM-Customizations.psm1`": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610551026
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613991703
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790614140671
+      }
+    ],
+    "8.2 Register `Get-CHARPrincipalPermission` in the module manifest `FunctionsToExport`": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610551053
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613993059
+      },
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790614141642
+      }
+    ],
+    "9. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790610551071
+      },
+      {
+        "executionId": "684a9d35-66aa-413d-9712-a1441be33621",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790614765706
+      }
+    ],
+    "1. Implement ARN parsing helper": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612248678
+      }
+    ],
+    "2. Implement bidirectional wildcard overlap helper": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790612490343
+      }
+    ],
+    "4. Implement policy aggregation helper": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613304554
+      }
+    ],
+    "5. Implement the public function skeleton, statement normalization, and matching": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613984816
+      }
+    ],
+    "6. Implement effect filtering and verdict computation": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613985934
+      }
+    ],
+    "7. Implement structured Permission_Record output": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790613987035
+      }
+    ],
+    "8. Wire up export and manifest registration": [
+      {
+        "executionId": "267b6d98-e928-4c67-9904-5c08f2060390",
+        "chatSessionId": "sess_9ecf9aca-0441-498c-b8cf-24a7713d3624",
+        "timestamp": 1790614141674
+      }
+    ]
+  }
+}
