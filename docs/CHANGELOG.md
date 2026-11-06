@@ -4,6 +4,13 @@ All notable changes to the CharlandCustomizations module will be documented in t
 
 ## [Unreleased]
 
+### Added
+
+- `KMS-Customizations.psm1` — new nested module under `Public/AWS/KMS/` with read-only KMS key audit functions (#85)
+- `Find-CHARKMSKeyResource` — matches a key's ARN, ID and aliases against AWS Config encryption configuration (#85)
+- `Get-CHARKMSKeyLastUsage` — reports the last successful cryptographic use and how complete the usage history is (#85)
+- `Find-CHARDeletedPrincipalKMSPolicy` — finds key policies referencing deleted IAM principals for one key or all customer-managed keys in a region (#85)
+
 ## [0.8.0] - 2026-10-01
 
 ### Added
