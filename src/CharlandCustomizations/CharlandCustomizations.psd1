@@ -120,6 +120,7 @@ FunctionsToExport = @(
     'Out-CHARAWSNetworkingComponent',
     'Out-CHARAWSSupportingInfo',
     'Out-CHARCFNStackInfo',
+    'Remove-CHARExpiredACMCerts',
     'Remove-CHARExpiredAWSProfile',
     'Search-CHARPolicyStatement',
     'Set-CHARAuthenticodeSignature',
