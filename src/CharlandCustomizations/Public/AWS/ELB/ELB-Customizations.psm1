@@ -28,6 +28,12 @@ $script:TestCertificateNameCoverage = {
   $false
 }
 
+# Get-ACMCertificateList only returns RSA_2048 certificates unless key types are requested, which
+# would hide valid ECDSA or larger-RSA replacements. These are the key types ALB/NLB listeners accept.
+$script:ElbSupportedKeyTypes = @(
+  'RSA_2048', 'RSA_3072', 'RSA_4096', 'EC_prime256v1', 'EC_secp384r1', 'EC_secp521r1'
+)
+
 function Remove-CHARExpiredELBListenerCertificate {
   <#
 .SYNOPSIS
@@ -44,7 +50,8 @@ function Remove-CHARExpiredELBListenerCertificate {
   'DefaultCertificate' and a warning, and is not modified.
 
   With -ReplaceDefaultCertificate, the function looks in the certificate's own
-  region for an ISSUED, unexpired ACM certificate whose domain name and subject
+  region (RSA 2048/3072/4096 and ECDSA 256/384/521 key types) for an ISSUED,
+  unexpired ACM certificate whose domain name and subject
   alternative names cover every name on the expired certificate (a '*.example.com'
   certificate covers 'www.example.com'). If one certificate has the latest
   expiration date, it becomes the listener's default (Edit-ELB2Listener) and the
@@ -202,6 +209,15 @@ function Remove-CHARExpiredELBListenerCertificate {
         }
       }
 
+      # The API accepts only CertificateArn in request objects; a describe-response object also
+      # carries IsDefault, which violates the removal/modify request contract.
+      $newCertificateRequest = {
+        param([string]$Arn)
+        $request = New-Object -TypeName 'Amazon.ElasticLoadBalancingV2.Model.Certificate'
+        $request.CertificateArn = $Arn
+        $request
+      }
+
       $getCertificateNames = {
         param($Detail)
         @(@($Detail.DomainName) + @($Detail.SubjectAlternativeNames)) |
@@ -226,7 +242,7 @@ function Remove-CHARExpiredELBListenerCertificate {
           if (-not $issuedListCache.ContainsKey($CertificateRegion)) {
             $acmParams = @{} + $awsParams
             $acmParams['Region'] = $CertificateRegion
-            $issuedListCache[$CertificateRegion] = @(Get-ACMCertificateList -CertificateStatus 'ISSUED' @acmParams -ErrorAction Stop)
+            $issuedListCache[$CertificateRegion] = @(Get-ACMCertificateList -CertificateStatus 'ISSUED' -Includes_KeyType $script:ElbSupportedKeyTypes @acmParams -ErrorAction Stop)
           }
 
           $candidates = @(foreach ($summary in $issuedListCache[$CertificateRegion]) {
@@ -273,7 +289,18 @@ function Remove-CHARExpiredELBListenerCertificate {
             continue
           }
 
-          $listenerCertificates = @(Get-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn @awsParams -ErrorAction Stop)
+          # The API can return the default certificate twice (IsDefault true and false). Collapse by
+          # ARN and keep the default flag, or the non-default copy would bypass the default guard.
+          $listenerCertificates = @(
+            @(Get-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn @awsParams -ErrorAction Stop) |
+              Group-Object -Property CertificateArn |
+              ForEach-Object {
+                [PSCustomObject]@{
+                  CertificateArn = $_.Name
+                  IsDefault      = [bool]($_.Group | Where-Object { $_.IsDefault } | Select-Object -First 1)
+                }
+              }
+          )
 
           foreach ($listenerCertificate in $listenerCertificates) {
             $certificateArn = $listenerCertificate.CertificateArn
@@ -313,17 +340,15 @@ function Remove-CHARExpiredELBListenerCertificate {
                 Write-Warning "Expired default certificate '$certificateArn' on listener '$($listener.ListenerArn)' was not replaced: $($replacement.Reason)."
               }
               elseif ($PSCmdlet.ShouldProcess($listener.ListenerArn, "Replace expired default certificate '$certificateArn' with '$replacementArn'")) {
-                $newDefault = New-Object -TypeName 'Amazon.ElasticLoadBalancingV2.Model.Certificate'
-                $newDefault.CertificateArn = $replacementArn
-                $null = Edit-ELB2Listener -ListenerArn $listener.ListenerArn -Certificate $newDefault -Force @awsParams -ErrorAction Stop
+                $null = Edit-ELB2Listener -ListenerArn $listener.ListenerArn -Certificate (& $newCertificateRequest $replacementArn) -Force @awsParams -ErrorAction Stop
 
                 # Whether the old default stays attached as a non-default certificate isn't guaranteed,
                 # so re-read the listener and remove it if it is still there.
                 $remainingCertificate = @(Get-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn @awsParams -ErrorAction Stop) |
-                  Where-Object { $_.CertificateArn -eq $certificateArn } |
+                  Where-Object { $_.CertificateArn -eq $certificateArn -and -not $_.IsDefault } |
                   Select-Object -First 1
                 if ($remainingCertificate) {
-                  Remove-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn -Certificate $remainingCertificate -Force @awsParams -ErrorAction Stop
+                  Remove-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn -Certificate (& $newCertificateRequest $certificateArn) -Force @awsParams -ErrorAction Stop
                 }
                 $action = 'DefaultReplaced'
               }
@@ -332,7 +357,7 @@ function Remove-CHARExpiredELBListenerCertificate {
               }
             }
             elseif ($PSCmdlet.ShouldProcess($listener.ListenerArn, "Remove certificate '$certificateArn' expired $daysSinceExpired day(s) ago")) {
-              Remove-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn -Certificate $listenerCertificate -Force @awsParams -ErrorAction Stop
+              Remove-ELB2ListenerCertificate -ListenerArn $listener.ListenerArn -Certificate (& $newCertificateRequest $certificateArn) -Force @awsParams -ErrorAction Stop
             }
             else {
               $action = 'Skipped'

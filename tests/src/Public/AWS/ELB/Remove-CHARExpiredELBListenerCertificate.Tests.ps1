@@ -41,6 +41,8 @@ Describe 'Remove-CHARExpiredELBListenerCertificate' -Tag 'Unit' {
     BeforeEach {
         Mock Test-CHARAWSCmdlet { $true } -ModuleName ELB-Customizations
         Mock Remove-ELB2ListenerCertificate -ModuleName ELB-Customizations { }
+        # Real code builds an AWS SDK model object; the SDK type may not be loaded in CI.
+        Mock New-Object -ModuleName ELB-Customizations { [PSCustomObject]@{ CertificateArn = $null } }
 
         Mock Get-ELB2LoadBalancer -ModuleName ELB-Customizations {
             @(
@@ -271,19 +273,75 @@ Describe 'Remove-CHARExpiredELBListenerCertificate -ReplaceDefaultCertificate' -
         $results[0].Action | Should -Be 'NoReplacementFound'
     }
 
-    It 'removes the expired certificate when it is still attached after the swap' {
+    It 'removes the expired certificate when it is still attached as non-default after the swap' {
+        # Each test uses its own counter name: mock bodies keep script-scope state between tests.
+        Mock Get-ELB2ListenerCertificate -ModuleName ELB-Customizations {
+            $script:ElbReadsAfterSwapRemoval++
+            if ($script:ElbReadsAfterSwapRemoval -eq 1) {
+                [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/old-def'; IsDefault = $true }
+            }
+            else {
+                # After the swap AWS reports the old certificate as a non-default listener certificate.
+                [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/old-def'; IsDefault = $false }
+                [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/exact'; IsDefault = $true }
+            }
+        }
         $null = Remove-CHARExpiredELBListenerCertificate -ReplaceDefaultCertificate -Confirm:$false
         Should -Invoke Remove-ELB2ListenerCertificate -ModuleName ELB-Customizations -Times 1 -Exactly -ParameterFilter {
             $Certificate.CertificateArn -like '*/old-def'
         }
     }
 
-    It 'does not call remove when the swap already detached the expired certificate' {
-        # Mock bodies run in the module's script scope, so the counter lives there instead of globally.
-        & (Get-Module ELB-Customizations) { $script:ElbTestListenerReads = 0 }
+    It 'does not try to remove a certificate that is still flagged default after the swap' {
+        # Default mock returns old-def as IsDefault = $true on every read, including after the swap.
+        $results = @(Remove-CHARExpiredELBListenerCertificate -ReplaceDefaultCertificate -Confirm:$false)
+        $results[0].Action | Should -Be 'DefaultReplaced'
+        Should -Invoke Remove-ELB2ListenerCertificate -ModuleName ELB-Customizations -Times 0 -Exactly
+    }
+
+    It 'sends ARN-only certificate objects to the modify and remove calls' {
+        # Each test uses its own counter name: mock bodies keep script-scope state between tests.
         Mock Get-ELB2ListenerCertificate -ModuleName ELB-Customizations {
-            $script:ElbTestListenerReads++
-            if ($script:ElbTestListenerReads -eq 1) {
+            $script:ElbReadsArnOnly++
+            [PSCustomObject]@{
+                CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/old-def'
+                IsDefault      = ($script:ElbReadsArnOnly -eq 1)
+            }
+        }
+        $null = Remove-CHARExpiredELBListenerCertificate -ReplaceDefaultCertificate -Confirm:$false
+        Should -Invoke Edit-ELB2Listener -ModuleName ELB-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Certificate.PSObject.Properties.Name -notcontains 'IsDefault'
+        }
+        Should -Invoke Remove-ELB2ListenerCertificate -ModuleName ELB-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Certificate.PSObject.Properties.Name -notcontains 'IsDefault'
+        }
+    }
+
+    It 'treats a duplicated default certificate entry as the default and never removes it' {
+        Mock Get-ELB2ListenerCertificate -ModuleName ELB-Customizations {
+            [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/old-def'; IsDefault = $true }
+            [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/old-def'; IsDefault = $false }
+        }
+        $results = @(Remove-CHARExpiredELBListenerCertificate -Confirm:$false -WarningAction SilentlyContinue)
+        $results.Count | Should -Be 1
+        $results[0].IsDefault | Should -BeTrue
+        $results[0].Action | Should -Be 'DefaultCertificate'
+        Should -Invoke Remove-ELB2ListenerCertificate -ModuleName ELB-Customizations -Times 0 -Exactly
+    }
+
+    It 'requests all ALB/NLB-supported key types when listing replacement certificates' {
+        $null = Remove-CHARExpiredELBListenerCertificate -ReplaceDefaultCertificate -Confirm:$false
+        Should -Invoke Get-ACMCertificateList -ModuleName ELB-Customizations -Times 1 -Exactly -ParameterFilter {
+            $Includes_KeyType -contains 'EC_prime256v1' -and $Includes_KeyType -contains 'RSA_4096' -and
+            $Includes_KeyType -contains 'RSA_2048'
+        }
+    }
+
+    It 'does not call remove when the swap already detached the expired certificate' {
+        # Each test uses its own counter name: mock bodies keep script-scope state between tests.
+        Mock Get-ELB2ListenerCertificate -ModuleName ELB-Customizations {
+            $script:ElbReadsDetached++
+            if ($script:ElbReadsDetached -eq 1) {
                 [PSCustomObject]@{ CertificateArn = 'arn:aws:acm:us-east-1:123456789012:certificate/old-def'; IsDefault = $true }
             }
             else {
