@@ -8,6 +8,20 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 > **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
+## KMS key auditing
+
+Read-only helpers for reviewing a KMS key before retiring it:
+
+```powershell
+Find-CHARKMSKeyResource -KeyArn $keyArn -ProfileName audit
+Get-CHARKMSKeyLastUsage -KeyArn $keyArn -ProfileName audit
+Find-CHARDeletedPrincipalKMSPolicy -KeyArn $keyArn -ProfileName audit
+```
+
+`Find-CHARKMSKeyResource` matches the key ARN, ID and aliases against AWS Config encryption configuration (recorded resource types in one region only). `Get-CHARKMSKeyLastUsage` reports the last successful cryptographic operation and whether the history is complete. `Find-CHARDeletedPrincipalKMSPolicy` reports unresolved IAM principal IDs in one key policy, or in every customer-managed key in the region.
+
+> **Empty results do not mean a key is safe to delete.** Config may not record a resource, usage tracking may start after the key was created, and some use is infrequent. Disable the key and watch CloudTrail before scheduling deletion.
+
 ## What's new in v0.8.0
 
 - **IAM policy auditing** — `Find-CHARDeletedPrincipalPolicy` and `Find-CHARDeletedPrincipalRole` detect policy and trust-policy references to deleted principals, and `Search-CHARPolicyStatement` searches customer-managed policy documents for arbitrary text
@@ -54,6 +68,7 @@ CharlandCustomizations/
     │       │   │   ├── CloudFormation/
     │       │   │   ├── Config/  # AWS Config operations
     │       │   │   ├── IAM/     # IAM policy/role audit tools
+    │       │   │   ├── KMS/     # KMS key audit tools
     │       │   │   ├── Lambda/
     │       │   │   └── S3/
     │       │   ├── Git/         # Git helpers
