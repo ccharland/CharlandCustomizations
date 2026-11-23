@@ -29,6 +29,7 @@ I'm also working on building a repeatable build and release process, including c
 ## Quick start
 
 ```powershell
+
 Install-Module CharlandCustomizations -Scope CurrentUser
 Import-Module CharlandCustomizations
 
