@@ -29,3 +29,5 @@ venv/
 
 # Specific VSCode items - majority are included
 .vscode/launch.json
+*.code-workspace
+

@@ -396,9 +396,9 @@ function Find-CHARDeletedPrincipalPolicy {
             $policyDocument = [System.Web.HttpUtility]::UrlDecode($policyVersion.Document)
 
             # Check for deleted principal unique IDs in the document
-            $matches = [regex]::Matches($policyDocument, $deletedPrincipalPattern)
+            $principalMatches = [regex]::Matches($policyDocument, $deletedPrincipalPattern)
 
-            if ($matches.Count -gt 0) {
+            if ($principalMatches.Count -gt 0) {
                 # Parse JSON to identify which statement contains the reference
                 try {
                     $parsedDoc = $policyDocument | ConvertFrom-Json
@@ -549,9 +549,9 @@ function Find-CHARDeletedPrincipalRole {
             $trustDocument = [System.Web.HttpUtility]::UrlDecode($role.AssumeRolePolicyDocument)
 
             # Check for deleted principal unique IDs
-            $matches = [regex]::Matches($trustDocument, $deletedPrincipalPattern)
+            $principalMatches = [regex]::Matches($trustDocument, $deletedPrincipalPattern)
 
-            if ($matches.Count -gt 0) {
+            if ($principalMatches.Count -gt 0) {
                 try {
                     $parsedDoc = $trustDocument | ConvertFrom-Json
                 }
@@ -775,10 +775,10 @@ Export-ModuleMember -Function @(
 )
 
 # SIG # Begin signature block
-# MIIgywYJKoZIhvcNAQcCoIIgvDCCILgCAQExDzANBglghkgBZQMEAgEFADB5Bgor
+# MIIgzAYJKoZIhvcNAQcCoIIgvTCCILkCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAxFfbViZIsl7qz
-# zJOTqZ/ZectjjxReQEh9QvKdincRZ6CCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAqPlXySSAoCbKt
+# ZabcLxF7rRH5+HUfs9ubz3MyV25DraCCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
 # /xLZmv82guWnMAoGCCqGSM49BAMDMHwxCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVU
 # ZXhhczEQMA4GA1UEBwwHSG91c3RvbjEYMBYGA1UECgwPU1NMIENvcnBvcmF0aW9u
 # MTEwLwYDVQQDDChTU0wuY29tIFJvb3QgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkg
@@ -924,30 +924,30 @@ Export-ModuleMember -Function @(
 # BEvgsbxe25yEhJ0IdGa1pwCYsarldJhJVMdNcAOU7jyIMqHcczav3wtIXp/SwbXZ
 # 3xX0mfsLfANSJ47G4qPgx1atb6GIlTaQXzu/p4fTQeAIUVzZXT4K984IyfuO7NLj
 # WMtog1wGUpZD98pv+4Mt9Y5bvfPUjaUVjtePy1DVdi0rl5ESNYi0zyOmXVxtA5zz
-# xu1H7RdLZOZugT/XjX69rY9bMYIEyTCCBMUCAQEwgYwweDELMAkGA1UEBhMCVVMx
+# xu1H7RdLZOZugT/XjX69rY9bMYIEyjCCBMYCAQEwgYwweDELMAkGA1UEBhMCVVMx
 # DjAMBgNVBAgMBVRleGFzMRAwDgYDVQQHDAdIb3VzdG9uMREwDwYDVQQKDAhTU0wg
 # Q29ycDE0MDIGA1UEAwwrU1NMLmNvbSBDb2RlIFNpZ25pbmcgSW50ZXJtZWRpYXRl
 # IENBIEVDQyBSMgIQUR3u8+0Mq1hXs5hyxM0vzzANBglghkgBZQMEAgEFAKCBhDAY
 # BgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3
 # AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqGSIb3DQEJBDEi
-# BCDAFFhpsLMkDA4CcV08OclxCk0PiMT2xgLzG4Xvwx2hYDALBgcqhkjOPQIBBQAE
-# ZzBlAjEA5doCkHla/NRIg810lyaCqMUvpQKU9gkRgtdHQfIjlijlY66kegVmKwH5
-# TA+4GZkbAjBsm60KmxQ09FQ4YRxiAilZYlM1dzTw/MAGlmU4Fox3Y5rD/Ygwq9zO
-# 0L1jP7QD1MChggMjMIIDHwYJKoZIhvcNAQkGMYIDEDCCAwwCAQEwajBVMQswCQYD
-# VQQGEwJHQjEYMBYGA1UEChMPU2VjdGlnbyBMaW1pdGVkMSwwKgYDVQQDEyNTZWN0
-# aWdvIFB1YmxpYyBUaW1lIFN0YW1waW5nIENBIFI0MQIRAOdO8lWwUE/626bf9/yL
-# oxUwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwG
-# CSqGSIb3DQEJBTEPFw0yNjEwMDIwMTA2MTRaMD8GCSqGSIb3DQEJBDEyBDAY1sI5
-# d/zjn0g4qDGK3RR6RaATpEi0Gwz2sYuHTZJmbYXN0P6BEi2ZSYjTIc5N1bEwDQYJ
-# KoZIhvcNAQEBBQAEggIATQD8WPgEWZy2N0InRKSeerJgNHU5xAY2m1Ts0sTdetn7
-# nhTJmmUYYKs7+DcJxECH11vThqY3SBnXDjneiUo7UuF+9Zehqrcp9eC8RUnFWQ7/
-# xcaZdekfi5FAd528V0MN/CC1UxC3d0tpiQj+kOFWA8Vm8xyolsFG5VHpvGwA+wuZ
-# EIlHYCCVr5Rzd9p43JMbKPhMUWoq5JkEQAK7DaOwulFwI6QTl/miuPyLmN0JpNmT
-# PJjGsSX2/Xcp7kiUSCu3Zu1K+tuSxJByPezB4hVVuGmE9Rwpmu/hsul85x7xnEPd
-# Q+OVPKVK9Nk1lyLya5Xbj70V0x3nJlLaWG0NeFef+97tpE/RZDh7YkJ/fZwDmMh8
-# wAtDbDuHjQBpiOKDBHm93gidIl1VE4g6Wefa5Vwn98Ippr9dZVYqj3W0gZ3e3m7B
-# 8H477HGzYTqosp/8k3ZNIpGtj8LHdc2Nxqeo7lE8liHdwogfMAU+PUvHMdEN/+g+
-# IkSSzt7h6e3O/ADOy62nPzFCSaTtero1ief0ZTiA1HpsOJWaPutkNKB5B0NznADU
-# As478s3y/vRdMLhwT3SWdt621paxHTnCnpdB4zpjb/vLI/Bgj5Rc1718jxAewg6e
-# 7uVF2cl6bQ0+ZXrWOUJtJwcujTdcUKNkDhcE/UuzuTOjcBUOi+ZQmIKwB1uQpRM=
+# BCCkadNDfGUhhBt2fRNt5coTIbqScXnysEmIgtbYeZjX+jALBgcqhkjOPQIBBQAE
+# aDBmAjEAh74XIZ7eFjpOUnZmyAvzMd5rhvoQuZ8mAL3nsGe1r0u2MgFBOh0Oj9tY
+# qa6E/EFlAjEAxvrgasGYdraqn3nE0GlrR7o6FQMCAZXC/He3MPYPqMLnTUmGQvdV
+# dscB006lDDjroYIDIzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkG
+# A1UEBhMCR0IxGDAWBgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2Vj
+# dGlnbyBQdWJsaWMgVGltZSBTdGFtcGluZyBDQSBSNDECEQDnTvJVsFBP+tum3/f8
+# i6MVMA0GCWCGSAFlAwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
+# BgkqhkiG9w0BCQUxDxcNMjYxMTIzMDEyMjIwWjA/BgkqhkiG9w0BCQQxMgQwDv+S
+# 6yV7JI0SfZ1palXSQ2yIMIFWQkvQc/zZ+UmvKo/F3/UwrjQqMn95e30sflheMA0G
+# CSqGSIb3DQEBAQUABIICACTe3ORmcYzDG+Gn0m/FtrXWSOdIppJjNlOXVJ2W9bFl
+# HwqEfgloHSZI7shW7mKOcmmgiNdkDbPSQg62qNtw0aV1bjsf5OxtF4lZ8rZOFk8q
+# K5NmeYoe4EFrIw7GnzLKuKXx14kIF3DmhgZVYjj065J7uNeN1/AEbfy5dZgL6lEg
+# CdgvMbPANqN/NPQ1V+L+iqeY3D0R5YgNSkQPV+maQKSmaUnUP9sRBt0yLJ+UvHrQ
+# /4ImTBBSqFmy4lhiUJQ/7vIpUq0yyk4muX2AtsGwCe1nGxcXF+hn7YM3zoZaNdIy
+# UELSsrvHHFpZyuYufaGP3JziyMg8tkTgLaXavHcfMSRMYKxVCYyvCj0ALYUBGSus
+# MAIyWJplmlThUQXEh6Jx0fW9VzlQCVWqLs9sRrPXpyqxqwwl2wFvymuKox8Meiw1
+# 4H9ujlzFAJjOQ4MG+rguaX4BNAJG7m8opnK6/mcDGh+8snVYr8HUNm0Tf3pLZF/Y
+# zs828CXVopLi9B3d/zne80gT6x5z82PeZa2sEdXyNNzXEPIrnLCXO1G56PbBTJj7
+# 6CaSHiwYMNf0ydCVqlxyNvS3lDddRG0YJeQ4nccq73v0FBSWPDcAvOBArcaxSN3V
+# p2bYZvtF2ZtrsKSg6qdvdOWU0/bejaVn1GUDkDU+Q44kFATH6Y+b81wkbeq+WGyA
 # SIG # End signature block

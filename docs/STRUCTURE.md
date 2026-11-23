@@ -25,7 +25,9 @@ CharlandCustomizations/
 │       ├── CharlandCustomizations.psm1  # Module loader
 │       ├── Private/                     # Internal helpers (not exported)
 │       │   ├── New-AWSParamSplat.ps1
-│       │   └── CFNPrivateFunctions.ps1
+│       │   ├── CFNPrivateFunctions.ps1
+│       │   ├── IAMPrivateFunctions.ps1
+│       │   └── Invoke-CHAREC2ProcessScan.ps1
 │       └── Public/                      # Exported functions
 │           ├── Clear-CHARAuthenticodeSignature.ps1
 │           ├── Get-CHARAWSRegionFromIp.ps1

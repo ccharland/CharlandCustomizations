@@ -8,6 +8,12 @@ All public commands use the "CHAR" prefix before the noun of the command (e.g., 
 
 > **v0.4.0 Breaking Change:** All commands were renamed from the `CC` prefix to `CHAR` (e.g., `Find-CCCFNStackError` → `Find-CHARCFNStackError`). If you are upgrading from v0.3.x or earlier, update your scripts to use the new prefix. See [docs/CHANGELOG.md](docs/CHANGELOG.md) for full details.
 
+## What's new in v0.9.0
+- **IAM principal permissions** — `Get-CHARPrincipalPermission` audits the permissions of an IAM principal, with optional action and effect filters
+- **EC2 process auditing** — `Find-CHAREC2Process` finds running processes by name across EC2 instances via SSM, and `Find-CHAREC2MissingProcess` reports instances that are not running them
+- **ACM certificate safety** — certificate results now include Subject Alternative Names, and replacing an ACM certificate fails when DNS names differ unless `-Force` is used
+- **Dependabot support** — Python dependency scanning and a dedicated `dependabot/*` branch policy
+
 ## What's new in v0.8.0
 
 - **IAM policy auditing** — `Find-CHARDeletedPrincipalPolicy` and `Find-CHARDeletedPrincipalRole` detect policy and trust-policy references to deleted principals, and `Search-CHARPolicyStatement` searches customer-managed policy documents for arbitrary text

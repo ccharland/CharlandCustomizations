@@ -109,6 +109,7 @@ Clear-CHARS3Bucket -BucketName "my-bucket" -Region us-east-1 -DeleteBucket
 Import-CHARPfxCertificateToACM -PfxPath ./cert.pfx -Region us-east-1
 
 # Replace an existing ACM certificate with a renewed PFX
+# (fails if DNS names differ from the existing certificate; add -Force to override)
 Update-CHARPfxCertificateInACM -PfxPath ./renewed.pfx -CertificateArn arn:aws:acm:us-east-1:123456789012:certificate/... -Region us-east-1
 
 # Export PFX to PEM files (cert, key, chain)
@@ -122,6 +123,19 @@ Test-CHARACMCertificate -CertificateArn arn:aws:acm:us-east-1:123456789012:certi
 
 # List all ACM certificates in a region
 Get-CHARACMCertificateInventory -Region us-east-1
+```
+
+### IAM and EC2 Auditing
+
+```powershell
+# Audit the permissions of an IAM principal, optionally filtered by action
+Get-CHARPrincipalPermission -PrincipalArn arn:aws:iam::123456789012:role/my-role -Action 's3:*' -Region us-east-1
+
+# Find running processes by name on EC2 instances (via SSM)
+Find-CHAREC2Process -InstanceId i-0123456789abcdef0 -LinuxProcess nginx -Region us-east-1
+
+# Report instances that are NOT running the given processes
+Find-CHAREC2MissingProcess -InstanceId i-0123456789abcdef0 -LinuxProcess nginx -Region us-east-1
 ```
 
 ### IP and Utility Helpers
