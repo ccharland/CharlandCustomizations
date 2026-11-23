@@ -396,9 +396,9 @@ function Find-CHARDeletedPrincipalPolicy {
             $policyDocument = [System.Web.HttpUtility]::UrlDecode($policyVersion.Document)
 
             # Check for deleted principal unique IDs in the document
-            $matches = [regex]::Matches($policyDocument, $deletedPrincipalPattern)
+            $principalMatches = [regex]::Matches($policyDocument, $deletedPrincipalPattern)
 
-            if ($matches.Count -gt 0) {
+            if ($principalMatches.Count -gt 0) {
                 # Parse JSON to identify which statement contains the reference
                 try {
                     $parsedDoc = $policyDocument | ConvertFrom-Json
@@ -549,9 +549,9 @@ function Find-CHARDeletedPrincipalRole {
             $trustDocument = [System.Web.HttpUtility]::UrlDecode($role.AssumeRolePolicyDocument)
 
             # Check for deleted principal unique IDs
-            $matches = [regex]::Matches($trustDocument, $deletedPrincipalPattern)
+            $principalMatches = [regex]::Matches($trustDocument, $deletedPrincipalPattern)
 
-            if ($matches.Count -gt 0) {
+            if ($principalMatches.Count -gt 0) {
                 try {
                     $parsedDoc = $trustDocument | ConvertFrom-Json
                 }
@@ -777,8 +777,8 @@ Export-ModuleMember -Function @(
 # SIG # Begin signature block
 # MIIgzAYJKoZIhvcNAQcCoIIgvTCCILkCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDCvBwXn3TGfOhl
-# sbmcttoxcxmKrt84gDsB3Zk+oAq2u6CCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAqPlXySSAoCbKt
+# ZabcLxF7rRH5+HUfs9ubz3MyV25DraCCG1gwggN5MIIC/qADAgECAhAcz51nzeIZ
 # /xLZmv82guWnMAoGCCqGSM49BAMDMHwxCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVU
 # ZXhhczEQMA4GA1UEBwwHSG91c3RvbjEYMBYGA1UECgwPU1NMIENvcnBvcmF0aW9u
 # MTEwLwYDVQQDDChTU0wuY29tIFJvb3QgQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkg
@@ -930,24 +930,24 @@ Export-ModuleMember -Function @(
 # IENBIEVDQyBSMgIQUR3u8+0Mq1hXs5hyxM0vzzANBglghkgBZQMEAgEFAKCBhDAY
 # BgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3
 # AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqGSIb3DQEJBDEi
-# BCBvXa8Dg7OcYglCb75+Qsr1yUcrTXlVnoAmJdZC4zDZkjALBgcqhkjOPQIBBQAE
-# aDBmAjEAxm9kqo3W4nMbpJVrD/BImjpJfFrgGbeQz9s1UtgRQqo7Tr12z6gl/Vgw
-# 0jX7aqozAjEAzKe4+4Il2djKmuxV0b29sxUeffC7/Z9/L+F0fWKseQxlTJBHfZ9r
-# uVRLoNrMhxQHoYIDIzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkG
+# BCCkadNDfGUhhBt2fRNt5coTIbqScXnysEmIgtbYeZjX+jALBgcqhkjOPQIBBQAE
+# aDBmAjEAh74XIZ7eFjpOUnZmyAvzMd5rhvoQuZ8mAL3nsGe1r0u2MgFBOh0Oj9tY
+# qa6E/EFlAjEAxvrgasGYdraqn3nE0GlrR7o6FQMCAZXC/He3MPYPqMLnTUmGQvdV
+# dscB006lDDjroYIDIzCCAx8GCSqGSIb3DQEJBjGCAxAwggMMAgEBMGowVTELMAkG
 # A1UEBhMCR0IxGDAWBgNVBAoTD1NlY3RpZ28gTGltaXRlZDEsMCoGA1UEAxMjU2Vj
 # dGlnbyBQdWJsaWMgVGltZSBTdGFtcGluZyBDQSBSNDECEQDnTvJVsFBP+tum3/f8
 # i6MVMA0GCWCGSAFlAwQCAgUAoHkwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
-# BgkqhkiG9w0BCQUxDxcNMjYxMTIzMDA0MzMzWjA/BgkqhkiG9w0BCQQxMgQwX319
-# 2pBWUeemUskyoDAqbWygC9qRUxKuW8UCNSKa4YNVMi+rmCCjN75gE372PCywMA0G
-# CSqGSIb3DQEBAQUABIICAG1x3VKKyansehCtLUqKfIhtP03G+JRlEsyZi8ZayjyL
-# +7evS9I/e+F6sbvYRfkI2dYOgxEh4sGJE13ONkwx9hOxKjOOjnAeRp3SCaQMJy/t
-# cGyWKlMhTXPqnhgwPkR60VLP92kqfDzXuCLTFCVwAPYIxwLP13wndlxDoWOU4EZg
-# qQ0DF3po3+NxAmJ2j11hOmE765U9Qzk2NNyndTbkDPnSu0b4pV7lOlpOc+xIQXzf
-# OXieXqApiSI2mL3btU1SoZ0hzZaYIOgKuJoiZMKMoar/hd2FXVBTq6EGKpqKG9ST
-# XRkTpTfPeGOHsUfmcKAeOyVHybCgQcPw7AbYdVSLHgmpwUlu1GRWCFD0r3kKX2b1
-# t+RM04Ahj6arcAMyx65CIGHJ7s5lwpWlmUD90tDLRasw8uyqfSXEccPVIApZaEt/
-# Mv+C5G8GeKKIgtguytD8APvFaTmeZvFtJGvfWWOgtQWYzNH02Ou8anInvKXouDy5
-# CLsk05Qq2kVzABtl0BQvHyP23aGUji+0EPh0sr1MnrMWHJybyjvVI79fRa3RIdUt
-# akHm2thvY70kyxxIkqvyRcyWmKHgqaOWYXwt6D57eAtvJLoZip4d766SuYEUvT5A
-# PW4ZsPnD+hWXMSjTN1wMXs2jhwbaXNjGBx6VXfPEy6Tnz9W3Zt1GFpmKGfbwKVGI
+# BgkqhkiG9w0BCQUxDxcNMjYxMTIzMDEyMjIwWjA/BgkqhkiG9w0BCQQxMgQwDv+S
+# 6yV7JI0SfZ1palXSQ2yIMIFWQkvQc/zZ+UmvKo/F3/UwrjQqMn95e30sflheMA0G
+# CSqGSIb3DQEBAQUABIICACTe3ORmcYzDG+Gn0m/FtrXWSOdIppJjNlOXVJ2W9bFl
+# HwqEfgloHSZI7shW7mKOcmmgiNdkDbPSQg62qNtw0aV1bjsf5OxtF4lZ8rZOFk8q
+# K5NmeYoe4EFrIw7GnzLKuKXx14kIF3DmhgZVYjj065J7uNeN1/AEbfy5dZgL6lEg
+# CdgvMbPANqN/NPQ1V+L+iqeY3D0R5YgNSkQPV+maQKSmaUnUP9sRBt0yLJ+UvHrQ
+# /4ImTBBSqFmy4lhiUJQ/7vIpUq0yyk4muX2AtsGwCe1nGxcXF+hn7YM3zoZaNdIy
+# UELSsrvHHFpZyuYufaGP3JziyMg8tkTgLaXavHcfMSRMYKxVCYyvCj0ALYUBGSus
+# MAIyWJplmlThUQXEh6Jx0fW9VzlQCVWqLs9sRrPXpyqxqwwl2wFvymuKox8Meiw1
+# 4H9ujlzFAJjOQ4MG+rguaX4BNAJG7m8opnK6/mcDGh+8snVYr8HUNm0Tf3pLZF/Y
+# zs828CXVopLi9B3d/zne80gT6x5z82PeZa2sEdXyNNzXEPIrnLCXO1G56PbBTJj7
+# 6CaSHiwYMNf0ydCVqlxyNvS3lDddRG0YJeQ4nccq73v0FBSWPDcAvOBArcaxSN3V
+# p2bYZvtF2ZtrsKSg6qdvdOWU0/bejaVn1GUDkDU+Q44kFATH6Y+b81wkbeq+WGyA
 # SIG # End signature block
