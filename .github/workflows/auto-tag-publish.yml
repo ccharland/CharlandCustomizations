@@ -79,6 +79,7 @@ jobs:
         with:
           ref: ${{ steps.check-publish.outputs.merge_sha }}
           token: ${{ github.token }}
+          persist-credentials: false
 
       - name: Read version from manifest
         if: steps.check-publish.outputs.is_publish == 'true'
