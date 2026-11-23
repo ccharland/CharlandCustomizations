@@ -90,6 +90,8 @@ FunctionsToExport = @(
     'Find-CHARDeletedPrincipalPolicy',
     'Find-CHARDeletedPrincipalRole',
     'Find-CHAREC2DBSG',
+    'Find-CHAREC2MissingProcess',
+    'Find-CHAREC2Process',
     'Find-CHAROpenSecurityGroup',
     'Get-CHARAccountListFromProfile',
     'Get-CHARACMCertificateInventory',
