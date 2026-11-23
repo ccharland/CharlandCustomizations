@@ -3,6 +3,26 @@
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
 ## [Unreleased]
+## [0.9.0] - 2026-11-22
+### Added
+- `Get-CHARPrincipalPermission` — audits the permissions of an IAM principal, with optional action and effect filters, in `IAM-Customizations.psm1`, backed by new private helpers in `Private/IAMPrivateFunctions.ps1` (#128)
+- `Find-CHAREC2Process` — finds running processes by name on EC2 instances using SSM Run Command, built on the new private helper `Invoke-CHAREC2ProcessScan` (#146)
+- `Find-CHAREC2MissingProcess` — reports EC2 instances that are not running one or more specified processes (#146)
+- Pester tests for `Get-CHARPrincipalPermission`, `IAMPrivateFunctions`, `Invoke-CHAREC2ProcessScan`, `Find-CHAREC2Process`, and `Find-CHAREC2MissingProcess` (#128, #146)
+- Kiro spec documents for the `iam-permission-role-auditing` feature (#128)
+### Changed
+- ACM certificate output now includes `SubjectAlternativeNames` and `SubjectAlternativeNameCount` for PFX inspection, import, update, and inventory results (#134)
+- `Import-CHARPfxCertificateToACM` and `Update-CHARPfxCertificateInACM` — replacing an existing certificate now fails when the replacement DNS names do not match the existing ACM certificate; the new `-Force` switch skips that check (#134)
+- `Audit-AWSAccount.psm1` — refactored alongside the EC2 process functions (#146)
+- Module manifest version bumped to `0.9.0`; `FunctionsToExport` expanded with 3 new functions (60 total exported functions)
+- Python dependency `uv` bumped from 0.11.21 to 0.13.9 in `requirements.txt` (#135, #140, #143, #144)
+- GitHub Actions dependencies updated (`actions/checkout`, `actions/github-script`, `actions/upload-artifact`) (#138)
+- `auto-tag-publish.yml` — passes `RELEASE_PAT` to checkout so tag pushes trigger downstream workflows
+- `*.code-workspace` files are now gitignored
+### Infrastructure
+- Dependabot now scans Python (`pip`) dependencies, including security updates (#133)
+- Branch path policy: added `dependabot/*` branches as an allow-list type that may change only `requirements.txt` and `.github/workflows/`; updated `Test-BranchPathPolicy.ps1` (re-signed), the pre-commit hook, ADR-002, and tests (#136, #139)
+- Branch name ruleset now allows AI-tool feature and infrastructure prefixes (`codex-feature/*`, `copilot-infrastructure/*`, `kiro-feature/*`, etc.) and exempts a trusted integration from the ruleset (#132)
 
 ## [0.8.0] - 2026-10-01
 
