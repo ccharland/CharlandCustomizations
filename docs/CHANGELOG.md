@@ -3,6 +3,9 @@
 All notable changes to the CharlandCustomizations module will be documented in this file.
 
 ## [Unreleased]
+### Added
+- `ELB-Customizations.psm1` — new nested module under `Public/AWS/ELB/` for Elastic Load Balancing (ALB/NLB) functions
+- `Remove-CHARExpiredELBListenerCertificate` — finds expired ACM certificates on ALB/NLB listeners and removes them, with `-LoadBalancerName` wildcard and `-DaysExpired` filters; `-ReplaceDefaultCertificate` swaps an expired default certificate for the unexpired ACM certificate that covers all of its names and expires last; without the switch, expired default certificates are reported and left unchanged
 
 ## [0.8.0] - 2026-10-01
 
